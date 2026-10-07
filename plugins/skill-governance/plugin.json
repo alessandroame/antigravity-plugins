@@ -1,0 +1,11 @@
+{
+  "name": "skill-governance",
+  "displayName": "Skill Governance & Token Optimization",
+  "description": "Standard di qualità per le skill: audit dei trigger, ottimizzazione del budget token, prevenzione di collisioni e refactoring modulare.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Esegui un audit completo di questa skill analizzando trigger e impronta token",
+    "Rifattorizza questa skill monolitica applicando la divulgazione progressiva",
+    "Verifica eventuali collisioni o duplicati tra le skill installate"
+  ]
+}
