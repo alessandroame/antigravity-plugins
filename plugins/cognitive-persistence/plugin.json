@@ -1,0 +1,11 @@
+{
+  "name": "cognitive-persistence",
+  "displayName": "Cognitive Persistence & Project Memory",
+  "description": "Preserva la continuità architetturale e la memoria tra sessioni: frammenti di log ADR, lezioni apprese in MEMORY.md e matrice di avanzamento in DESIDERATA.md.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Sincronizza la memoria di progetto e aggiorna MEMORY.md",
+    "Genera un frammento di decisione architetturale (ADR) in worklog.d",
+    "Aggiorna lo stato di avanzamento delle funzionalità in DESIDERATA.md"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "starter-plugin",
+  "displayName": "Starter Plugin Template",
+  "description": "Template di partenza per creare un nuovo plugin Antigravity con regole e skill.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Esegui l'azione principale del plugin",
+    "Verifica la configurazione del plugin",
+    "Mostra lo stato operativo"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "engineering-workflow",
+  "displayName": "Engineering Workflow & Trace Debugging",
+  "description": "Governance rigorosa di sviluppo: staging chirurgico Git, isolamento in Git Worktrees, Conventional Commits e debugging deterministico trace-based.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Inizializza un Git Worktree isolato per sviluppare questo task",
+    "Localizza la causa radice del bug con il protocollo breadcrumb trace",
+    "Prepara staging chirurgico e Conventional Commit dopo il collaudo"
+  ]
+}

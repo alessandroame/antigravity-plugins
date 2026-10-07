@@ -1,0 +1,11 @@
+{
+  "name": "execution-guard",
+  "displayName": "Execution Guard & Anti-Freeze",
+  "description": "Garantisce resilienza di esecuzione: watchdog anti-freeze su task background, prevenzione stalli, circuit breaker salva-token e rollback su regressioni.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Verifica lo stato dei task in background e diagnostica processi bloccati",
+    "Configura i timeout di sicurezza e watchdog per test e script",
+    "Analizza il loop di errore e proponi le alternative del circuit breaker"
+  ]
+}

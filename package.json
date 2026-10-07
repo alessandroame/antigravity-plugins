@@ -1,0 +1,20 @@
+{
+  "name": "antigravity-plugins",
+  "version": "1.0.0",
+  "description": "Modular plugin collection for Google Antigravity",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs --all",
+    "test": "node scripts/validate.mjs --all"
+  },
+  "keywords": [
+    "antigravity",
+    "plugins",
+    "agentic-coding",
+    "gemini",
+    "skills",
+    "rules"
+  ],
+  "author": "Alessandro Ame",
+  "license": "MIT"
+}

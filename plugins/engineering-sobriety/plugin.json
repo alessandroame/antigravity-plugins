@@ -1,0 +1,11 @@
+{
+  "name": "engineering-sobriety",
+  "displayName": "Engineering Sobriety & Anti-Hype",
+  "description": "Impone rigore tecnico, assenza di convenevoli, divieto di marketing hype e adozione di linguaggio fattuale e diretto.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Esegui un audit del linguaggio e rimuovi termini promozionali",
+    "Riscrivi la documentazione eliminando aggettivi enfatici e fuffa",
+    "Analizza questo problema tecnico con rigore e zero convenevoli"
+  ]
+}

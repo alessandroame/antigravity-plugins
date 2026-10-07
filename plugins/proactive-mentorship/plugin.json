@@ -1,0 +1,11 @@
+{
+  "name": "proactive-mentorship",
+  "displayName": "Proactive Mentorship & Prompt Refactoring",
+  "description": "Coaching architetturale e sui prompt: scrutinio critico preventivo (KISS/YAGNI/casi limite), assenza di adulazione e refactoring Before/After dei prompt.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Esamina questo prompt e proponi un refactoring ottimizzato Before vs After",
+    "Analizza i punti ciechi e i casi limite di questo requisito prima di agire",
+    "Valuta questa proposta architetturale contro complessità e over-engineering"
+  ]
+}
