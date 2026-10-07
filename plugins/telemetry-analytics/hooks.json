@@ -1,0 +1,18 @@
+{
+  "telemetry-collector": {
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/collector.mjs",
+        "timeout": 15
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./scripts/collector.mjs --finalize",
+        "timeout": 15
+      }
+    ]
+  }
+}

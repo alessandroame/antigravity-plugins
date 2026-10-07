@@ -4,7 +4,32 @@ Questo documento traccia la cronologia consolidata delle decisioni architettural
 
 ---
 
+## [2026-10-07] ADR: Ridenominazione Automatica della Sessione di Chat in `/next-step`
+
+### Contesto & Motivazione
+Durante l'avvio di nuove sessioni con `/next-step`, Antigravity assegnava alla sessione un titolo generico ("Next Step Planning") basato sul prompt iniziale. Questo generava ambiguità nella cronologia della sidebar. Era necessario che `/next-step` aggiornasse programmaticamente il titolo della chat con la denominazione dello step preso in carico da `DESIDERATA.md`.
+
+### Decisioni Architetturali
+1. **Integrazione con Antigravity Language Server (Connect-RPC)**:
+   - Identificato l'endpoint Connect-RPC locale `LanguageServerService/UpdateConversationAnnotations`.
+   - Creato lo script autonomo `plugins/cognitive-persistence/scripts/set-chat-title.mjs` (Node.js nativo con zero dipendenze).
+   - Risoluzione automatica della porta di Language Server e del token di autenticazione `x-codeium-csrf-token`.
+   - Rilevamento automatico dell'ID di conversazione attivo da `~/.gemini/antigravity/brain/` quando non esplicitato da linea di comando.
+2. **Aggiornamento Runbook `/next-step` e Regole**:
+   - Aggiunto lo Step 5 ("Ridenominazione Automatica Titolo Chat") nel runbook di `plugins/cognitive-persistence/skills/next-step/SKILL.md`.
+   - Aggiornato `rules/AGENTS.md` (punto 4 nella Direttiva di Avvio Task).
+   - Documentato il componente e aggiornato il diagramma di flusso in `plugins/cognitive-persistence/README.md`.
+3. **Allineamento Configurazione Globale**:
+   - Replicati i file aggiornati in `~/.gemini/config/plugins/cognitive-persistence/`.
+
+### Impatto e Verifiche
+- Collaudo eseguito: sessione corrente ridenominata con successo e riscontrata sia via Connect-RPC che nel database locale `conversation_summaries.db`.
+- Esecuzione `node scripts/validate.mjs` completata con 8/8 plugin validati e 0 anomalie.
+
+---
+
 ## [2026-10-07] ADR: Introduzione del Comando Slash `/next-step` in `cognitive-persistence`
+
 
 ### Contesto & Motivazione
 Il plugin `cognitive-persistence` forniva la skill `memory-sync` per la chiusura del task (End-of-Task Sync), ma necessitava di un punto di ingresso standardizzato e deterministico per l'avvio della sessione (Start-of-Task Intake). Era richiesta la capacità di scansionare automaticamente `DESIDERATA.md`, estrarre vincoli da `MEMORY.md`, generare il prompt esecutivo ed eseguire la transizione di stato verso `🟡 In Lavorazione`.
@@ -57,3 +82,58 @@ Il repository raccoglie 7 plugin modulari e 1 template per Google Antigravity. I
 ### Impatto e Verifiche
 - Tutti gli 8 plugin dispongono ora di documentazione approfondita.
 - Esecuzione di `npm test` superata con esito positivo: 8/8 plugin validati, 0 errori, 0 avvisi.
+
+---
+
+## [2026-10-07] ADR: Ridenominazione Automatica della Sessione di Chat in `/next-step`
+
+### Contesto & Motivazione
+Durante l'avvio di una nuova sessione di sviluppo tramite il comando slash `/next-step`, Antigravity assegnava alla sessione un titolo generico ("Next Step Planning") basato sul prompt iniziale. Di conseguenza, nella sidebar dell'applicazione desktop e dell'IDE comparivano molteplici chat con identica titolazione, rendendo difficoltosa la rapida localizzazione e differenziazione degli interventi in corso o storici.
+
+### Decisioni Architetturali
+1. **Analisi del Runtime di Antigravity**:
+   - Individuato il meccanismo interno di gestione dei metadati di sessione: le conversazioni sono archiviate in `conversation_summaries.db` e gestite dal processo locale `language_server.exe`.
+   - Verificato che l'endpoint locale Connect-RPC `LanguageServerService/UpdateConversationAnnotations` (su porta dinamica `https://127.0.0.1:<port>/`) consente l'aggiornamento in tempo reale dei metadati di annotazione (`title`), notificando la UI reattiva Electron via stream `StreamCascadeSummariesReactiveUpdates`.
+2. **Creazione dello Script di Ridenominazione (`set-chat-title.mjs`)**:
+   - Creato lo script autonomo `plugins/cognitive-persistence/scripts/set-chat-title.mjs` con zero dipendenze esterne (solo moduli nativi Node.js: `fs`, `path`, `https`, `child_process`).
+   - Implementata la risoluzione deterministica della porta tramite analisi di `main.log` e fallback su porte in ascolto di sistema.
+   - Implementata l'estrazione automatica del token di autenticazione `x-codeium-csrf-token` dal file HTML dell'applicazione.
+   - Supportata la risoluzione automatica della conversazione attiva tramite scansione cronologica di `~/.gemini/antigravity/brain/` quando `--conversation-id` non viene specificato.
+3. **Integrazione nel Runbook di `/next-step`**:
+   - Aggiornato `plugins/cognitive-persistence/skills/next-step/SKILL.md` introducendo lo "Step 5: Ridenominazione Automatica del Titolo della Chat" prima della conferma di avvio sviluppo.
+   - Aggiornato `rules/AGENTS.md` inserendo il punto 4 nella "Direttiva di Avvio Task".
+   - Aggiornati il diagramma di flusso e la tabella componenti in `plugins/cognitive-persistence/README.md`.
+4. **Sincronizzazione Ambiente Globale**:
+   - Replicati lo script e le definizioni aggiornate nella configurazione globale utente `~/.gemini/config/plugins/cognitive-persistence/`.
+
+### Impatto e Verifiche
+- Validazione automatica `scripts/validate.mjs` superata con esito positivo (8 plugin verificati, 0 errori, 0 avvisi).
+- All'invocazione di `/next-step`, il titolo della chat nella barra laterale di Antigravity viene immediatamente rinominato con il nome dello step selezionato da `DESIDERATA.md`.
+
+---
+
+## [2026-10-07] ADR: Creazione del Plugin `telemetry-analytics` (Invocazioni, Latenza e Tool Metrics)
+
+### Contesto & Motivazione
+Nel runtime di Antigravity mancava un meccanismo trasparente e quantitativo per misurare il tempo di utilizzo effettivo dei plugin, la frequenza delle invocazioni di skill e i tassi di successo dei tool nativi. L'approccio ingenuo con hook sincroni per-tool (`PreToolUse`/`PostToolUse`) comportava un overhead di process spawning proibitivo su Windows (~150ms per tool). L'utente ha optato per un'architettura **ibrida** (storage centrale globale con tag di workspace).
+
+### Decisioni Architetturali
+1. **Plugin `telemetry-analytics`**:
+   - Manifest SemVer `1.0.0` conforme alle specifiche con 3 suggested prompts.
+   - Registrazione hook in `hooks.json` su `PostInvocation` e `Stop`, eliminando qualsiasi overhead durante l'esecuzione dei singoli tool call.
+2. **Ingestore Batch `scripts/collector.mjs`**:
+   - Zero dipendenze esterne (solo API native `node:fs`, `node:path`, `node:os`).
+   - Normalizzazione rigorosa dei percorsi su Windows (`\\\\` -> `/`, quote stripping, boundary check `(?:^|\/)plugins\/`).
+   - Rilevamento incrementale tramite file cursore `.cursor_<sessionId>.json` per evitare ricalcoli $O(N)$ sui log di transcript.
+   - Watchdog di sicurezza rigido (`setTimeout` unref) conforme alle regole di `execution-guard`.
+3. **Persistenza e Reporting Ibrido**:
+   - Archiviazione in `~/.gemini/antigravity/analytics/` (`events.ndjson` e `metrics-summary.json`).
+   - Script CLI `scripts/report.mjs` con supporto per `--workspace`, `--global`, `--json`, `--csv`, `--reset`.
+   - Skill `plugin-analytics` (dashboard tabellare Markdown) e `telemetry-export` (esportazione CSV/JSON).
+4. **Sincronizzazione Globale**:
+   - Creata Directory Junction verso `~/.gemini/config/plugins/telemetry-analytics` per garantire disponibilità immediata a livello utente.
+
+### Impatto e Verifiche
+- Suite `npm test` superata con 9 plugin validati, 0 errori, 0 avvisi.
+- Test end-to-end eseguito con successo sul transcript reale della sessione: rilevati correttamente tempo di esecuzione, token consumati (input, output, cache ratio), tool chiamati e plugin intercettati (`laws-of-ux`, `telemetry-analytics`, ecc.).
+

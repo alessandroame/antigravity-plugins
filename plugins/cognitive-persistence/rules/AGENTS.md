@@ -36,3 +36,4 @@ All'inizio di una sessione di sviluppo o quando invocato tramite il comando slas
 1. **Scansione Matrice**: Consulta `DESIDERATA.md` dando priorità a eventuali task `🟡 In Lavorazione`, altrimenti al primo task `🔴 Pianificato`.
 2. **Consultazione Vincoli**: Ispeziona `MEMORY.md` per lezioni e vincoli attinenti, e `WORKLOG.md` per lo storico recente.
 3. **Presa in Carico**: Commuta lo stato in `🟡 In Lavorazione` e produce il briefing operativo con prompt deterministico prima di avviare la modifica del codice.
+4. **Ridenominazione Chat**: Rinomina la sessione di chat con il titolo dello step preso in carico (invocando `set-chat-title.mjs`), garantendo tracciabilità immediata nella sidebar di Antigravity.

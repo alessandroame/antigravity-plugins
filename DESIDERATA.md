@@ -19,9 +19,11 @@ Questo documento traccia lo stato di sviluppo delle funzionalità, dei plugin e 
 | `laws-of-ux` | `🟢 Completato` | 30 leggi, 6 regole, 7 skill, template di audit euristico P0-P3, [README](./plugins/laws-of-ux/README.md). |
 | `execution-guard` | `🟢 Completato` | Watchdog anti-freeze, circuit breaker salva-token, timeout script, [README](./plugins/execution-guard/README.md). |
 | `engineering-workflow` | `🟢 Completato` | Staging chirurgico, Conventional Commits, worktrees, trace debugging, [README](./plugins/engineering-workflow/README.md). |
-| `cognitive-persistence` | `🟢 Completato` | Triade cognitiva, slash command `/next-step`, skill `memory-sync`, ADR in `worklog.d/`, [README](./plugins/cognitive-persistence/README.md). |
+| `cognitive-persistence` | `🟢 Completato` | Triade cognitiva, slash command `/next-step`, ridenominazione chat automatica (`set-chat-title.mjs`), skill `memory-sync`, ADR in `worklog.d/`, [README](./plugins/cognitive-persistence/README.md). |
+
 | `proactive-mentorship` | `🟢 Completato` | Scrutinio critico preventivo, prompt refactoring Before/After, [README](./plugins/proactive-mentorship/README.md). |
 | `skill-governance` | `🟢 Completato` | Two-phase token model, audit dimensionale (A-E), collision check, [README](./plugins/skill-governance/README.md). |
+| `telemetry-analytics` | `🟢 Completato` | Telemetria ibrida, latenza turni, volume invocazioni plugin/skill, parser transcript, [README](./plugins/telemetry-analytics/README.md). |
 | `starter-plugin` (template) | `🟢 Completato` | Blueprint standard per nuovi plugin con manifest SemVer valido, [README](./templates/starter-plugin/README.md). |
 
 ---

@@ -54,6 +54,7 @@ Mappa l'intero ciclo di vita delle funzionalità tramite uno schema tabellare co
 | **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Impone all'agente l'obbligo di consultare la triade cognitiva all'avvio del task e di sincronizzarla al completamento prima di rilasciare il controllo. |
 | **`next-step`** | Skill / Comando Slash | [`skills/next-step/SKILL.md`](./skills/next-step/SKILL.md) | Runbook di accoglienza requisiti invocabile con `/next-step`: scansiona `DESIDERATA.md`, recupera vincoli da `MEMORY.md`, commuta lo stato in `🟡 In Lavorazione` e produce il briefing operativo con prompt deterministico. |
 | **`memory-sync`** | Skill on-demand | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook operativo che guida l'agente nei 5 passaggi di redazione frammento, consolidamento giornale, aggiornamento lezioni e allineamento matrice a fine task. |
+| **`set-chat-title`** | Script di utilità | [`scripts/set-chat-title.mjs`](./scripts/set-chat-title.mjs) | Script Node.js che comunica via Connect-RPC con Antigravity Language Server per aggiornare istantaneamente il titolo della conversazione nella sidebar e nel database. |
 
 ---
 
@@ -66,8 +67,9 @@ flowchart TD
     subgraph Avvio ["1. Start-of-Task (/next-step)"]
         A["Invocazione /next-step"] --> B["Scansione DESIDERATA.md<br/>(Ripresa 🟡 o selezione primo 🔴)"]
         B --> C["Iniezione Vincoli MEMORY.md<br/>& Storico WORKLOG.md"]
-        C --> D["Transizione stato: 🟡 In Lavorazione<br/>+ Briefing Operativo con Prompt"]
+        C --> D["Transizione stato: 🟡 In Lavorazione<br/>+ Ridenominazione Chat (set-chat-title.mjs)<br/>+ Briefing Operativo con Prompt"]
     end
+
 
     subgraph Sviluppo ["2. Esecuzione & Test"]
         D --> E["Sviluppo TDD & Modifiche Codice"]

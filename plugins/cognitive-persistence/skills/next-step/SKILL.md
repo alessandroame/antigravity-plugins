@@ -32,7 +32,10 @@ Fornire un punto di ingresso deterministico all'inizio di ogni sessione o task d
 [4. Transizione di Stato]    ──► Aggiornamento DESIDERATA.md (🔴 ➔ 🟡 In Lavorazione)
                │
                ▼
-[5. Avvio Implementazione]   ──► Allineamento con l'utente e inizio sviluppo
+[5. Ridenominazione Chat]    ──► Aggiornamento titolo chat via scripts/set-chat-title.mjs
+               │
+               ▼
+[6. Avvio Implementazione]   ──► Allineamento con l'utente e inizio sviluppo
 ```
 
 ---
@@ -77,8 +80,20 @@ Presenta all'utente una sintesi strutturata contenente:
    - Se opportuno, aggiungi una nota sintetica (es. `In corso nella sessione corrente`).
 2. Mantieni intatta la struttura tabellare e le altre sezioni del documento.
 
-### Step 5: Avvio o Richiesta di Conferma
+### Step 5: Ridenominazione Automatica del Titolo della Chat
+
+1. Recupera il titolo sintetico dello step identificato (es. `[1.3] Telemetria ed Event Tracking` o il nome della feature).
+2. Esegui il comando di aggiornamento titolo richiamando lo script dedicato del plugin:
+   ```bash
+   node plugins/cognitive-persistence/scripts/set-chat-title.mjs --title "<Codice/Titolo Step>"
+   ```
+   *(Nota: se il plugin è installato globalmente nella configurazione utente, utilizzare `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --title "..."`)*.
+3. Lo script contatta l'endpoint Connect-RPC locale di Antigravity Language Server (`UpdateConversationAnnotations`), aggiornando istantaneamente il titolo sia nella visualizzazione a pannello laterale (sidebar) sia nello storage persistente di Antigravity.
+4. Segnala all'utente nel briefing operativo l'avvenuta ridenominazione della sessione.
+
+### Step 6: Avvio o Richiesta di Conferma
 
 - Se l'utente ha invocato `/next-step` senza ulteriori flag, presenta il briefing con il prompt generato e chiedi conferma per procedere con l'implementazione del codice e dei relativi test.
 - Se l'utente specifica argomenti come `--auto` o chiede esplicitamente di procedere subito, avvia direttamente l'intervento tecnico (creazione test, analisi codice, modifiche chirurgiche).
 - **Chiusura del Ciclo (Ponte con `memory-sync`)**: Ricorda che al completamento dello sviluppo e al superamento di tutti i test, l'intervento dovrà essere finalizzato invocando la skill `/memory-sync`.
+

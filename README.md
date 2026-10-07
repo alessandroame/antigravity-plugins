@@ -67,6 +67,11 @@ L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegne
 - **Cosa fa**: Valuta le skill secondo una checklist di 5 assi (Trigger, Frontmatter, Taglia, Tool coupling, Verificabilità) assegnando un punteggio A-E, guida lo scorporo modulare di documenti pesanti verso cartelle ausiliarie e scansiona la gerarchia di installazione per individuare fenomeni di shadowing tra skill con lo stesso nome.
 - **Guida completa**: [`plugins/skill-governance/README.md`](./plugins/skill-governance/README.md)
 
+### 8. `telemetry-analytics`
+- **Goal**: Fornire osservabilità, tracciamento dei tempi d'uso dei plugin e metriche sull'efficienza di esecuzione.
+- **Cosa fa**: Raccoglie telemetria a basso overhead tramite parsing batch del log di sessione (`PostInvocation` e `Stop` hook) senza rallentare i singoli tool. Registra volume invocazioni per plugin/skill, latenza effettiva dei turni, tassi di successo dei tool nativi e consumo di token in modalità ibrida (globale e per singolo workspace).
+- **Guida completa**: [`plugins/telemetry-analytics/README.md`](./plugins/telemetry-analytics/README.md)
+
 ---
 
 ## 📁 Struttura del Repository
@@ -84,7 +89,8 @@ antigravity-plugins/
 │   ├── execution-guard/               # Anti-freeze, watchdog e circuit breaker salva-token
 │   ├── laws-of-ux/                    # Regole ed ergonomia basate sulle 30 Laws of UX
 │   ├── proactive-mentorship/          # Scrutinio critico e prompt refactoring
-│   └── skill-governance/              # Audit, token optimization e collision check
+│   ├── skill-governance/              # Audit, token optimization e collision check
+│   └── telemetry-analytics/           # Telemetria ibrida, latenze, invocazioni plugin e tool
 ├── scripts/
 │   └── validate.mjs                   # Motore di validazione statica e conformità manifest
 ├── templates/

@@ -1,0 +1,11 @@
+{
+  "name": "telemetry-analytics",
+  "displayName": "Telemetry & Usage Analytics",
+  "description": "Cattura telemetria di esecuzione, latenza dei turni, utilizzo di plugin e skill, volume invocazioni e tassi di errore tramite ingestione batch transcript.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Mostra il report di utilizzo dei plugin e delle skill per questo workspace",
+    "Mostra le statistiche globali aggregate di Antigravity",
+    "Esporta la telemetria delle sessioni in formato JSON o CSV"
+  ]
+}
