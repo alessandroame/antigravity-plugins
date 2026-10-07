@@ -52,29 +52,45 @@ Mappa l'intero ciclo di vita delle funzionalità tramite uno schema tabellare co
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
 | **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Impone all'agente l'obbligo di consultare la triade cognitiva all'avvio del task e di sincronizzarla al completamento prima di rilasciare il controllo. |
-| **`memory-sync`** | Skill on-demand | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook operativo che guida l'agente nei 5 passaggi di redazione frammento, consolidamento giornale, aggiornamento lezioni e allineamento matrice. |
+| **`next-step`** | Skill / Comando Slash | [`skills/next-step/SKILL.md`](./skills/next-step/SKILL.md) | Runbook di accoglienza requisiti invocabile con `/next-step`: scansiona `DESIDERATA.md`, recupera vincoli da `MEMORY.md`, commuta lo stato in `🟡 In Lavorazione` e produce il briefing operativo con prompt deterministico. |
+| **`memory-sync`** | Skill on-demand | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook operativo che guida l'agente nei 5 passaggi di redazione frammento, consolidamento giornale, aggiornamento lezioni e allineamento matrice a fine task. |
 
 ---
 
-## Ciclo Operativo di Sincronizzazione (End-of-Task Sync)
+## Ciclo Operativo Integrato: Avvio e Sincronizzazione di Fine Task
 
-Al termine di qualsiasi intervento che modifichi la struttura del codice o risolva un difetto, l'agente attiva la procedura di sincronizzazione:
+Il plugin orchestra l'intero ciclo di vita dello sviluppo legando l'avvio alla chiusura:
 
 ```mermaid
 flowchart TD
-    A["Test e Verifiche Superati"] --> B["1. Redazione Frammento ADR<br/>(.agents/worklog.d/YYYY-MM-DD_topic.md)"]
-    B --> C["2. Consolidamento Cronologico<br/>(WORKLOG.md)"]
-    C --> D{"Sono emerse insidie<br/>o antipattern non ovvi?"}
-    D -- Sì --> E["3. Registrazione Lezione Appresa<br/>(MEMORY.md)"]
-    D -- No --> F["4. Allineamento Matrice Requisiti<br/>(DESIDERATA.md: 🟡 ➔ 🟢)"]
-    E --> F
-    F --> G["5. Resoconto Finale all'Utente"]
+    subgraph Avvio ["1. Start-of-Task (/next-step)"]
+        A["Invocazione /next-step"] --> B["Scansione DESIDERATA.md<br/>(Ripresa 🟡 o selezione primo 🔴)"]
+        B --> C["Iniezione Vincoli MEMORY.md<br/>& Storico WORKLOG.md"]
+        C --> D["Transizione stato: 🟡 In Lavorazione<br/>+ Briefing Operativo con Prompt"]
+    end
+
+    subgraph Sviluppo ["2. Esecuzione & Test"]
+        D --> E["Sviluppo TDD & Modifiche Codice"]
+        E --> F["Verifica Test Superata: 100%"]
+    end
+
+    subgraph Chiusura ["3. End-of-Task Sync (/memory-sync)"]
+        F --> G["Redazione Frammento ADR<br/>(.agents/worklog.d/YYYY-MM-DD_topic.md)"]
+        G --> H["Consolidamento Cronologico (WORKLOG.md)"]
+        H --> I{"Nuove insidie o antipattern?"}
+        I -- Sì --> L["Registrazione Lezione (MEMORY.md)"]
+        I -- No --> M["Allineamento Matrice (DESIDERATA: 🟡 ➔ 🟢)"]
+        L --> M
+        M --> N["Resoconto Finale all'Utente"]
+    end
 ```
 
 ---
 
 ## Prompt di Esempio
 
+- *"`/next-step`"* (o *"Cerca il prossimo desiderata pianificato e avvia la lavorazione."*)
+- *"`/next-step --auto`"* (seleziona il task prioritario e procede immediatamente all'analisi e ai test)
 - *"Esegui la sincronizzazione della memoria di progetto per l'intervento appena completato."*
 - *"Registra in MEMORY.md la causa radice del bug di rendering appena risolto e il pattern per evitarlo."*
 - *"Allinea lo stato di DESIDERATA.md con le funzionalità rilasciate e prepara la scheda ADR."*

@@ -27,3 +27,12 @@ Al termine di ogni implementazione o correzione strutturale, l'agente non deve c
 1. **Creazione Frammento**: Redigere la scheda dell'intervento in `.agents/worklog.d/`.
 2. **Aggiornamento Lezioni**: Se sono emersi limiti o insidie, registrare la voce in `MEMORY.md`.
 3. **Allineamento Matrice**: Aggiornare lo stato corrispondente in `DESIDERATA.md`.
+
+---
+
+## 3. Direttiva di Avvio Task (Start-of-Task Intake)
+
+All'inizio di una sessione di sviluppo o quando invocato tramite il comando slash `/next-step`, l'agente attiva la procedura di accoglienza requisiti:
+1. **Scansione Matrice**: Consulta `DESIDERATA.md` dando priorità a eventuali task `🟡 In Lavorazione`, altrimenti al primo task `🔴 Pianificato`.
+2. **Consultazione Vincoli**: Ispeziona `MEMORY.md` per lezioni e vincoli attinenti, e `WORKLOG.md` per lo storico recente.
+3. **Presa in Carico**: Commuta lo stato in `🟡 In Lavorazione` e produce il briefing operativo con prompt deterministico prima di avviare la modifica del codice.

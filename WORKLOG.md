@@ -4,6 +4,35 @@ Questo documento traccia la cronologia consolidata delle decisioni architettural
 
 ---
 
+## [2026-10-07] ADR: Introduzione del Comando Slash `/next-step` in `cognitive-persistence`
+
+### Contesto & Motivazione
+Il plugin `cognitive-persistence` forniva la skill `memory-sync` per la chiusura del task (End-of-Task Sync), ma necessitava di un punto di ingresso standardizzato e deterministico per l'avvio della sessione (Start-of-Task Intake). Era richiesta la capacità di scansionare automaticamente `DESIDERATA.md`, estrarre vincoli da `MEMORY.md`, generare il prompt esecutivo ed eseguire la transizione di stato verso `🟡 In Lavorazione`.
+
+### Decisioni Architetturali
+1. **Skill `next-step`**:
+   - Creata la skill `plugins/cognitive-persistence/skills/next-step/SKILL.md` esposta come comando slash nativo `/next-step`.
+   - Adottato il naming standard kebab-case (`next-step`) conforme alle specifiche di Antigravity e al validatore di repository.
+2. **Logica di Risoluzione Priorità**:
+   - Priorità 1: Ripresa prioritaria dei task già in stato `🟡 In Lavorazione` da sessioni precedenti.
+   - Priorità 2: Selezione top-down del primo task nello stato `🔴 Pianificato`.
+   - Priorità 3: Notifica di backlog esaurito se tutte le voci sono `🟢 Completato`.
+3. **Iniezione Contesto Cognitivo e Generazione Prompt**:
+   - Estrazione vincoli tecnici da `MEMORY.md` e contesto architetturale da `WORKLOG.md`.
+   - Generazione di prompt esecutivo strutturato con riferimenti mirati (`@file`) e criteri di verifica/test.
+4. **Allineamento Manifest, Regole e Documentazione**:
+   - Aggiornato `plugin.json` (versione `1.1.0`, inserito `/next-step` nei `suggestedPrompts`).
+   - Aggiunta in `rules/AGENTS.md` la sezione 3 ("Direttiva di Avvio Task - Start-of-Task Intake").
+   - Aggiornato `README.md` del plugin con diagramma del ciclo integrato di sviluppo (Avvio $\to$ Sviluppo $\to$ Chiusura).
+5. **Sincronizzazione Ambiente Globale**:
+   - Allineata la copia globale in `~/.gemini/config/plugins/cognitive-persistence/`.
+
+### Impatto e Verifiche
+- Suite di validazione `scripts/validate.mjs` superata con 8 plugin validati, 0 errori e 0 avvisi.
+- Ciclo di sviluppo governato da `cognitive-persistence` completato (avvio tramite `/next-step` e chiusura tramite `/memory-sync`).
+
+---
+
 ## [2026-10-07] ADR: Documentazione Globale del Repository e Guide Dedicate per Ciascun Plugin
 
 ### Contesto & Motivazione
