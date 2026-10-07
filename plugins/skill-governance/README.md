@@ -1,57 +1,101 @@
-# Antigravity Plugin: Skill Governance
+# Antigravity Plugin: Skill Governance & Token Optimization
 
-Plugin per la governance, l'efficienza dei token e il controllo della qualità delle skill in **Google Antigravity**. Introduce protocolli di audit per i trigger, linee guida per l'architettura a divulgazione progressiva e procedure di risoluzione dei conflitti e dello shadowing tra personalizzazioni.
-
----
-
-## Componenti Inclusi
-
-| Componente | Tipo | Scopo e Funzionalità |
-| :--- | :--- | :--- |
-| **`rules/AGENTS.md`** | Regola | Standard obbligatori per la scrittura di skill: vincoli di lunghezza della description, soglia di righe per `SKILL.md` e divieto di ambiguità nei trigger. |
-| **`skill-audit`** | Skill | Esegue un audit dimensionale (A-E) su trigger, frontmatter, taglia file, tool coupling e verificabilità con attribuzione di voto e priorità di intervento (P0-P2). |
-| **`skill-token-optimizer`** | Skill | Guida alla rifattorizzazione pratica di skill monolitiche: condensazione della description per il system prompt e scorporo in `references/` ed `examples/`. |
-| **`skill-collision-check`** | Skill | Mappatura gerarchica delle fonti (workspace, plugin, global, builtin) per rilevare omonimie (shadowing) e duplicati semantici. |
-| **`references/`** | Riferimento | Specifiche architetturali sul modello di caricamento a due fasi e tabella metrica di benchmark. |
-| **`examples/`** | Esempio | Caso studio Before vs After di rifattorizzazione modulare di una skill complessa. |
+Plugin per Google Antigravity progettato per garantire **la qualità ingegneristica, l'efficienza dei token e il controllo delle collisioni** nello sviluppo e nell'adozione di skill e plugin.
 
 ---
 
-## Architettura e Modello dei Token
+## Obiettivo del Plugin (Goal)
 
-Antigravity carica le skill in due fasi distinte:
+Nelle installazioni complesse di Antigravity, l'accumulo non regolamentato di skill personalizzate genera tre problemi architetturali:
+1. **Saturazione del contesto globale (Token Bloat)**: Antigravity inietta i campi `name` e `description` di **tutte** le skill abilitate nel system prompt iniziale di ogni turno. Descrizioni verbose o prolisse consumano centinaia di token per ogni singolo messaggio, anche se la skill non viene mai invocata.
+2. **Attivazioni spurie e trigger ambigui**: skill con trigger generici o privi di condizioni chiare (*"Use this skill when..."*) entrano in conflitto tra loro o vengono invocate dal modello in contesti non pertinenti.
+3. **Collisioni e Shadowing silenzioso**: la presenza di skill con nomi identici o scopi sovrapposti distribuiti tra cartelle di workspace, plugin e configurazione globale genera comportamenti impredicibili dovuti alle priorità di risoluzione.
 
-1. **Fase Globale (System Prompt)**: I campi `name` e `description` di **tutte le skill abilitate** risiedono stabilmente nel contesto di ogni turno.
-   - *Target*: `description` compressa tra 80 e 250 caratteri con trigger condizionale esplicito (*"Use this skill when..."*).
-2. **Fase Esecutiva (On-Demand)**: Il corpo di `SKILL.md` viene caricato solo all'effettiva attivazione.
-   - *Target*: `SKILL.md` snello ($\le 150-200$ righe) che funge da runbook; tabelle e template delegati a cartelle ausiliarie.
+Il plugin `skill-governance` introduce standard di qualità formali, verifiche dimensionali (audit A-E) e procedure di rifattorizzazione basate sul principio della **divulgazione progressiva**.
+
+---
+
+## Componenti del Plugin
+
+| Componente | Tipo | Percorso | Funzione |
+| :--- | :--- | :--- | :--- |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Stabilisce i vincoli di scrittura per le skill: lunghezza description (80-250 caratteri), limite dimensionale per `SKILL.md` (≤ 150-200 righe) e trigger espliciti. |
+| **`skill-audit`** | Skill on-demand | [`skills/skill-audit/SKILL.md`](./skills/skill-audit/SKILL.md) | Esegue un audit dimensionale su 5 assi (Trigger, Frontmatter, Taglia, Tool coupling, Verificabilità) con attribuzione di voto scolastico (A-E) e priorità (P0-P2). |
+| **`skill-token-optimizer`** | Skill on-demand | [`skills/skill-token-optimizer/SKILL.md`](./skills/skill-token-optimizer/SKILL.md) | Guida passo-passo per snellire skill monolitiche: condensazione della description ed esternalizzazione di tabelle e guide in `references/` ed `examples/`. |
+| **`skill-collision-check`** | Skill on-demand | [`skills/skill-collision-check/SKILL.md`](./skills/skill-collision-check/SKILL.md) | Mappa gerarchicamente le fonti di caricamento (workspace, plugin, global, builtin) per identificare casi di shadowing e duplicazione semantica. |
+| **Specifiche Architetturali** | Riferimento | [`references/skill-governance-standards.md`](./references/skill-governance-standards.md) | Documento di specifica sul modello di caricamento a due fasi di Antigravity e metriche di benchmark. |
+| **Esempio Before / After** | Esempio | [`examples/refactored-skill-example.md`](./examples/refactored-skill-example.md) | Caso studio pratico di rifattorizzazione di una skill complessa da monolitica a modulare. |
+
+---
+
+## Modello dei Token a Due Fasi
+
+Per ottimizzare la spesa di token, Antigravity adotta una separazione a due stadi:
+
+```mermaid
+flowchart TD
+    subgraph Fase 1: System Prompt Fisso
+        A["Iniezione all'avvio di ogni turno"] --> B["name + description di tutte le skill"]
+        B --> C["Target: 80 - 250 caratteri per skill"]
+    end
+    subgraph Fase 2: Caricamento Esecutivo On-Demand
+        D["L'agente riconosce il trigger"] --> E["Caricamento corpo SKILL.md"]
+        E --> F["Target: runbook compatto <= 150 righe"]
+        F --> G["Consultazione condizionale di references/"]
+    end
+```
+
+---
+
+## Flusso della Skill `skill-audit`
+
+La skill analizza qualsiasi `SKILL.md` secondo una checklist multidimensionale:
+
+```mermaid
+flowchart LR
+    A["File SKILL.md"] --> B["1. Verifica Trigger (Frase 'Use when...')"]
+    B --> C["2. Verifica Frontmatter (name & description)"]
+    C --> D["3. Calcolo Impronta Token (Caratteri & Righe)"]
+    D --> E["4. Valutazione Accoppiamento Tool"]
+    E --> F["5. Report Finale con Voto (A-E) e Azioni P0-P2"]
+```
+
+---
+
+## Prompt di Esempio
+
+- *"Esegui un audit completo di questa skill analizzando trigger, taglia e impronta di token."*
+- *"Rifattorizza questa skill monolitica applicando la divulgazione progressiva e spostando la teoria in references/."*
+- *"Verifica eventuali collisioni o shadowing tra le skill attive nel mio workspace e quelle globali."*
 
 ---
 
 ## Modalità di Installazione
 
-### 1. Nel Workspace di Progetto (Consigliata)
-Copiare la cartella in `.agents/plugins/`:
+### 1. Installazione nel Singolo Workspace (Consigliata)
+```bash
+# Linux/macOS
+mkdir -p <percorso-progetto>/.agents/plugins
+cp -r plugins/skill-governance <percorso-progetto>/.agents/plugins/
 
-```powershell
-# Windows PowerShell
-Copy-Item -Recurse plugins/skill-governance "<percorso-repo>\.agents\plugins\"
+# Windows (PowerShell)
+New-Item -ItemType Directory -Force -Path "<percorso-progetto>\.agents\plugins"
+Copy-Item -Recurse plugins/skill-governance "<percorso-progetto>\.agents\plugins\"
 ```
 
-Oppure creare una Directory Junction su Windows:
+Directory Junction su Windows:
 ```powershell
-New-Item -ItemType Junction -Path "<percorso-repo>\.agents\plugins\skill-governance" -Target "c:\github\antigravity-plugins\plugins\skill-governance"
+New-Item -ItemType Junction -Path "<percorso-progetto>\.agents\plugins\skill-governance" -Target "c:\github\antigravity-plugins\plugins\skill-governance"
 ```
 
-### 2. A Livello Globale (Tutti i progetti)
+### 2. Installazione Globale (Per tutti i progetti)
 ```powershell
 Copy-Item -Recurse plugins/skill-governance "$env:USERPROFILE\.gemini\config\plugins\"
 ```
 
 ---
 
-## Prompt di Avvio Rapido
+## Sinergia con gli Altri Plugin
 
-- *"Esegui un audit completo di questa skill analizzando trigger e impronta token"*
-- *"Rifattorizza questa skill monolitica applicando la divulgazione progressiva"*
-- *"Verifica eventuali collisioni o duplicati tra le skill installate"*
+- **`engineering-sobriety`**: collabora nel depurare le descrizioni delle skill da aggettivi promozionali, garantendo trigger asciutti e precisi.
+- **`proactive-mentorship`**: utilizza le metriche di audit per consigliare all'utente il refactoring preventivo di skill obsolete o sovraccariche.
