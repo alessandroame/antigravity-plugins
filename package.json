@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "validate": "node scripts/validate.mjs --all",
-    "test": "node scripts/validate.mjs --all"
+    "test": "node scripts/validate.mjs --all",
+    "sync": "node scripts/sync-to-global.mjs"
   },
   "keywords": [
     "antigravity",
