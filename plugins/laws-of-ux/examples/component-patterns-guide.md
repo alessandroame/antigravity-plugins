@@ -120,5 +120,65 @@ Questa guida illustra pattern di componenti frontend comuni (Button, Form, Stepp
 - L'utente clicca freneticamente più volte convinto che il sito non stia funzionando.
 
 ### ✅ Best Practice
-- Mostrare un **Skeleton Loader** entro 200ms dal caricamento iniziale per delineare la sagoma dei contenuti in arrivo.
-- Se l'operazione richiede più di 1 secondo, visualizzare una barra di avanzamento con messaggio di stato rassicurante (*'Stiamo elaborando i tuoi dati...'*).
+- Mostrare uno **Skeleton Loader** entro 200ms dal caricamento iniziale per delineare la sagoma dei contenuti in arrivo ed eliminare il CLS.
+- Rispettare la **Timing Hierarchy**:
+  - `< 1s`: nessun loader invasivo.
+  - `1-3s`: spinner contestuale inline.
+  - `3-10s`: barra di avanzamento percentuale con messaggio rassicurante (*"Elaborazione in corso: 65%..."*).
+  - `> 10s`: stima temporale residua ed esecuzione asincrona in background.
+- Per invii critici o cancellazioni, implementare il pattern **Undo Grace Period**: toast con countdown di 5 secondi e pulsante "Annulla" prima del commit definitivo (NN/G Euristica #3).
+
+---
+
+## 5. Interfacce Autonome & Suggerimenti AI (Standard 2026 - Windmill #11)
+*Leggi di riferimento: Explainability (Show the Reasoning), Cheap Takeover, User Control & Freedom*
+
+### ❌ Anti-pattern
+- Un sistema AI precompila campi o riscrive testi senza indicare da dove ha estratto l'informazione.
+- Nessuna indicazione di confidenza; se l'utente vuole correggere una parola, l'interfaccia cancella l'intero blocco costringendolo a rifare tutto manualmente (elevato costo di takeover).
+
+### ✅ Best Practice
+```html
+<!-- SOLUZIONE: Indicatore di confidenza inline, fonte verificabile e override con 1 click -->
+<div class="ai-suggestion-box" style="border: 1px solid #cce5ff; background: #f0f8ff; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="background: #007bff; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 12px;">AI SUGGESTION</span>
+      <span style="font-size: 12px; color: #495057;">Confidenza: <strong>96%</strong></span>
+    </div>
+    <!-- Fonte verificabile senza uscire dal contesto -->
+    <a href="#view-source" style="font-size: 12px; color: #007bff; text-decoration: underline;">Visualizza documento sorgente (PDF p. 3)</a>
+  </div>
+
+  <p style="font-size: 14px; color: #212529; margin-bottom: 12px;">
+    "Indirizzo di fatturazione dedotto automaticamente dalla visura camerale allegata."
+  </p>
+
+  <!-- Cheap Takeover: modifica rapida o rifiuto senza azzeramento -->
+  <div style="display: flex; gap: 8px;">
+    <button class="btn btn-sm btn-primary" style="padding: 6px 12px; font-size: 13px;">Accetta</button>
+    <button class="btn btn-sm btn-outline" style="padding: 6px 12px; font-size: 13px;">Modifica inline</button>
+    <button class="btn btn-sm btn-ghost" style="padding: 6px 12px; font-size: 13px; color: #6c757d;">Ignora</button>
+  </div>
+</div>
+```
+
+---
+
+## 6. Ricerca & Filtri di Catalogo (Baymard & NN/G #6)
+*Leggi di riferimento: Recognition over Recall, Hick's Law, Choice Overload*
+
+### ❌ Anti-pattern
+- Barra di ricerca a campo vuoto senza cronologia né suggerimenti; se l'utente sbaglia una lettera ("smarthone"), la pagina mostra "0 risultati trovati" senza alternative.
+- Elenco prodotti con 40 checkbox disordinate senza raggruppamento né conteggio elementi.
+
+### ✅ Best Practice
+- **Ricerca Intelligente**: dropdown ad autocompletamento visivo che propone ricerche recenti, categorie correlate e prodotti suggeriti con miniatura. Tolleranza semantica ai refusi (*"Risultati per 'smartphone' invece di 'smarthone'"*).
+- **5 Categorie di Filtro Baymard**:
+  1. *Categoria* (es. Elettronica, Accessori).
+  2. *Specifiche tecniche* (es. RAM, Memoria, Colore).
+  3. *Fascia di prezzo* (slider o range predefiniti con conteggio).
+  4. *Rating recensioni* (da 4 stelle in su).
+  5. *Disponibilità* (es. "Spedizione immediata (14)").
+- **Filtri Attivi Visibili**: ogni filtro selezionato compare in alto sotto forma di badge/pill rimovibile singolarmente o con pulsante "Cancella tutti i filtri".
+

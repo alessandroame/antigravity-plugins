@@ -1,11 +1,11 @@
 {
   "name": "laws-of-ux",
   "displayName": "Laws of UX (Design & Usability Engineering)",
-  "version": "1.0.0",
-  "description": "Suite di intelligenza di design e valutazione euristica basata sulle 30 Laws of UX (principi Gestalt, limiti cognitivi, Fitts, Hick, Doherty ed ergonomia touch).",
+  "version": "1.1.0",
+  "description": "Suite di intelligenza di design e valutazione euristica che unifica le 30 Laws of UX, le 10 Euristiche di Usabilità NN/G, i benchmark empirici Baymard e gli standard 2026 per interfacce autonome/AI.",
   "suggestedPrompts": [
-    "Esegui un UX Heuristic Audit completo su questa schermata o componente",
-    "Ottimizza la gerarchia visiva e il layout applicando i principi Gestalt",
-    "Verifica touch target e pulsanti secondo la Legge di Fitts e l'ergonomia mobile"
+    "Esegui un UX Heuristic Audit completo (30 Laws of UX + NN/G + Baymard)",
+    "Ottimizza questo form applicando la riduzione campi Baymard (6-8 campi) e la Legge di Postel",
+    "Verifica ergonomia touch target (Fitts >= 48px) e feedback di latenza (< 400ms)"
   ]
 }

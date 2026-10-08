@@ -1,34 +1,37 @@
 # Antigravity Plugin: Laws of UX
 
-Plugin completo per **Google Antigravity** che trasforma le **30 Laws of UX** (raccolte da Jon Yablonski su [lawsofux.com](https://lawsofux.com/)) in un sistema intelligente di **Regole contestuali** e **Skill mirate**, attivate selettivamente in base allo specifico problema di design, ergonomia o codice di interfaccia da risolvere.
+Plugin completo per **Google Antigravity** che unifica le **30 Laws of UX** (Jon Yablonski), le **10 Euristiche di Usabilità di Nielsen Norman Group (NN/G)**, i **benchmark empirici di Baymard Institute** (su 200.000+ ore di test di form ed e-commerce) e i **principi 2026 per interfacce autonome/AI** (Windmill & UXPilot).
+
+Il plugin agisce come un sistema intelligente di **Regole contestuali** e **Skill specializzate**, attivandosi automaticamente quando l'agente progetta, scrive o revisiona codice di interfaccia (HTML, CSS, React, Vue, Svelte, Flutter, SwiftUI, Android XML).
 
 ---
 
 ## Obiettivo del Plugin (Goal)
 
-Durante la progettazione e l'implementazione di interfacce utente (HTML, CSS, React, Vue, Svelte, Flutter, SwiftUI, Android XML), gli agenti AI tendono a concentrarsi sulla correttezza funzionale tralasciando spesso i principi cardine della percezione visiva, del carico cognitivo e dell'ergonomia di puntamento. Questo porta a problemi noti:
-1. **Form ostili ed elevato attrito di input**: campi sprovvisti di attributi di autocompletamento semantico, formati rigidi che rifiutano spazi o prefissi (violazione della Legge di Postel), etichette distanti dai relativi campi.
-2. **Layout disordinati e scarsa gerarchia**: violazione dei principi Gestalt di prossimità e regione comune, con card prive di confini definiti e informazioni eterogenee raggruppate insieme.
-3. **Target touch inadeguati e click accidentali**: pulsanti troppo piccoli (< 48x48px su mobile) o privi di adeguata spaziatura (violazione della Legge di Fitts).
-4. **Paralisi decisionale e latenza percepita**: troppe opzioni contemporanee (Legge di Hick) e assenza di skeleton loading per attese superiori al Doherty Threshold (< 400ms).
-
-Il plugin `laws-of-ux` fornisce all'agente un corpus ingegneristico di regole automatiche e skill di audit che garantiscono che ogni componente o vista generata rispetti gli standard della psicologia cognitiva e dell'ergonomia applicata.
+Garantire che ogni vista, componente o flusso generato da Antigravity rispetti standard quantitativi e scientifici rigorosi:
+1. **Form snelli & validazione non distruttiva**: riduzione del 20-60% dei campi rispetto al default ($\le 6-8$ campi per step, benchmark Baymard), layout a colonna singola, tolleranza dei formati prima dell'invio (Legge di Postel) e autocompletamento semantico obbligatorio.
+2. **Layout Gestalt & Gerarchia**: rispetto dei confini visivi espliciti (Common Region), spaziatura correlata tra label e input ($\le 8\text{ px}$) ed eliminazione di elementi ridondanti (Prägnanz e Rasoio di Occam).
+3. **Ergonomia motoria & Touch Target**: touch target $\ge 48\times 48\text{ px}$ su mobile e $\ge 32\times 32\text{ px}$ su desktop, distanziati di almeno $8\text{ px}$ (Legge di Fitts) e allineati alla Thumb Zone.
+4. **Timing Hierarchy & Controllo**: feedback visivo istantaneo entro 400ms (Doherty Threshold), skeleton screens per attese oltre 1 secondo, progress bar determinate tra 3-10s, finestra di annullamento *Undo Grace Period* (5-10s) prima del commit definitivo (NN/G Euristica #3).
+5. **Ricerca con Recognition over Recall & Filtri Faccettati**: autocompletamento predittivo, tolleranza a typo/sinonimi e 5 categorie chiave di filtro (categoria, specifiche, prezzo, rating, disponibilità).
+6. **Interfacce Autonome & AI (Standard 2026)**: trasparenza e motivazione verificabile inline (*Show the Reasoning*), con possibilità di correzione o override manuale con sforzo minimo (*Cheap Takeover*).
 
 ---
 
 ## Attivazione Modulare in Base al Problema
 
-Invece di un blocco unico e generico, il plugin espone **7 Skill tematiche** e **5 Regole contestuali**. L'agente attiva autonomamente la regola o la skill più idonea in base alla richiesta o al tipo di file su cui sta lavorando:
+Il plugin espone **7 Skill tematiche** e **5 Regole contestuali**:
 
-| Problema da Risolvere | Skill Attivata | Regola Automatica | Leggi di Riferimento Chiave |
+| Problema da Risolvere | Skill Attivata | Regola Automatica | Leggi & Standard di Riferimento |
 | :--- | :--- | :--- | :--- |
-| **Form, checkout, validazione e input complessi** | `ux-form-optimization` | `ux-forms-and-inputs.md` | *Postel's Law, Parkinson's Law, Proximity, Tesler's Law, Chunking* |
-| **Layout disordinato, card, dashboard e griglie** | `ux-layout-and-visual-hierarchy` | `ux-layout-and-gestalt.md` | *Principi Gestalt (Proximity, Common Region, Similarity, Connectedness, Prägnanz)* |
-| **Pulsanti, CTA, touch target e click accidentali** | `ux-button-and-touch-ergonomics` | `ux-buttons-and-touch-targets.md` | *Fitts's Law, Von Restorff Effect, Aesthetic-Usability Effect* |
-| **Latenza, caricamenti lenti e feedback mancante** | `ux-feedback-and-perceived-performance` | `ux-performance-and-feedback.md` | *Doherty Threshold, Peak-End Rule, Goal-Gradient Effect* |
-| **Scelte troppe complesse, menu e pricing** | `ux-choice-and-navigation-design` | `ux-navigation-and-choice.md` | *Hick's Law, Choice Overload, Occam's Razor, Serial Position* |
+| **Form, checkout, validazione e input complessi** | `ux-form-optimization` | `ux-forms-and-inputs.md` | *Postel, Parkinson, Proximity, Tesler, Chunking, Benchmark Baymard ($\le 6-8$ campi, colonna singola)* |
+| **Layout disordinato, card, dashboard e griglie** | `ux-layout-and-visual-hierarchy` | `ux-layout-and-gestalt.md` | *Principi Gestalt (Proximity, Common Region, Similarity, Connectedness, Prägnanz), NN/G #8* |
+| **Pulsanti, CTA, touch target ed ergonomia** | `ux-button-and-touch-ergonomics` | `ux-buttons-and-touch-targets.md` | *Fitts's Law ($\ge 48\times 48\text{ px}$), Von Restorff, Thumb Zone, WCAG AA* |
+| **Latenza, caricamenti lenti e feedback mancante** | `ux-feedback-and-perceived-performance` | `ux-performance-and-feedback.md` | *Doherty Threshold (<400ms), Timing Hierarchy (<1s, 1-3s, 3-10s, >10s), Undo Pattern (NN/G #3)* |
+| **Scelte complesse, menu, search e cataloghi** | `ux-choice-and-navigation-design` | `ux-navigation-and-choice.md` | *Hick's Law, Choice Overload, Recognition over Recall (NN/G #6), 5 Filtri Baymard, Serial Position* |
 | **Abbandono dell'onboarding e setup profili** | `ux-onboarding-and-retention` | `AGENTS.md` | *Jakob's Law, Active User Paradox, Goal-Gradient, Zeigarnik, Flow* |
-| **Audit euristico completo di un'intera schermata/app** | `laws-of-ux-audit` | Tutte le regole | *Tutte le 30 Laws of UX con classificazione gravità P0–P3* |
+| **Audit euristico completo e interfaccia AI** | `laws-of-ux-audit` | Tutte le regole | *30 Laws of UX + 10 Euristiche NN/G + Benchmark Baymard + Explainability & Cheap Takeover (Windmill 2026)* |
+
 
 ---
 
