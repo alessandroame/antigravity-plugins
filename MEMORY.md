@@ -32,10 +32,20 @@ Questo documento registra vincoli stabili, particolarità del runtime di Google 
 
 ---
 
-## 4. Installazione Concorrente su Windows (Directory Junctions)
-- **Problema Riscontrato**: La duplicazione di cartelle (`cp -r`) disallinea il plugin installato rispetto al repository di sviluppo, richiedendo copie manuali a ogni modifica.
-- **Causa Radice**: I filesystem Windows supportano le Directory Junctions (`New-Item -ItemType Junction`) che funzionano in modo trasparente anche senza privilegi di amministratore (a differenza dei symlink simbolici completi).
-- **Pattern Preventivo Obbligatorio**: Nei workflow di sviluppo locale su Windows, consigliare l'uso di Directory Junctions verso `.agents/plugins/<nome-plugin>` per garantire sincronizzazione istantanea a costo zero.
+## 4. Divieto di Directory Junctions su Windows & Sincronizzazione Fisica Globale
+- **Problema Riscontrato**: Collegare i plugin tramite Directory Junction (`New-Item -ItemType Junction`) in `.agents/plugins/` o in `~/.gemini/config/plugins/` causa il fallimento silenzioso del caricamento: il Language Server non indicizza i plugin né le relative skill, e i comandi slash (es. `/next-step`) non appaiono nell'autocompletamento dell'interfaccia utente.
+- **Causa Radice**: 
+  1. Il runtime e il file scanner del Language Server di Antigravity su Windows scartano a priori i reparse point / Junctions NTFS (trattati come symlink e ignorati per evitare loop di ricorsione).
+  2. Antigravity non riconosce le directory `.agents/plugins/` all'interno dei singoli workspace come root di plugin: l'architettura dei plugin richiede che risiedano fisicamente nella directory utente globale `~/.gemini/config/plugins/` e siano registrati con `"enabled": true` in `~/.gemini/config/config.json`.
+  3. L'interfaccia client (Electron / webview) popola la cache visuale dei comandi slash all'inizializzazione della finestra: dopo l'installazione di una nuova cartella fisica di plugin, è necessario ricaricare la finestra (`Developer: Reload Window`) o riavviare l'IDE.
+- **Pattern Preventivo Obbligatorio**:
+  - È tassativamente vietato l'uso di Directory Junction o collegamenti simbolici per i plugin su Windows.
+  - Per installare e mantenere aggiornati i plugin durante lo sviluppo, eseguire sempre lo script di sincronizzazione fisica:
+    ```bash
+    npm run sync
+    ```
+    che clona ricorsivamente le directory reali da `plugins/` a `~/.gemini/config/plugins/`, rimuovendo automaticamente eventuali vecchi junction rimasti orfani.
+  - Se una specifica skill deve essere confinata a un singolo workspace anziché esposta globalmente, deve essere posizionata come cartella fisica in `.agents/skills/<nome-skill>/`, mai in `.agents/plugins/`.
 
 ---
 

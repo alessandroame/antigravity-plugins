@@ -4,6 +4,32 @@ Questo documento traccia la cronologia consolidata delle decisioni architettural
 
 ---
 
+## [2026-10-09] ADR: Protocollo di Installazione Fisica Globale e Divieto Directory Junction su Windows
+
+### Contesto & Motivazione
+Durante il collaudo dell'attivazione dei plugin su progetti esterni (es. GlideMind), i comandi slash (tra cui `/next-step` e `/memory-sync`) risultavano assenti dall'autocompletamento della chat, nonostante i plugin fossero stati collegati tramite NTFS Directory Junction (`New-Item -ItemType Junction`).
+
+### Diagnosi Empirica & Causa Radice
+1. **Scarto Reparse Points su Windows**: Chiamate Connect-RPC al Language Server (`exa.language_server_pb.LanguageServerService/GetAllPlugins`) hanno dimostrato che il file scanner su Windows ignora i reparse points / Directory Junctions NTFS (trattati come link e scartati).
+2. **Ambito di Discovery dei Plugin**: Antigravity non scansiona `.agents/plugins/` di progetto come root di plugin. I plugin sono scoperti unicamente nella cartella utente globale `~/.gemini/config/plugins/` e abilitati in `~/.gemini/config/config.json`.
+3. **Cache Visuale dei Comandi Slash**: La webview Electron popola la lista dei comandi slash all'inizializzazione della finestra. Per visualizzare nuovi comandi slash nell'autocompletamento, dopo la sincronizzazione fisica è necessario ricaricare la finestra (`Developer: Reload Window`) o riavviare Antigravity.
+4. **Collisioni tra Skill di Workspace e Plugin Globali**: La presenza di una copia locale loose in `<workspace>/.agents/skills/<name>` assieme al plugin globale genera duplicati visivi nella UI. Le skill distribuite tramite plugin globale non devono essere duplicate nel workspace.
+
+### Decisioni Architetturali
+1. **Divieto Assoluto di Directory Junction per i Plugin**: Bandito l'uso di junction o symlink per la registrazione dei plugin su Windows.
+2. **Adozione di Sincronizzazione Fisica Automatizzata (`npm run sync`)**: Implementato lo script `scripts/sync-to-global.mjs` invocabile via `npm run sync`. Lo script rimuove eventuali vecchie junction e clona ricorsivamente le cartelle reali in `~/.gemini/config/plugins/`.
+3. **Allineamento Documentazione e Regole**:
+   - Aggiornato `README.md` con il runbook di sincronizzazione globale (`npm run sync`).
+   - Aggiornato `MEMORY.md` (Sezione 4) registrando il vincolo permanente sul Language Server.
+   - Aggiornato `.agents/skills/install-plugin/SKILL.md` (Sezione 3) rimuovendo le indicazioni errate sulle junction.
+
+### Impatto e Verifiche
+- Validazione automatica `npm test` verificata con 9/9 plugin OK, 0 errori e 0 avvisi.
+- Riconoscimento immediato di tutti gli 8 plugin da parte del Language Server.
+- Eliminati duplicati visivi nel menu di autocompletamento.
+
+---
+
 ## [2026-10-07] ADR: Ridenominazione Automatica della Sessione di Chat in `/next-step`
 
 ### Contesto & Motivazione

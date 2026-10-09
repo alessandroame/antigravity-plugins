@@ -103,42 +103,40 @@ antigravity-plugins/
 
 ## 🚀 Modalità di Installazione dei Plugin
 
-I plugin possono essere installati per un singolo progetto oppure a livello globale per tutti i workspace aperti sulla macchina.
+I plugin di Antigravity operano a livello globale all'interno della directory di configurazione utente `~/.gemini/config/plugins/` e vengono attivati tramite il file `config.json`.
 
-### 1. Nel Workspace del Singolo Progetto (Consigliata per team)
-Posizionare la cartella del plugin in `.agents/plugins/` alla radice del repository di destinazione:
+> [!WARNING]
+> **Divieto di Junction NTFS / Reparse Points su Windows**:
+> Il Language Server di Antigravity ignora i Directory Junctions e i symlink su Windows. I plugin devono essere sempre clonati o sincronizzati come **directory fisiche reali** all'interno di `~/.gemini/config/plugins/`.
+
+### 1. Sincronizzazione Globale Rapida (Consigliata)
+Per installare o aggiornare tutti i plugin del repository direttamente nella configurazione di Antigravity:
 
 ```bash
-# Esempio per engineering-sobriety su Linux/macOS
-mkdir -p <percorso-progetto>/.agents/plugins
-cp -r plugins/engineering-sobriety <percorso-progetto>/.agents/plugins/
-
-# Esempio su Windows PowerShell
-New-Item -ItemType Directory -Force -Path "<percorso-progetto>\.agents\plugins"
-Copy-Item -Recurse plugins/engineering-sobriety "<percorso-progetto>\.agents\plugins\"
+npm run sync
 ```
 
-### 2. Tramite Directory Junction su Windows (Sviluppo Locale)
-Se desideri che il progetto di destinazione utilizzi la versione più recente del plugin senza dover copiare i file a ogni aggiornamento:
+Questo comando (guidato da `scripts/sync-to-global.mjs`):
+1. Rimuove eventuali vecchi Directory Junction rimasti orfani.
+2. Copia fisicamente tutte le directory dei plugin in `~/.gemini/config/plugins/`.
+3. Garantisce che il Language Server rilevi e carichi immediatamente tutte le skill e regole associate.
+
+### 2. Copia Manuale del Singolo Plugin
+Se desideri installare manualmente un singolo plugin:
 
 ```powershell
-New-Item -ItemType Junction `
-  -Path "<percorso-progetto>\.agents\plugins\engineering-sobriety" `
-  -Target "c:\github\antigravity-plugins\plugins\engineering-sobriety"
+# Windows PowerShell (Copia Fisica)
+Copy-Item -Recurse -Force plugins/cognitive-persistence "$HOME\.gemini\config\plugins\"
 ```
-
-### 3. A Livello Globale (Per tutti i progetti della macchina)
-Copiare la cartella del plugin all'interno della directory di configurazione utente di Antigravity:
 
 ```bash
 # Linux / macOS
-cp -r plugins/engineering-sobriety ~/.gemini/config/plugins/
-
-# Windows PowerShell
-Copy-Item -Recurse plugins/engineering-sobriety "$env:USERPROFILE\.gemini\config\plugins\"
+cp -r plugins/cognitive-persistence ~/.gemini/config/plugins/
 ```
 
-*Nota: I nuovi plugin vengono rilevati all'apertura o al riavvio della sessione.*
+### 3. Rilevamento nell'Interfaccia Chat (Comandi Slash)
+- Il Language Server di Antigravity scansiona `~/.gemini/config/plugins/` per estrarre le skill registrate.
+- L'interfaccia client (Electron) carica la cache dei comandi slash (es. `/next-step`, `/memory-sync`, `/tone-audit`) all'avvio: dopo la prima sincronizzazione di un nuovo plugin, ricarica la finestra con `Ctrl+Shift+P` $\to$ `Developer: Reload Window` (oppure riavvia Antigravity).
 
 ---
 

@@ -33,7 +33,8 @@ Questo documento traccia lo stato di sviluppo delle funzionalità, dei plugin e 
 | Modulo / Funzionalità | Stato | Note di Rilascio |
 | :--- | :---: | :--- |
 | Suite di validazione statica (`scripts/validate.mjs`) | `🟢 Completato` | Controllo manifest JSON, SemVer, kebab-case, regole Markdown e frontmatter skill. |
-| Meta-skill `install-plugin` (`.agents/skills/install-plugin`) | `🟢 Completato` | Installazione guidata per progetti esterni con Directory Junction e audit collisioni. |
+| Script sincronizzazione fisica (`scripts/sync-to-global.mjs`) | `🟢 Completato` | Clona fisicamente i plugin in `~/.gemini/config/plugins/` rimuovendo junction per caricamento LS immediato. |
+| Meta-skill `install-plugin` (`.agents/skills/install-plugin`) | `🟢 Completato` | Installazione guidata verso configurazione globale e audit collisioni per progetti esterni. |
 | Meta-skill `validate-plugins` (`.agents/skills/validate-plugins`) | `🟢 Completato` | Esecuzione interattiva della suite di test interna. |
 | Documentazione globale di repository (`README.md`) | `🟢 Completato` | Visione architetturale, catalogo, modalità di installazione e contribuzione. |
 | Triade cognitiva di repository (`MEMORY.md`, `WORKLOG.md`, `DESIDERATA.md`) | `🟢 Completato` | Allineata con End-of-Task Sync. |

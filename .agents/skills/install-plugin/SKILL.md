@@ -34,14 +34,24 @@ Per ogni elemento concorrente identificato, proporre all'utente una tra le segue
 
 ---
 
-## 3. Modalità di Collegamento del Plugin
+## 3. Modalità di Installazione e Sincronizzazione
 
-- **Directory Junction (Consigliata su Windows)**:
-  ```powershell
-  New-Item -ItemType Junction -Path "<target>\.agents\plugins\<nome-plugin>" -Target "c:\github\antigravity-plugins\plugins\<nome-plugin>"
-  ```
-- **Configurazione Dichiarativa (`plugins.json`)**:
-  Aggiungere il plugin alla lista `entries` di `<target>\.agents\plugins.json`.
+> [!CAUTION]
+> **Divieto Assoluto di Directory Junction su Windows**:
+> Il Language Server di Antigravity ignora i reparse points e symlink su Windows. Inoltre, Antigravity non carica plugin da `.agents/plugins/` di progetto. I plugin devono essere sempre sincronizzati o installati come directory fisiche reali in `~/.gemini/config/plugins/`.
+
+1. **Sincronizzazione Globale Automatica (Consigliata)**:
+   Dalla cartella principale del repository `antigravity-plugins`:
+   ```bash
+   npm run sync
+   ```
+   Lo script `scripts/sync-to-global.mjs` rimuove eventuali junction obsolete e clona fisicamente le cartelle dei plugin in `~/.gemini/config/plugins/`.
+
+2. **Abilitazione nel Runtime (`config.json`)**:
+   Verificare o invocare l'RPC `JetboxWriteState` per garantire che il plugin sia `"enabled": true` in `~/.gemini/config/config.json`.
+
+3. **Skill di Workspace Specifiche (Non Plugin)**:
+   Se una skill deve risiedere unicamente in un progetto isolato e non a livello globale per tutta la macchina, copiarla fisicamente in `<target>\.agents\skills\<nome-skill>\SKILL.md` anziché usare i plugin.
 
 ---
 
