@@ -19,9 +19,10 @@ Il plugin `engineering-workflow` elimina questi rischi subordinando ogni operazi
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Vieta `git add .`, impone Conventional Commits in inglese, vieta commit/merge autonomi su `main` e prescrive l'isolamento del guasto basato su checkpoint. |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Vieta `git add .`, impone Conventional Commits in inglese, prescrive isolamento headless del core, standard storage ad adapter e protocollo Shift-Left. |
 | **`worktree-lifecycle`** | Skill on-demand | [`skills/worktree-lifecycle/SKILL.md`](./skills/worktree-lifecycle/SKILL.md) | Guida completa a 5 fasi per creare rami di lavoro paralleli su cartelle separate, verificare le modifiche ed eseguire il teardown pulito. |
 | **`trace-debugging`** | Skill on-demand | [`skills/trace-debugging/SKILL.md`](./skills/trace-debugging/SKILL.md) | Procedura di localizzazione guasti tramite iniezione log `[DEBUG-TRACE #X]`, rilevamento del Last Known Good Checkpoint e bonifica post-fix. |
+| **`shift-left-governance`** | Skill on-demand | [`skills/shift-left-governance/SKILL.md`](./skills/shift-left-governance/SKILL.md) | Protocollo a 5 gate e template di test suite automatizzata per prevenire difetti architetturali prima della consegna del codice. |
 
 ---
 

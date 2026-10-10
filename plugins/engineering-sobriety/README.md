@@ -19,8 +19,8 @@ Il plugin `engineering-sobriety` stabilisce un vincolo operazionale permanente: 
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Prescrive l'apertura immediata sui fatti tecnici, la tabella di sostituzione terminologica e i pilastri di integrità per test e metriche. |
-| **`tone-audit`** | Skill on-demand | [`skills/tone-audit/SKILL.md`](./skills/tone-audit/SKILL.md) | Procedura operativa per scansionare codebase, commenti e documentazione rimuovendo superlativi, enfasi di marketing e verificando l'indipendenza dei test. |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Prescrive l'apertura immediata sui fatti tecnici, la tabella di sostituzione terminologica, i pilastri di integrità per test e metriche, e il bando a emoji decorative (zero icon clutter). |
+| **`tone-audit`** | Skill on-demand | [`skills/tone-audit/SKILL.md`](./skills/tone-audit/SKILL.md) | Procedura operativa per scansionare codebase, markup UI e documentazione rimuovendo superlativi, enfasi di marketing, convenevoli ed emoji decorative non funzionali. |
 
 ---
 

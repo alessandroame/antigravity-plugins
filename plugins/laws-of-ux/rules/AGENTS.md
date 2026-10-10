@@ -67,3 +67,13 @@ Quando progetti, scrivi codice o effettui la revisione di interfacce utente (HTM
 - **Understandable**: Gerarchia di intestazioni logica (`h1` -> `h2` -> `h3`), messaggi di errore chiari con istruzioni correttive dirette (NN/G Euristica #9).
 - **Robust**: Compatibilità con screen reader, semantica HTML nativa prima di ricorrere ad attributi ARIA.
 
+---
+
+## 8. Standard Ergonomici per Interfacce Outdoor, Field & Wearable (High-Glare / Guanti)
+- **Target di Tocco Maggiorati ($\ge 48 \times 48\text{ px}$)**: Per dispositivi usati all'aperto, su supporti mobili, con dita fredde o guanti, il pavimento tattile minimo è $\ge 48\text{px}$. In caso di elementi visivi compatti (badge, frecce), estendere l'area interattiva tramite padding trasparente o pseudo-elemento `::before`.
+- **Caroselli Orizzontali a Riga Singola (`touch-action: pan-x`)**: Per elenchi di filtri, date o chip frequenti, vietare il `flex-wrap: wrap` con decine di elementi che creano barriere verticali. Utilizzare scorrimento orizzontale a riga singola con scroll-snap nativo.
+- **Prevenzione Conflitti di Gesto su Mappe e Canvas**: I canvas interattivi (grafici con scrubber) e le cartografie WebGL/Leaflet/MapLibre devono dichiarare `touch-action: pan-y` (o gesti cooperativi a due dita) per evitare che lo scorrimento verticale della pagina resti intrappolato.
+- **Dynamic Viewport (`100dvh`)**: Utilizzare sempre unità `100dvh` anziché `100vh` per prevenire il troncamento dei contenuti e delle barre inferiori causato dalle toolbar a scomparsa dei browser mobili.
+- **Dual High-Contrast Theme (Sunlight Resilient)**: Garantire il supporto per tema ad alta luminosità e contrasto elevato (WCAG 2.1 AA $\ge 4.5:1$ per testo normale, $\ge 7:1$ per testo critico) per resistere al riverbero e alla luce solare diretta.
+- **Feedback Tri-Modale di Sicurezza**: Gli indicatori di stato critico o di sicurezza non devono mai basarsi solo sul colore: combinare sempre **Colore + Testo Esplicito + Icona Funzionale**.
+

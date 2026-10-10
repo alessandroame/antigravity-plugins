@@ -57,3 +57,15 @@ safetyWatchdog.unref(); // Permette al runtime Node di uscire naturalmente se il
 ```
 
 I processi figli generati (browser headless, WebSocket, server) devono essere sempre chiusi all'interno di un blocco `finally`, assicurando l'invocazione esplicita di `process.exit(0)` o `process.exit(1)`.
+
+---
+
+## 4. Guardia Mock API Esterne e Protezione Quota nei Test Automatici
+
+1. **Divieto di Chiamate Live durante i Test e Crawler**:
+   - Gli script di test automatizzati, i crawler headless e le sessioni di verifica UI eseguite dall'agente non devono MAI effettuare chiamate di rete reali verso API esterne soggette a rate limit (HTTP 429 Too Many Requests) o a tariffazione a consumo (es. provider meteo, tile cartografici proprietari, geocoding, API LLM terze).
+2. **Protocollo di Mocking Deterministico e Fixture Offline**:
+   - Eseguire sempre i test UI e le simulazioni headless con mock abilitato tramite parametro di avvio (`?mock=1`, `?mock_weather=1`), header dedicato o variabile d'ambiente (`NODE_ENV=test` / `MOCK_EXTERNAL_APIS=true`).
+   - I moduli client devono fornire generatori di payload mock o fixture JSON statiche deterministiche, garantendo l'esecuzione offline affidabile e test < 1s.
+3. **Collaudo Live Mirato e Isolato**:
+   - L'invocazione reale di endpoint remoti è consentita esclusivamente in test di integrazione dedicati, il cui unico obiettivo dichiarato sia validare il contratto di schema e la connettività di rete.

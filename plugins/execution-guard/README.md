@@ -20,7 +20,7 @@ Il plugin `execution-guard` implementa meccanismi formali di salvaguardia per re
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Impone `WaitMsBeforeAsync: 10000`, watchdog obbligatorio su comandi asincroni con `schedule`, soglie quantitative del circuit breaker e timeout negli script. |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Impone `WaitMsBeforeAsync: 10000`, watchdog obbligatorio su comandi asincroni con `schedule`, soglie quantitative del circuit breaker, timeout negli script e guardia mock API esterne. |
 | **`task-watchdog`** | Skill on-demand | [`skills/task-watchdog/SKILL.md`](./skills/task-watchdog/SKILL.md) | Runbook operativo per rilevare task in stallo, ispezionarne i log tramite `manage_task` ed eseguirne la terminazione forzata (`kill`). |
 | **`circuit-breaker`** | Skill on-demand | [`skills/circuit-breaker/SKILL.md`](./skills/circuit-breaker/SKILL.md) | Protocollo di blocco per errori invarianti, rollback automatico su regressioni ed escalation formale dell'architettura bloccata. |
 

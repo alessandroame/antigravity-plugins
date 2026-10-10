@@ -31,3 +31,17 @@ Un prompt formulato per un agente autonomo deve massimizzare due variabili:
 2. **Formulazione Box**: Comporre il blocco di Proactive Mentorship con il confronto *Prima vs Dopo*.
 3. **Spiegazione dei Vantaggi**: Evidenziare perché la versione ottimizzata riduce il consumo di token e previene modifiche non richieste.
 4. **Richiesta di Conferma**: Chiedere conferma prima di procedere se il perimetro del task cambia significativamente.
+
+---
+
+## 4. Compressione del Contesto per Payload LLM (Tabular Token Economy)
+
+Quando si progettano prompt o chiamate ad API LLM che devono elaborare serie storiche, dati telemetrici o elenchi strutturati:
+- **Evitare Array JSON Grezzi**: Non trasmettere oggetti JSON completi con chiavi ripetute per decine di record.
+- **Formattazione Tabellare Compatta (Markdown / Pipe-Delimited)**: Serializzare i dati in tabelle Markdown sintetiche o stringhe delimitate da pipe.
+  ```text
+  Time | Wind (km/h) | Gusts | Dir | Temp (°C) | Rain
+  10:00| 8           | 12    | S   | 18        | 0.0
+  11:00| 12          | 18    | SSW | 21        | 0.0
+  ```
+- **Impatto**: Riduzione dei token fino all'80%, payload inferiori a 1.5 KB e abbattimento dei tempi di latenza su reti mobili e connessioni outdoor.

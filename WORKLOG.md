@@ -163,3 +163,30 @@ Nel runtime di Antigravity mancava un meccanismo trasparente e quantitativo per 
 - Suite `npm test` superata con 9 plugin validati, 0 errori, 0 avvisi.
 - Test end-to-end eseguito con successo sul transcript reale della sessione: rilevati correttamente tempo di esecuzione, token consumati (input, output, cache ratio), tool chiamati e plugin intercettati (`laws-of-ux`, `telemetry-analytics`, ecc.).
 
+---
+
+## [2026-10-10] ADR: Integrazione Standard Ingegneristici ed Ergonomici da Audit GlideMind
+
+### Contesto & Motivazione
+A seguito dell'audit delle direttive e dei comportamenti richiesti agli agenti nel repository [GlideMind](file:///c:/github/GlideMind), sono stati isolati ed estratti i pattern architetturali trasversali di valore sistemico, arricchendo la suite `antigravity-plugins` senza introdurre specifiche parassite di dominio aerologico o aeronautico.
+
+### Decisioni Architetturali
+1. **`engineering-sobriety`**:
+   - Aggiornata la regola `rules/AGENTS.md` (Sezione 4) con il bando rigoroso alle emoji decorative non funzionali (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`) sia nel codice sia nell'interfaccia.
+   - Aggiornata la skill `tone-audit` per scansionare e bonificare simboli decorativi nei sorgenti e markup.
+2. **`engineering-workflow`**:
+   - Introdotte in `rules/AGENTS.md` le Sezioni 4 e 5: prescrizione dell'architettura headless core (zero DOM nei moduli computazionali, 100% testabili in puro Node.js) con injectable storage adapter, e protocollo Shift-Left.
+   - Creata la nuova skill `shift-left-governance` dotata di template per test suite di governance automatizzata (`tests/governance.test.mjs`).
+3. **`execution-guard`**:
+   - Integrata in `rules/AGENTS.md` la Sezione 4 che vieta chiamate di rete live verso API esterne soggette a quota o rate-limit durante test e crawler automatici, prescrivendo mock deterministici e fixture offline.
+4. **`laws-of-ux`**:
+   - Aggiunta in `rules/AGENTS.md` la Sezione 8 sugli standard ergonomici outdoor, field e wearable (alta luminosità solare, touch target $\ge 48\text{px}$ con pseudo-elementi, caroselli a riga singola `pan-x`, gesti cooperativi `pan-y` per canvas/mappe, `100dvh` e feedback tri-modale colore+testo+icona).
+   - Creata la nuova skill `ux-outdoor-and-field-ergonomics`.
+5. **`proactive-mentorship`**:
+   - Aggiornata la skill `prompt-refactor` con la sezione Tabular Token Economy (serializzazione compatta Markdown/pipe-delimited per serie storiche verso LLM, con riduzione dell'80% dei token).
+
+### Impatto e Verifiche
+- Eseguito `node scripts/validate.mjs --all`: 9 plugin verificati con 0 errori e 0 avvisi.
+- Eseguito `npm run sync`: aggiornati fisicamente tutti i plugin in `~/.gemini/config/plugins/`.
+- Allineata la matrice di stato [DESIDERATA.md](file:///c:/github/antigravity-plugins/DESIDERATA.md) e redatto il frammento di worklog.
+

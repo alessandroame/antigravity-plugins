@@ -30,6 +30,7 @@ Il plugin espone **7 Skill tematiche** e **5 Regole contestuali**:
 | **Latenza, caricamenti lenti e feedback mancante** | `ux-feedback-and-perceived-performance` | `ux-performance-and-feedback.md` | *Doherty Threshold (<400ms), Timing Hierarchy (<1s, 1-3s, 3-10s, >10s), Undo Pattern (NN/G #3)* |
 | **Scelte complesse, menu, search e cataloghi** | `ux-choice-and-navigation-design` | `ux-navigation-and-choice.md` | *Hick's Law, Choice Overload, Recognition over Recall (NN/G #6), 5 Filtri Baymard, Serial Position* |
 | **Abbandono dell'onboarding e setup profili** | `ux-onboarding-and-retention` | `AGENTS.md` | *Jakob's Law, Active User Paradox, Goal-Gradient, Zeigarnik, Flow* |
+| **Uso all'aperto, luce solare diretta e guanti** | `ux-outdoor-and-field-ergonomics` | `AGENTS.md` | *Fitts Target $\ge 48\text{px}$, Pan-X Carousels, 100dvh, Dual High-Contrast, Feedback Tri-Modale* |
 | **Audit euristico completo e interfaccia AI** | `laws-of-ux-audit` | Tutte le regole | *30 Laws of UX + 10 Euristiche NN/G + Benchmark Baymard + Explainability & Cheap Takeover (Windmill 2026)* |
 
 
@@ -55,6 +56,7 @@ laws-of-ux/
 │   ├── ux-feedback-and-perceived-performance/SKILL.md
 │   ├── ux-choice-and-navigation-design/SKILL.md
 │   ├── ux-onboarding-and-retention/SKILL.md
+│   ├── ux-outdoor-and-field-ergonomics/SKILL.md
 │   └── laws-of-ux-audit/SKILL.md
 ├── references/                                # Catalogo e teoria approfondita
 │   ├── 01-gestalt-principles.md

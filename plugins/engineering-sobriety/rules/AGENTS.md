@@ -49,3 +49,17 @@ Questo documento definisce gli standard operativi e di comunicazione vincolanti 
    - Se un test fallisce, se una metrica diverge o se un'architettura presenta criticità, dichiararlo apertamente al primo rigo del messaggio, senza attenuazioni retoriche.
 4. **Rifiuto di Hack Fragili e Bypass**:
    - Non proporre né applicare bypass fragili (es. timer arbitrari, soppressione silente di errori, mutazioni non controllate) per mascherare problemi strutturali. Sollevare il rischio e proporre la soluzione architetturale corretta.
+
+---
+
+## 4. Bando a Emoji e Simboli Decorativi nel Codice e nell'Interfaccia (Zero Icon Clutter)
+
+1. **Divieto Assoluto di Emoji Decorative**:
+   - È vietato inserire emoji o simboli decorativi (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`) all'interno di:
+     - Titoli di sezione, intestazioni (`h1`-`h6`) e card UI.
+     - Etichette di pulsanti di navigazione o azioni ordinarie.
+     - Nomi di variabili, file sorgente, log interni o commenti di codice.
+2. **Icone Funzionali e Indicatori Semantici Ammessi**:
+   - Le icone sono consentite **esclusivamente** se assolvono a un ruolo funzionale o di sicurezza:
+     - Controlli interattivi compatti (es. pulsante di chiusura `X`, menu hamburger, switch di tema) provvisti di attributo `aria-label`.
+     - Indicatori di stato semantico (es. marker di sicurezza Verde/Giallo/Rosso, frecce direzionali di trend/vettori) sempre affiancati da testo esplicito per non dipendere unicamente dal canale visivo.
