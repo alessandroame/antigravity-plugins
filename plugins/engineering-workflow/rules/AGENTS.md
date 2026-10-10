@@ -47,3 +47,20 @@ Quando si riscontra un'anomalia di comportamento, un fallimento di test o un err
    - Identificare l'ultimo checkpoint valido (*Last Known Good Checkpoint*). La causa radice si trova tassativamente tra l'ultimo checkpoint corretto e il primo assente o corrotto.
 4. **Pulizia Obbligatoria (Trace Cleanup)**:
    - Prima di completare il task o proporre il commit, rimuovere completamente tutti i log temporanei `[DEBUG-TRACE]`. Il codice consegnato deve risultare pulito da tracce diagnostiche.
+
+---
+
+## 3. Standard di Codifica: Lingua Inglese Esclusiva nel Codice Sorgente
+
+1. **Inglese Esclusivo nel Codice**:
+   - Qualsiasi artefatto di codice sorgente deve essere redatto esclusivamente in lingua inglese:
+     - **Identificatori**: nomi di variabili, costanti, funzioni, classi, metodi, proprietà, tipi, interfacce, file sorgente e directory di codice.
+     - **Commenti e Annotazioni**: commenti inline (`//`), blocchi di commento (`/* */`), annotazioni TODO/FIXME, docstring e documentazione API (JSDoc, TSDoc, Docblocks).
+     - **Test Automatizzati**: denominazioni e descrizioni delle suite (`describe`), dei casi di test (`it`, `test`), messaggi di asserzione, fixture e mock.
+     - **Log Interni ed Eccezioni**: messaggi delle eccezioni (`throw new Error(...)`), log diagnostici (`console.error`, `console.warn`, `console.info`) e codici/chiavi di stato interni.
+2. **Distinzione con Testi Utente (UI Copy & Localizzazione)**:
+   - Le stringhe visibili all'utente finale nell'interfaccia (etichette pulsanti, messaggi UI, file di localizzazione/dizionari i18n) seguono la lingua target richiesta dalle specifiche di prodotto (es. italiano per GlideMind).
+   - I commenti a corredo e le chiavi del dizionario i18n rimangono in lingua inglese (es. `t('flightSummary.title')`).
+3. **Conversazione Agente-Utente**:
+   - L'agente risponde nella lingua utilizzata dall'utente nella chat (es. italiano per dialoghi e spiegazioni), ma il codice prodotto o modificato durante il turno deve rispettare rigidamente la regola dell'inglese esclusivo.
+
