@@ -89,5 +89,13 @@ Questo documento registra vincoli stabili, particolarità del runtime di Google 
   2. Usare l'**Albero Decisionale a Spina Verticale (` ```text `)** (max 65 caratteri per riga, bivi marcati con `◇ BIVIO` e rami `├── [NO] ──►` / `└── [SÌ] ──►`), che mantiene il font monospace al 100% della dimensione nativa.
   3. Nei diagrammi `mermaid`, usare esclusivamente **`flowchart TD` (Top-Down)** spezzando i testi lunghi con `<br/>` (massimo 25–28 caratteri per riga) e distinguendo le forme (`([...])` per Ingresso/Uscita, `{...}` per Bivi, `[...]` per Step).
 
+---
+
+## 10. Assenza di Orologio nei Sub-Turni LLM e Iniezione via Hook `PreInvocation`
+- **Problema Riscontrato**: Durante le lavorazioni multi-step, il modello LLM riceve il timestamp locale solo nel blocco `ADDITIONAL_METADATA` dell'input utente iniziale. Nelle invocazioni successive (`Invocation #2, #3...` dopo l'esecuzione di tool), il modello è privo di un riferimento temporale aggiornato e non conosce la durata effettiva impiegata dai tool appena conclusi, rischiando di produrre stime ETA inventate.
+- **Causa Radice**: I risultati dei tool contengono i timestamp nel log su disco (`transcript.jsonl`), ma il contesto conversazionale non ricalcola automaticamente `Elapsed` né espone le medie storiche di latenza del workspace. Inoltre, l'estrazione dell'ETA iniziale deve ispezionare sia `step.content` sia `step.tool_calls` (`toolAction`/`toolSummary`) escludendo le righe di `ETA residuo`.
+- **Pattern Preventivo Obbligatorio**: Utilizzare l'hook `PreInvocation` (`plugins/telemetry-analytics/scripts/eta-injector.mjs`) per leggere l'ultimo `USER_INPUT` da `transcript.jsonl`, calcolare `Elapsed` reale (`nowMs - promptStartMs`) e iniettare un `ephemeralMessage` (`[TELEMETRY-ETA-CLOCK]`) con l'ora corrente, i secondi trascorsi, la baseline storica per step e il fattore di calibrazione del workspace (`etaCalibrationFactor`).
+
+
 
 

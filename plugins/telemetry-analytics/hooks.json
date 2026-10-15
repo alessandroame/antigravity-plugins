@@ -1,5 +1,12 @@
 {
   "telemetry-collector": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/eta-injector.mjs",
+        "timeout": 10
+      }
+    ],
     "PostInvocation": [
       {
         "type": "command",

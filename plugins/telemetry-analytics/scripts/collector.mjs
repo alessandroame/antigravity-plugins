@@ -3,6 +3,7 @@
 /**
  * Telemetry & Usage Analytics Collector
  * Native zero-dependency batch ingestor for Antigravity PostInvocation and Stop hooks.
+ * Also tracks multi-step ETA accuracy and computes workspace calibration factors.
  */
 
 import { readFileSync, appendFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
@@ -75,6 +76,24 @@ function extractToolCalls(step) {
   return calls;
 }
 
+function extractDeclaredEtaMs(step) {
+  let content = typeof step.content === 'string' ? step.content : '';
+  if (!content && Array.isArray(step.tool_calls)) {
+    for (const tc of step.tool_calls) {
+      if (tc?.args?.toolSummary) content += ' ' + tc.args.toolSummary;
+      if (tc?.args?.toolAction) content += ' ' + tc.args.toolAction;
+    }
+  }
+  if (!content) return null;
+
+  // Match patterns like "[ETA: ~45s", "[ETA ~45s", "· ETA ~45s]"
+  const match = content.match(/(?:\[ETA(?:\s+iniziale)?:\s*~?(\d+)s|\[ETA\s+~?(\d+)s|ETA\s*~(\d+)s)/i);
+  if (!match) return null;
+  const seconds = parseInt(match[1] || match[2] || match[3], 10);
+  if (Number.isNaN(seconds) || seconds <= 0) return null;
+  return seconds * 1000;
+}
+
 function processTranscriptBatch(transcriptPath, lastIndex) {
   if (!existsSync(transcriptPath)) {
     return { newSteps: [], newLastIndex: lastIndex };
@@ -102,16 +121,39 @@ function processTranscriptBatch(transcriptPath, lastIndex) {
   return { newSteps, newLastIndex };
 }
 
-function updateSummaryStore(summaryPath, record) {
+function applyEtaMetrics(targetBucket, estimatedMs, actualMs) {
+  if (!estimatedMs || !actualMs || estimatedMs <= 0 || actualMs <= 0) return;
+
+  targetBucket.etaTrackedTasks = (targetBucket.etaTrackedTasks || 0) + 1;
+  targetBucket.totalEstimatedMs = (targetBucket.totalEstimatedMs || 0) + estimatedMs;
+  targetBucket.totalActualEtaTaskMs = (targetBucket.totalActualEtaTaskMs || 0) + actualMs;
+
+  const sampleRatio = Math.max(0.4, Math.min(3.0, actualMs / estimatedMs));
+  const prevFactor =
+    typeof targetBucket.etaCalibrationFactor === 'number' && targetBucket.etaCalibrationFactor > 0
+      ? targetBucket.etaCalibrationFactor
+      : 1.0;
+
+  // Exponential moving average (alpha = 0.3) clamped to [0.5, 2.5]
+  const updated = prevFactor * 0.7 + sampleRatio * 0.3;
+  targetBucket.etaCalibrationFactor = Number(Math.max(0.5, Math.min(2.5, updated)).toFixed(2));
+}
+
+function updateSummaryStore(summaryPath, record, etaOutcome) {
   let summary = {
     lastUpdated: new Date().toISOString(),
     global: {
       totalSessions: 0,
       totalInvocations: 0,
+      totalSteps: 0,
       totalDurationMs: 0,
       totalInputTokens: 0,
       totalOutputTokens: 0,
       totalCacheReadTokens: 0,
+      etaTrackedTasks: 0,
+      totalEstimatedMs: 0,
+      totalActualEtaTaskMs: 0,
+      etaCalibrationFactor: 1.0,
       plugins: {},
       tools: {}
     },
@@ -132,6 +174,7 @@ function updateSummaryStore(summaryPath, record) {
   summary.lastUpdated = new Date().toISOString();
   const g = summary.global;
   g.totalInvocations += 1;
+  g.totalSteps = (g.totalSteps || 0) + (record.stepCount || 0);
   g.totalDurationMs += record.durationMs;
   g.totalInputTokens += record.tokens.input;
   g.totalOutputTokens += record.tokens.output;
@@ -143,24 +186,34 @@ function updateSummaryStore(summaryPath, record) {
     summary.workspaces[wsKey] = {
       name: record.workspaceName || 'unknown',
       totalInvocations: 0,
+      totalSteps: 0,
       totalDurationMs: 0,
       totalInputTokens: 0,
       totalOutputTokens: 0,
       totalCacheReadTokens: 0,
+      etaTrackedTasks: 0,
+      totalEstimatedMs: 0,
+      totalActualEtaTaskMs: 0,
+      etaCalibrationFactor: 1.0,
       plugins: {},
       tools: {}
     };
   }
   const ws = summary.workspaces[wsKey];
   ws.totalInvocations += 1;
+  ws.totalSteps = (ws.totalSteps || 0) + (record.stepCount || 0);
   ws.totalDurationMs += record.durationMs;
   ws.totalInputTokens += record.tokens.input;
   ws.totalOutputTokens += record.tokens.output;
   ws.totalCacheReadTokens += record.tokens.cacheRead;
 
+  if (etaOutcome && etaOutcome.estimatedMs > 0 && etaOutcome.actualMs > 0) {
+    applyEtaMetrics(g, etaOutcome.estimatedMs, etaOutcome.actualMs);
+    applyEtaMetrics(ws, etaOutcome.estimatedMs, etaOutcome.actualMs);
+  }
+
   // Merge plugins
   for (const [pluginName, pData] of Object.entries(record.plugins)) {
-    // Global
     if (!g.plugins[pluginName]) {
       g.plugins[pluginName] = { invocations: 0, skills: {} };
     }
@@ -169,7 +222,6 @@ function updateSummaryStore(summaryPath, record) {
       g.plugins[pluginName].skills[skillName] = (g.plugins[pluginName].skills[skillName] || 0) + sCount;
     }
 
-    // Workspace
     if (!ws.plugins[pluginName]) {
       ws.plugins[pluginName] = { invocations: 0, skills: {} };
     }
@@ -181,14 +233,12 @@ function updateSummaryStore(summaryPath, record) {
 
   // Merge tools
   for (const [toolName, tData] of Object.entries(record.tools)) {
-    // Global
     if (!g.tools[toolName]) {
       g.tools[toolName] = { calls: 0, errors: 0 };
     }
     g.tools[toolName].calls += tData.calls;
     g.tools[toolName].errors += tData.errors;
 
-    // Workspace
     if (!ws.tools[toolName]) {
       ws.tools[toolName] = { calls: 0, errors: 0 };
     }
@@ -224,15 +274,39 @@ async function main() {
   mkdirSync(analyticsDir, { recursive: true });
 
   const cursorFile = join(analyticsDir, `.cursor_${conversationId}.json`);
+  const etaStateFile = join(analyticsDir, `.eta_${conversationId}.json`);
   let lastIndex = -1;
+  let savedInitialEtaMs = null;
+  let savedPromptStartMs = null;
+
   if (existsSync(cursorFile)) {
     try {
       const cursor = JSON.parse(readFileSync(cursorFile, 'utf-8'));
       if (typeof cursor.lastIndex === 'number') {
         lastIndex = cursor.lastIndex;
       }
+      if (typeof cursor.initialEtaMs === 'number') {
+        savedInitialEtaMs = cursor.initialEtaMs;
+      }
+      if (typeof cursor.promptStartMs === 'number') {
+        savedPromptStartMs = cursor.promptStartMs;
+      }
     } catch {
       // Ignore corrupted cursor
+    }
+  }
+
+  if (existsSync(etaStateFile)) {
+    try {
+      const etaState = JSON.parse(readFileSync(etaStateFile, 'utf-8'));
+      if (!savedPromptStartMs && typeof etaState.promptStartMs === 'number') {
+        savedPromptStartMs = etaState.promptStartMs;
+      }
+      if (!savedInitialEtaMs && typeof etaState.initialEtaSec === 'number') {
+        savedInitialEtaMs = etaState.initialEtaSec * 1000;
+      }
+    } catch {
+      // Ignore state read errors
     }
   }
 
@@ -254,6 +328,22 @@ async function main() {
           const t = new Date(step.created_at).getTime();
           if (minTime === null || t < minTime) minTime = t;
           if (maxTime === null || t > maxTime) maxTime = t;
+
+          const isUserStep =
+            step.type === 'USER_INPUT' ||
+            step.source === 'USER_EXPLICIT' ||
+            step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
+          if (isUserStep) {
+            savedPromptStartMs = t;
+            savedInitialEtaMs = null;
+          }
+        }
+
+        if (!savedInitialEtaMs) {
+          const detectedEta = extractDeclaredEtaMs(step);
+          if (detectedEta) {
+            savedInitialEtaMs = detectedEta;
+          }
         }
 
         if (typeof step.input_tokens === 'number') inputTokens += step.input_tokens;
@@ -286,7 +376,6 @@ async function main() {
 
         // Error detection in content or status
         if (step.status === 'ERROR' || (step.content && /exited with code [^0]/i.test(step.content))) {
-          // Attribute error to last tool or generic
           const lastTool = calls.length > 0 ? calls[calls.length - 1].name : 'unknown';
           if (toolsMap[lastTool]) {
             toolsMap[lastTool].errors += 1;
@@ -296,12 +385,24 @@ async function main() {
 
       const durationMs = minTime && maxTime && maxTime >= minTime ? maxTime - minTime : 0;
 
+      let etaOutcome = null;
+      if (isFinalize && savedInitialEtaMs && savedPromptStartMs) {
+        const endTs = maxTime || Date.now();
+        const totalActualMs = Math.max(1000, endTs - savedPromptStartMs);
+        etaOutcome = {
+          estimatedMs: savedInitialEtaMs,
+          actualMs: totalActualMs
+        };
+      }
+
       const eventRecord = {
         ts: new Date().toISOString(),
         conversationId,
         workspace: workspacePath,
         workspaceName: basename(workspacePath),
         durationMs,
+        etaEstimatedMs: etaOutcome ? etaOutcome.estimatedMs : null,
+        etaActualMs: etaOutcome ? etaOutcome.actualMs : null,
         tokens: {
           input: inputTokens,
           output: outputTokens,
@@ -318,18 +419,36 @@ async function main() {
 
       // Update metrics-summary.json
       const summaryFile = join(analyticsDir, 'metrics-summary.json');
-      updateSummaryStore(summaryFile, eventRecord);
+      updateSummaryStore(summaryFile, eventRecord, etaOutcome);
 
       // Save cursor
-      writeFileSync(cursorFile, JSON.stringify({ lastIndex: newLastIndex, updatedAt: new Date().toISOString() }), 'utf-8');
+      writeFileSync(
+        cursorFile,
+        JSON.stringify({
+          lastIndex: newLastIndex,
+          initialEtaMs: savedInitialEtaMs,
+          promptStartMs: savedPromptStartMs,
+          updatedAt: new Date().toISOString()
+        }),
+        'utf-8'
+      );
     }
   }
 
-  if (isFinalize && existsSync(cursorFile)) {
-    try {
-      unlinkSync(cursorFile);
-    } catch {
-      // Ignore unlink errors
+  if (isFinalize) {
+    if (existsSync(cursorFile)) {
+      try {
+        unlinkSync(cursorFile);
+      } catch {
+        // Ignore unlink errors
+      }
+    }
+    if (existsSync(etaStateFile)) {
+      try {
+        unlinkSync(etaStateFile);
+      } catch {
+        // Ignore unlink errors
+      }
     }
   }
 

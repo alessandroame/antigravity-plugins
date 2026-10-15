@@ -27,7 +27,7 @@ L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegne
 | **`cognitive-persistence`** | Preserva la continuità architetturale e gestisce i pensieri in corso d'opera: cattura in-flight in `NOTES.md` (`/take-note`), analisi differita (`/review-notes`), diario ADR (`WORKLOG.md`), lezioni in `MEMORY.md` e matrice `DESIDERATA.md` (`/next-step`). | Regola attiva (`rules/AGENTS.md`), 4 Skill (`take-note`, `review-notes`, `next-step`, `memory-sync`) | [Leggi README](./plugins/cognitive-persistence/README.md) |
 | **`proactive-mentorship`** | Coaching architetturale e sui prompt: scrutinio critico preventivo (KISS/YAGNI/casi limite), assenza di adulazione (anti-sycophancy) e refactoring Before/After dei prompt. | Regola attiva (`rules/AGENTS.md`), Skill (`prompt-refactor`) | [Leggi README](./plugins/proactive-mentorship/README.md) |
 | **`skill-governance`** | Governance per skill: audit dimensionale dei trigger (A-E), ottimizzazione budget token, prevenzione collisioni/shadowing e scomposizione a divulgazione progressiva. | Regola attiva (`rules/AGENTS.md`), 3 Skill (`skill-audit`, `skill-token-optimizer`, `skill-collision-check`), Reference, Esempi | [Leggi README](./plugins/skill-governance/README.md) |
-| **`telemetry-analytics`** | Osservabilità e telemetria locale: tracciamento invocazioni plugin/skill, latenza turni, tassi di successo dei tool nativi ed esportazione CSV/JSON. | Regola attiva (`rules/AGENTS.md`), 2 Skill (`plugin-analytics`, `telemetry-export`), Hooks | [Leggi README](./plugins/telemetry-analytics/README.md) |
+| **`telemetry-analytics`** | Osservabilità, telemetria locale e stima ETA in-flight: iniezione orologio real-time (`PreInvocation`), output ETA su doppio canale (riga chat + pill tool), calibrazione scostamento e report CSV/JSON. | Regola attiva (`rules/AGENTS.md`), 2 Skill (`plugin-analytics`, `telemetry-export`), Hooks (`eta-injector`, `collector`) | [Leggi README](./plugins/telemetry-analytics/README.md) |
 | **`code-inspector`** | Verifica a livello di codice delle funzionalità software tramite il modello IPO Esteso (Ingresso -> Guardie -> Processo -> Uscita), tracciamento payload, stato test e selettori `<details>` con il codice sorgente coinvolto. | Regola attiva (`rules/AGENTS.md`), Skill (`/how-its-made`), Template, Esempio | [Leggi README](./plugins/code-inspector/README.md) |
 
 ---
@@ -70,8 +70,8 @@ L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegne
 - **Guida completa**: [`plugins/skill-governance/README.md`](./plugins/skill-governance/README.md)
 
 ### 8. `telemetry-analytics`
-- **Goal**: Fornire osservabilità, tracciamento dei tempi d'uso dei plugin e metriche sull'efficienza di esecuzione.
-- **Cosa fa**: Raccoglie telemetria a basso overhead tramite parsing batch del log di sessione (`PostInvocation` e `Stop` hook) senza rallentare i singoli tool. Registra volume invocazioni per plugin/skill, latenza effettiva dei turni, tassi di successo dei tool nativi e consumo di token in modalità ibrida (globale e per singolo workspace).
+- **Goal**: Fornire osservabilità, stima ETA in-flight delle lavorazioni in corso e metriche sull'efficienza di esecuzione.
+- **Cosa fa**: Inietta l'orologio real-time e la baseline storica ad ogni invocazione tramite l'hook `PreInvocation` (`eta-injector.mjs`), consentendo all'agente di stampare l'ETA prevista su doppio canale (riga di stato in chat + prefisso `[Step X/Y · ETA ~Ns]` nelle pill dei tool) per le lavorazioni multi-step e silenziando le risposte corte. Raccoglie inoltre telemetria a basso overhead (`PostInvocation` e `Stop` hook) registrando l'accuratezza delle stime ETA (`etaCalibrationFactor`), il volume invocazioni per plugin/skill, i tassi di successo dei tool e il consumo di token.
 - **Guida completa**: [`plugins/telemetry-analytics/README.md`](./plugins/telemetry-analytics/README.md)
 
 ### 9. `code-inspector`

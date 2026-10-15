@@ -2,17 +2,18 @@
 
 /**
  * Telemetry & Usage Analytics Reporter
- * Generates structured Markdown or JSON reports from collected Antigravity telemetry.
+ * Generates structured Markdown, JSON, or CSV reports from collected Antigravity telemetry,
+ * including step latency and ETA estimation accuracy metrics.
  */
 
-import { readFileSync, existsSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, unlinkSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, basename } from 'node:path';
 
 // Watchdog safety guard
 const WATCHDOG_TIMEOUT_MS = 10000;
 const safetyWatchdog = setTimeout(() => {
-  console.error('[FATAL TIMEOUT] report.mjs ha superato il timeout di sicurezza.');
+  console.error('[FATAL TIMEOUT] report.mjs exceeded the safety timeout.');
   process.exit(1);
 }, WATCHDOG_TIMEOUT_MS);
 safetyWatchdog.unref();
@@ -65,21 +66,50 @@ function parseArgs() {
   return options;
 }
 
-function renderMarkdownReport(data, scopeLabel, isGlobal) {
+function renderMarkdownReport(data, scopeLabel) {
   const lines = [];
-  lines.push(`# 📊 Report Telemetria & Analytics: ${scopeLabel}\n`);
+  lines.push(`# Report Telemetria & Analytics: ${scopeLabel}\n`);
 
-  lines.push(`- **Invocazioni Registrate**: \`${data.totalInvocations}\``);
-  lines.push(`- **Tempo Stimato Esecuzione Turni**: \`${formatDuration(data.totalDurationMs)}\``);
+  const totalInvocations = data.totalInvocations || 0;
+  const totalToolCalls = Object.values(data.tools || {}).reduce((acc, t) => acc + (t.calls || 0), 0);
+  const totalSteps = Math.max(data.totalSteps || 0, totalToolCalls);
+  const totalDurationMs = data.totalDurationMs || 0;
+  const avgStepMs = totalSteps > 0 ? Math.round(totalDurationMs / totalSteps) : 0;
+
+  lines.push(`- **Invocazioni Registrate**: \`${totalInvocations}\` (\`${totalSteps}\` step/tool registrati)`);
+  lines.push(`- **Tempo Esecuzione Turni**: \`${formatDuration(totalDurationMs)}\` (media per step/tool: \`${formatDuration(avgStepMs)}\`)`);
 
   const totalTokens = (data.totalInputTokens || 0) + (data.totalOutputTokens || 0);
   const cacheTokens = data.totalCacheReadTokens || 0;
-  const cacheRatio = totalTokens + cacheTokens > 0 ? ((cacheTokens / (totalTokens + cacheTokens)) * 100).toFixed(1) : '0.0';
+  const cacheRatio =
+    totalTokens + cacheTokens > 0 ? ((cacheTokens / (totalTokens + cacheTokens)) * 100).toFixed(1) : '0.0';
 
-  lines.push(`- **Token Consumati**: Input \`${formatTokens(data.totalInputTokens || 0)}\` | Output \`${formatTokens(data.totalOutputTokens || 0)}\` | Cache Read \`${formatTokens(cacheTokens)}\` (${cacheRatio}% cache hit)\n`);
+  lines.push(
+    `- **Token Consumati**: Input \`${formatTokens(data.totalInputTokens || 0)}\` | Output \`${formatTokens(data.totalOutputTokens || 0)}\` | Cache Read \`${formatTokens(cacheTokens)}\` (${cacheRatio}% cache hit)\n`
+  );
+
+  // ETA Accuracy & Calibration Section
+  lines.push('## Stime ETA & Calibrazione Tempi\n');
+  const etaTasks = data.etaTrackedTasks || 0;
+  const calibration = typeof data.etaCalibrationFactor === 'number' ? data.etaCalibrationFactor.toFixed(2) : '1.00';
+  if (etaTasks === 0) {
+    lines.push(
+      `_Nessuna lavorazione multi-step con ETA completata ancora registrata (Fattore di calibrazione attivo: \`${calibration}x\`)._\n`
+    );
+  } else {
+    const estMs = data.totalEstimatedMs || 0;
+    const actMs = data.totalActualEtaTaskMs || 0;
+    const driftPct = estMs > 0 ? (((actMs - estMs) / estMs) * 100).toFixed(1) : '0.0';
+    const driftSign = Number(driftPct) > 0 ? `+${driftPct}%` : `${driftPct}%`;
+    lines.push('| Task Multi-Step Tracciati | Somma ETA Stimata | Tempo Reale Effettivo | Scostamento Medio | Fattore Calibrazione |');
+    lines.push('| :---: | :---: | :---: | :---: | :---: |');
+    lines.push(
+      `| **${etaTasks}** | \`${formatDuration(estMs)}\` | \`${formatDuration(actMs)}\` | **${driftSign}** | \`${calibration}x\` |\n`
+    );
+  }
 
   // Plugin Breakdown Table
-  lines.push('## 🧩 Ripartizione per Plugin & Skill\n');
+  lines.push('## Ripartizione per Plugin & Skill\n');
   const plugins = Object.entries(data.plugins || {});
   if (plugins.length === 0) {
     lines.push('_Nessun plugin o skill intercettata in questo ambito._\n');
@@ -97,7 +127,7 @@ function renderMarkdownReport(data, scopeLabel, isGlobal) {
   }
 
   // Tools Breakdown Table
-  lines.push('## 🛠️ Utilizzo Tool di Sistema\n');
+  lines.push('## Utilizzo Tool di Sistema\n');
   const tools = Object.entries(data.tools || {});
   if (tools.length === 0) {
     lines.push('_Nessun tool di sistema registrato._\n');
@@ -118,14 +148,16 @@ function renderMarkdownReport(data, scopeLabel, isGlobal) {
 }
 
 function exportCsv(eventsFile) {
+  const header =
+    'Timestamp,SessionId,Workspace,DurationMs,EtaEstimatedMs,EtaActualMs,InputTokens,OutputTokens,CacheTokens,Plugins,Tools';
   if (!existsSync(eventsFile)) {
-    console.log('Timestamp,SessionId,Workspace,DurationMs,InputTokens,OutputTokens,CacheTokens,Plugins,Tools');
+    console.log(header);
     return;
   }
 
   const raw = readFileSync(eventsFile, 'utf-8');
   const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  console.log('Timestamp,SessionId,Workspace,DurationMs,InputTokens,OutputTokens,CacheTokens,Plugins,Tools');
+  console.log(header);
 
   for (const line of lines) {
     try {
@@ -133,10 +165,10 @@ function exportCsv(eventsFile) {
       const pList = Object.keys(ev.plugins || {}).join(';');
       const tList = Object.keys(ev.tools || {}).join(';');
       console.log(
-        `"${ev.ts}","${ev.conversationId}","${ev.workspaceName || ''}",${ev.durationMs || 0},${ev.tokens?.input || 0},${ev.tokens?.output || 0},${ev.tokens?.cacheRead || 0},"${pList}","${tList}"`
+        `"${ev.ts}","${ev.conversationId}","${ev.workspaceName || ''}",${ev.durationMs || 0},${ev.etaEstimatedMs || ''},${ev.etaActualMs || ''},${ev.tokens?.input || 0},${ev.tokens?.output || 0},${ev.tokens?.cacheRead || 0},"${pList}","${tList}"`
       );
     } catch {
-      // Ignore
+      // Ignore malformed lines
     }
   }
 }
@@ -153,8 +185,12 @@ function main() {
     if (existsSync(analyticsDir)) {
       const files = readdirSync(analyticsDir);
       for (const f of files) {
-        if (f.startsWith('.cursor_') && f.endsWith('.json')) {
-          try { unlinkSync(join(analyticsDir, f)); } catch {}
+        if ((f.startsWith('.cursor_') || f.startsWith('.eta_')) && f.endsWith('.json')) {
+          try {
+            unlinkSync(join(analyticsDir, f));
+          } catch {
+            // Ignore unlink errors
+          }
         }
       }
     }
@@ -169,7 +205,7 @@ function main() {
 
   if (!existsSync(summaryFile)) {
     console.log(`Nessun dato di telemetria disponibile in ${analyticsDir}.`);
-    console.log('I dati vengono raccolti automaticamente durante l\'esecuzione dell\'agente con il plugin attivo.');
+    console.log("I dati vengono raccolti automaticamente durante l'esecuzione dell'agente con il plugin attivo.");
     process.exit(0);
   }
 
@@ -177,7 +213,7 @@ function main() {
   try {
     summary = JSON.parse(readFileSync(summaryFile, 'utf-8'));
   } catch (err) {
-    console.error(`Errore durante la lettura di ${summaryFile}: ${err.message}`);
+    console.error(`Error reading ${summaryFile}: ${err.message}`);
     process.exit(1);
   }
 
@@ -188,22 +224,27 @@ function main() {
     targetData = summary.global;
     scopeLabel = 'Globale (Tutti i Workspace)';
   } else {
-    // Workspace search
     const normalizedTarget = options.workspace.replace(/\\/g, '/').toLowerCase();
-    const wsMatch = Object.entries(summary.workspaces || {}).find(([k]) => k.replace(/\\/g, '/').toLowerCase() === normalizedTarget);
+    const wsMatch = Object.entries(summary.workspaces || {}).find(
+      ([k]) => k.replace(/\\/g, '/').toLowerCase() === normalizedTarget
+    );
 
     if (wsMatch) {
       targetData = wsMatch[1];
       scopeLabel = `Workspace [${targetData.name || basename(options.workspace)}]`;
     } else {
-      // Empty placeholder for workspace
       targetData = {
         name: basename(options.workspace),
         totalInvocations: 0,
+        totalSteps: 0,
         totalDurationMs: 0,
         totalInputTokens: 0,
         totalOutputTokens: 0,
         totalCacheReadTokens: 0,
+        etaTrackedTasks: 0,
+        totalEstimatedMs: 0,
+        totalActualEtaTaskMs: 0,
+        etaCalibrationFactor: 1.0,
         plugins: {},
         tools: {}
       };
@@ -216,7 +257,7 @@ function main() {
     process.exit(0);
   }
 
-  const markdown = renderMarkdownReport(targetData, scopeLabel, options.global);
+  const markdown = renderMarkdownReport(targetData, scopeLabel);
   console.log(markdown);
 }
 
