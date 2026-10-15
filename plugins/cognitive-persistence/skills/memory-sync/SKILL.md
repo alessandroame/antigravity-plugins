@@ -1,8 +1,6 @@
 ---
 name: memory-sync
-description: >-
-  Protocollo di sincronizzazione della memoria di progetto. Utilizza a fine task per redigere frammenti ADR,
-  aggiornare le lezioni apprese in MEMORY.md, consolidare WORKLOG.md e allineare lo stato delle feature in DESIDERATA.md.
+description: Sincronizza la memoria di progetto a fine task creando il frammento ADR e aggiornando MEMORY.md, WORKLOG.md e DESIDERATA.md. Use this skill when the user runs /memory-sync or finishes a task.
 ---
 
 # Project Memory & Knowledge Persistence Runbook
@@ -27,7 +25,7 @@ Garantire che l'esperienza acquisita, i refactoring complessi e le decisioni arc
 [3. Sync MEMORY.md]      ──► Registrazione di lezioni apprese e antipattern
                │
                ▼
-[4. Sync DESIDERATA.md]  ──► Aggiornamento stato feature (🟡 -> 🟢)
+[4. Sync DESIDERATA.md]  ──► Aggiornamento stato feature (🟡 -> 🟢) e chiusura eventuale NOTE-XXX in NOTES.md
                │
                ▼
 [5. Resoconto all'Utente] ──► Presentazione delle modifiche e guida al collaudo
@@ -57,6 +55,6 @@ Se è stata riscontrata una fragilità non ovvia:
 - **Causa Radice**: Spiegazione tecnica del fenomeno.
 - **Pattern Preventivo Obbligatorio**: Regola architetturale da seguire in futuro.
 
-### C. Matrice in `DESIDERATA.md`
-- Aggiornare lo stato della riga corrispondente (`🟡 In Lavorazione` $\to$ `🟢 Completato`).
-- Aggiungere una nota concisa con il riferimento all'implementazione.
+### C. Matrice in `DESIDERATA.md` e Allineamento `NOTES.md`
+- Aggiornare lo stato della riga corrispondente in `DESIDERATA.md` (`🟡 In Lavorazione` $\to$ `🟢 Completato`) aggiungendo una nota concisa con il riferimento all'implementazione.
+- Se l'intervento completato risolve una nota aperta in `NOTES.md`, spostare la relativa scheda `[NOTE-XXX]` sotto `## ✅ Analizzate & Consolidate (Resolved)` con stato `✅ Completata (<Data>)`.

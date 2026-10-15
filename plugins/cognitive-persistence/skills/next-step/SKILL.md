@@ -1,9 +1,6 @@
 ---
 name: next-step
-description: >-
-  Avvia la lavorazione del prossimo elemento di DESIDERATA.md. Scansiona la matrice di stato,
-  estrae vincoli e lezioni apprese da MEMORY.md e genera il briefing operativo con prompt deterministico.
-  Use this skill when the user runs /next-step, asks what to do next, or requests to pull and start the next planned task from DESIDERATA.md.
+description: Avvia il prossimo step da DESIDERATA.md estraendo i vincoli da MEMORY.md e generando il briefing operativo. Use this skill when the user runs /next-step or asks to start the next planned task.
 ---
 
 # Next Step: Runbook di Avvio Task da DESIDERATA
@@ -20,8 +17,8 @@ Fornire un punto di ingresso deterministico all'inizio di ogni sessione o task d
 [Invocazione /next-step o Avvio Sessione]
                │
                ▼
-[1. Scansione DESIDERATA.md] ──► Ricerca task 🟡 In Lavorazione o 🔴 Pianificato
-               │
+[1. Scansione DESIDERATA.md] ──► Ricerca task 🟡 In Lavorazione o 🔴 Prioritario / Pianificato
+               │                  (+ check non bloccante di eventuali note aperte in NOTES.md)
                ▼
 [2. Iniezione Contesto]      ──► Scansione MEMORY.md e WORKLOG.md (vincoli/lezioni)
                │
@@ -44,16 +41,17 @@ Fornire un punto di ingresso deterministico all'inizio di ogni sessione o task d
 
 Quando questa skill viene invocata (tramite comando slash `/next-step` o richiesta esplicita dell'utente):
 
-### Step 1: Ispezione e Risoluzione Priorità di `DESIDERATA.md`
+### Step 1: Ispezione e Risoluzione Priorità di `DESIDERATA.md` (e Check `NOTES.md`)
 
-1. Leggi il file `DESIDERATA.md` situato alla radice del workspace.
-   - Se il file non esiste, guida l'utente nella creazione della matrice o richiedi dove reperire l'elenco dei requisiti.
+1. Leggi il file `DESIDERATA.md` situato alla radice del workspace (e controlla se esiste `NOTES.md`).
+   - Se `DESIDERATA.md` non esiste, guida l'utente nella creazione della matrice o richiedi dove reperire l'elenco dei requisiti.
+   - Se in `NOTES.md` sono presenti annotazioni in stato `📥 Da Analizzare`, includi una nota informativa non bloccante nel briefing: *"Promemoria: sono presenti N note aperte in `NOTES.md` (invoca `/review-notes` quando desideri analizzarle)."*
 2. Applica la seguente **regola gerarchica di risoluzione**:
    - **Priorità 1 (Ripresa Task Aperto)**: Cerca righe con stato `🟡 In Lavorazione`.
      - *Azione*: Se è presente un task in corso, selezionalo prioritariamente. Segnala all'utente: *"Rilevato task non concluso da una sessione precedente: [Nome Feature]. È prioritario completare questo intervento prima di avviare nuovi task."*
-   - **Priorità 2 (Nuovo Task Pianificato)**: Se nessun task è in corso, seleziona la **prima** riga con stato `🔴 Pianificato` procedendo dall'alto verso il basso della tabella.
+   - **Priorità 2 (Nuovo Task Prioritario o Pianificato)**: Se nessun task è in corso, seleziona la **prima** riga con stato `🔴 Prioritario` o `🔴 Pianificato` (o `⚪ Pianificato` se non vi sono `🔴`) procedendo dall'alto verso il basso della tabella.
    - **Priorità 3 (Backlog Esaurito)**: Se tutti gli elementi sono `🟢 Completato`:
-     - *Azione*: Notifica all'utente che tutti i desiderata pianificati sono stati completati con successo. Non mutare lo stato e richiedi se si desidera definire nuovi requisiti.
+     - *Azione*: Notifica all'utente che tutti i desiderata pianificati sono stati completati con successo (suggerendo `/review-notes` se vi sono note aperte in `NOTES.md`).
 
 ### Step 2: Estrazione del Contesto Cognitivo (`MEMORY.md` e `WORKLOG.md`)
 

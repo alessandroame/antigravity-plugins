@@ -1,11 +1,11 @@
 {
   "name": "cognitive-persistence",
   "displayName": "Cognitive Persistence & Project Memory",
-  "description": "Preserva la continuità architetturale e la memoria tra sessioni: frammenti di log ADR, lezioni apprese in MEMORY.md e matrice di avanzamento in DESIDERATA.md.",
-  "version": "1.1.0",
+  "description": "Preserva la continuità architetturale e la memoria tra sessioni: cattura pensieri in-flight in NOTES.md (/take-note), analisi differita (/review-notes), lezioni in MEMORY.md, ADR in WORKLOG.md e stato in DESIDERATA.md (/next-step).",
+  "version": "1.2.0",
   "suggestedPrompts": [
-    "Cerca il prossimo desiderata pianificato con /next-step e avvia l'intervento",
-    "Sincronizza la memoria di progetto con /memory-sync e aggiorna MEMORY.md",
-    "Aggiorna lo stato di avanzamento delle funzionalità in DESIDERATA.md"
+    "Annota un pensiero rapido in NOTES.md senza interrompere il task con /take-note",
+    "Mostra le note aperte in NOTES.md e avvia l'analisi approfondita con /review-notes",
+    "Cerca il prossimo desiderata pianificato con /next-step e avvia l'intervento"
   ]
 }

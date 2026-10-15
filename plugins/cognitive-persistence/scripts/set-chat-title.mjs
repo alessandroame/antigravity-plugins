@@ -24,7 +24,7 @@ function resolveConversationId(explicitId) {
     return explicitId.trim();
   }
 
-  // Risoluzione automatica: scansione della cartella brain più recente
+  // Risoluzione automatica: scansione della cartella brain con transcript più recente
   const home = getHomeDir();
   const brainCandidates = [
     join(home, '.gemini', 'antigravity', 'brain'),
@@ -38,7 +38,11 @@ function resolveConversationId(explicitId) {
           .filter((d) => /^[a-f0-9-]{36}$/i.test(d))
           .map((d) => {
             const fullPath = join(brainDir, d);
-            return { id: d, mtime: statSync(fullPath).mtimeMs };
+            const transcriptPath = join(fullPath, '.system_generated', 'logs', 'transcript.jsonl');
+            const mtime = existsSync(transcriptPath)
+              ? statSync(transcriptPath).mtimeMs
+              : statSync(fullPath).mtimeMs;
+            return { id: d, mtime };
           })
           .sort((a, b) => b.mtime - a.mtime);
 

@@ -65,3 +65,10 @@ Questo documento registra vincoli stabili, particolarità del runtime di Google 
 - **Causa Radice**: Il processo locale `language_server` genera un riassunto del primo turno e aggiorna `conversation_summaries.db`. La modifica diretta del database SQLite non forza la notifica reattiva al frontend Electron.
 - **Pattern Preventivo Obbligatorio**: Per aggiornare la titolazione di una sessione attiva in tempo reale, invocare l'endpoint Connect-RPC `https://127.0.0.1:<port>/exa.language_server_pb.LanguageServerService/UpdateConversationAnnotations` con metodo `POST`, header `x-codeium-csrf-token: <csrf>` (estratto dal runtime frontend) e payload `{"cascadeId": "<id>", "annotations": {"title": "<titolo>"}}`. L'operazione sincronizza contestualmente il database SQLite e invia lo stream reattivo alla sidebar dell'interfaccia utente.
 
+---
+
+## 7. Risoluzione Automatica della Conversazione Attiva su NTFS (`transcript.jsonl` mtime)
+- **Problema Riscontrato**: Ordinare le directory `~/.gemini/antigravity/brain/<conversation-id>` utilizzando `statSync(fullPath).mtimeMs` della cartella padre seleziona l'ultima conversazione in cui è stato creato un artefatto alla radice, non la conversazione attualmente attiva.
+- **Causa Radice**: Su filesystem NTFS (Windows), l'`mtime` di una directory padre varia solo quando vengono aggiunti o rimossi file figli diretti; la scrittura continua dei turni nel file annidato `.system_generated/logs/transcript.jsonl` non aggiorna l'`mtime` di `brain/<conversation-id>`.
+- **Pattern Preventivo Obbligatorio**: Per identificare programmaticamente la sessione di chat attiva (es. in `set-chat-title.mjs`), leggere prioritariamente `statSync(join(fullPath, '.system_generated', 'logs', 'transcript.jsonl')).mtimeMs`, ripiegando sull'`mtime` della directory solo come fallback.
+
