@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-2">
+  <div class="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+    <!-- Header + Segmented Mode Selector -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-[var(--border)]">
+      <div>
+        <div class="text-xs font-mono text-[var(--muted-foreground)]">ISPEZIONE FLUSSO (/how-its-made)</div>
+        <h3 class="text-sm font-semibold text-[var(--foreground)]">{{FEATURE_TITLE}}</h3>
+      </div>
+      <div class="inline-flex rounded-lg border border-[var(--border)] bg-[var(--background)] p-0.5" role="tablist" aria-label="Selettore modalità visualizzazione">
+        <button
+          id="tab-tree"
+          type="button"
+          onclick="switchView('tree')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)]"
+          role="tab"
+          aria-selected="true">
+          Albero Testuale
+        </button>
+        <button
+          id="tab-graph"
+          type="button"
+          onclick="switchView('graph')"
+          class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          role="tab"
+          aria-selected="false">
+          Grafico a Blocchi
+        </button>
+      </div>
+    </div>
+
+    <!-- View 1: Monospace Spine Tree (max 65 chars/line) -->
+    <div id="view-tree" class="block">
+      <pre class="text-xs font-mono leading-relaxed overflow-x-auto p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)]">  [INGRESSO] {{ENTRY_LABEL}} ({{ENTRY_LOC}})
+      │
+      ▼
+  ◇ BIVIO 1: {{GUARD_CONDITION}}? ({{GUARD_LOC}})
+      ├── [NO] ──► [USCITA ANTICIPATA] {{EARLY_EXIT_DESC}}
+      └── [SÌ] ──► prosegue nel flusso principale
+                    │
+                    ▼
+  1. [PURE] {{STEP1_LABEL}} ({{STEP1_LOC}})
+      └── {{STEP1_DETAIL}}
+      │
+      ▼
+  2. [STATE + I/O] {{STEP2_LABEL}} ({{STEP2_LOC}})
+      └── {{STEP2_DETAIL}}
+      │
+      ▼
+  [USCITA] {{EXIT_LABEL}} ({{EXIT_LOC}})</pre>
+    </div>
+
+    <!-- View 2: Vertical Block Flowchart -->
+    <div id="view-graph" class="hidden">
+      <div class="flex flex-col items-center space-y-1.5 p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs">
+        <!-- Entry Node -->
+        <div class="px-4 py-1.5 rounded-full border-2 border-[var(--primary)] bg-[var(--card)] font-mono font-semibold">
+          [INGRESSO] {{ENTRY_LABEL}} ({{ENTRY_LOC}})
+        </div>
+        <div class="text-[var(--muted-foreground)] font-mono">▼</div>
+
+        <!-- Fork / Guard Card -->
+        <div class="w-full max-w-md border border-[var(--border)] rounded-lg p-2.5 bg-[var(--card)]">
+          <div class="font-semibold text-center mb-2">◇ BIVIO 1: {{GUARD_CONDITION}}? ({{GUARD_LOC}})</div>
+          <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="p-2 rounded border border-[var(--border)] bg-[var(--background)]">
+              <div class="font-mono font-semibold text-[var(--muted-foreground)]">Ramo [NO]</div>
+              <div class="mt-0.5">Uscita Anticipata: {{EARLY_EXIT_DESC}}</div>
+            </div>
+            <div class="p-2 rounded border border-[var(--primary)] bg-[var(--background)]">
+              <div class="font-mono font-semibold">Ramo [SÌ]</div>
+              <div class="mt-0.5">Procede a Step 1 ▼</div>
+            </div>
+          </div>
+        </div>
+        <div class="text-[var(--muted-foreground)] font-mono">▼</div>
+
+        <!-- Process Step 1 -->
+        <div class="w-full max-w-md px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--card)] flex justify-between items-center gap-2">
+          <span><strong>1. {{STEP1_LABEL}}</strong> — {{STEP1_DETAIL}}</span>
+          <span class="font-mono shrink-0 px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)]">[PURE] {{STEP1_LOC}}</span>
+        </div>
+        <div class="text-[var(--muted-foreground)] font-mono">▼</div>
+
+        <!-- Process Step 2 -->
+        <div class="w-full max-w-md px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--card)] flex justify-between items-center gap-2">
+          <span><strong>2. {{STEP2_LABEL}}</strong> — {{STEP2_DETAIL}}</span>
+          <span class="font-mono shrink-0 px-1.5 py-0.5 rounded bg-[var(--background)] border border-[var(--border)]">[STATE+I/O] {{STEP2_LOC}}</span>
+        </div>
+        <div class="text-[var(--muted-foreground)] font-mono">▼</div>
+
+        <!-- Exit Node -->
+        <div class="px-4 py-1.5 rounded-full border-2 border-[var(--primary)] bg-[var(--card)] font-mono font-semibold">
+          [USCITA] {{EXIT_LABEL}} ({{EXIT_LOC}})
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchView(mode) {
+      const treeView = document.getElementById('view-tree');
+      const graphView = document.getElementById('view-graph');
+      const tabTree = document.getElementById('tab-tree');
+      const tabGraph = document.getElementById('tab-graph');
+
+      const activeClasses = ['bg-[var(--primary)]', 'text-[var(--primary-foreground)]'];
+      const inactiveClasses = ['text-[var(--muted-foreground)]', 'hover:text-[var(--foreground)]'];
+
+      if (mode === 'tree') {
+        treeView.classList.remove('hidden');
+        graphView.classList.add('hidden');
+        tabTree.classList.add(...activeClasses);
+        tabTree.classList.remove(...inactiveClasses);
+        tabGraph.classList.remove(...activeClasses);
+        tabGraph.classList.add(...inactiveClasses);
+        tabTree.setAttribute('aria-selected', 'true');
+        tabGraph.setAttribute('aria-selected', 'false');
+      } else {
+        treeView.classList.add('hidden');
+        graphView.classList.remove('hidden');
+        tabGraph.classList.add(...activeClasses);
+        tabGraph.classList.remove(...inactiveClasses);
+        tabTree.classList.remove(...activeClasses);
+        tabTree.classList.add(...inactiveClasses);
+        tabGraph.setAttribute('aria-selected', 'true');
+        tabTree.setAttribute('aria-selected', 'false');
+      }
+    }
+  </script>
+</body>
+</html>

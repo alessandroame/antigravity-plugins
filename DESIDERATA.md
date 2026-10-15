@@ -23,6 +23,7 @@ Questo documento traccia lo stato di sviluppo delle funzionalità, dei plugin e 
 | `proactive-mentorship` | `🟢 Completato` | Scrutinio critico preventivo, prompt refactoring Before/After, tabular token compression, [README](./plugins/proactive-mentorship/README.md). |
 | `skill-governance` | `🟢 Completato` | Two-phase token model, audit dimensionale (A-E), collision check, [README](./plugins/skill-governance/README.md). |
 | `telemetry-analytics` | `🟢 Completato` | Telemetria ibrida, latenza turni, volume invocazioni plugin/skill, parser transcript, [README](./plugins/telemetry-analytics/README.md). |
+| `code-inspector` | `🟢 Completato` | Modello IPO Esteso (Ingresso -> Guardie -> Processo -> Uscita), comando slash `/how-its-made`, selettori `<details>`, tracciamento payload e copertura test, [README](./plugins/code-inspector/README.md). |
 | `starter-plugin` (template) | `🟢 Completato` | Blueprint standard per nuovi plugin con manifest SemVer valido, [README](./templates/starter-plugin/README.md). |
 
 ---
@@ -32,7 +33,7 @@ Questo documento traccia lo stato di sviluppo delle funzionalità, dei plugin e 
 | Modulo / Funzionalità | Stato | Note di Rilascio |
 | :--- | :---: | :--- |
 | Suite di validazione statica (`scripts/validate.mjs`) | `🟢 Completato` | Controllo manifest JSON, SemVer, kebab-case, regole Markdown e frontmatter skill. |
-| Script sincronizzazione fisica (`scripts/sync-to-global.mjs`) | `🟢 Completato` | Clona fisicamente i plugin in `~/.gemini/config/plugins/` rimuovendo junction per caricamento LS immediato. |
+| Script sincronizzazione fisica (`scripts/sync-to-global.mjs`) | `🟢 Completato` | Clona fisicamente i plugin in `~/.gemini/config/plugins/` e li registra in `~/.gemini/config/config.json`. |
 | Meta-skill `install-plugin` (`.agents/skills/install-plugin`) | `🟢 Completato` | Installazione guidata verso configurazione globale e audit collisioni per progetti esterni. |
 | Meta-skill `validate-plugins` (`.agents/skills/validate-plugins`) | `🟢 Completato` | Esecuzione interattiva della suite di test interna. |
 | Documentazione globale di repository (`README.md`) | `🟢 Completato` | Visione architetturale, catalogo, modalità di installazione e contribuzione. |

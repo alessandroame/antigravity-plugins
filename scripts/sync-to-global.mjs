@@ -9,16 +9,18 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const PLUGINS_DIR = path.join(REPO_ROOT, 'plugins');
 const GLOBAL_PLUGINS_DIR = path.join(os.homedir(), '.gemini', 'config', 'plugins');
 
-console.log('🔄 Sincronizzazione plugin fisici verso Antigravity Globale:');
-console.log(`   Sorgente:    ${PLUGINS_DIR}`);
-console.log(`   Destinazione: ${GLOBAL_PLUGINS_DIR}\n`);
+const GLOBAL_CONFIG_FILE = path.join(os.homedir(), '.gemini', 'config', 'config.json');
+
+console.log('Synchronizing physical plugins to global Antigravity directory:');
+console.log(`   Source:      ${PLUGINS_DIR}`);
+console.log(`   Destination: ${GLOBAL_PLUGINS_DIR}\n`);
 
 if (!fs.existsSync(GLOBAL_PLUGINS_DIR)) {
   fs.mkdirSync(GLOBAL_PLUGINS_DIR, { recursive: true });
 }
 
 const pluginEntries = fs.readdirSync(PLUGINS_DIR, { withFileTypes: true });
-let syncedCount = 0;
+const syncedPluginNames = [];
 
 for (const entry of pluginEntries) {
   if (!entry.isDirectory()) continue;
@@ -30,7 +32,7 @@ for (const entry of pluginEntries) {
     continue;
   }
 
-  // Se la destinazione è un link o junction, rimuovila (Antigravity LS ignora reparse points)
+  // Remove existing symlink/junction or directory before copying
   if (fs.existsSync(dest)) {
     const stat = fs.lstatSync(dest);
     if (stat.isSymbolicLink()) {
@@ -40,10 +42,33 @@ for (const entry of pluginEntries) {
     }
   }
 
-  // Copia ricorsiva directory fisica
+  // Perform recursive physical directory copy
   fs.cpSync(src, dest, { recursive: true });
-  console.log(`   [✔ OK] Sincronizzato fisicamente: ${pluginName}`);
-  syncedCount++;
+  console.log(`   [OK] Physically synchronized: ${pluginName}`);
+  syncedPluginNames.push(pluginName);
 }
 
-console.log(`\n🎉 Completato: ${syncedCount} plugin sincronizzati come directory reali in ${GLOBAL_PLUGINS_DIR}`);
+if (fs.existsSync(GLOBAL_CONFIG_FILE)) {
+  try {
+    const rawConfig = fs.readFileSync(GLOBAL_CONFIG_FILE, 'utf-8');
+    const parsedConfig = JSON.parse(rawConfig);
+    if (!parsedConfig.plugins || typeof parsedConfig.plugins !== 'object') {
+      parsedConfig.plugins = {};
+    }
+    let configUpdated = false;
+    for (const name of syncedPluginNames) {
+      if (!parsedConfig.plugins[name]) {
+        parsedConfig.plugins[name] = { enabled: true };
+        configUpdated = true;
+        console.log(`   [OK] Registered in config.json: ${name} (enabled: true)`);
+      }
+    }
+    if (configUpdated) {
+      fs.writeFileSync(GLOBAL_CONFIG_FILE, JSON.stringify(parsedConfig, null, 2) + '\n', 'utf-8');
+    }
+  } catch (err) {
+    console.warn(`   [WARN] Could not update ${GLOBAL_CONFIG_FILE}: ${err.message}`);
+  }
+}
+
+console.log(`\nCompleted: ${syncedPluginNames.length} plugins synchronized in ${GLOBAL_PLUGINS_DIR}`);

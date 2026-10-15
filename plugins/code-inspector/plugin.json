@@ -1,0 +1,11 @@
+{
+  "name": "code-inspector",
+  "displayName": "Code Inspector & Execution Flow Verification",
+  "description": "Ricostruisce e verifica a livello di codice il flusso esecutivo di una funzionalità (Punto di Ingresso -> Guardie -> Processo -> Punto di Uscita), tracciando mutazioni di stato, trasformazioni del payload, copertura test e offrendo selettori espandibili <details> con il codice sorgente esatto.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Esegui /how-its-made per mostrarmi ingresso, processo, uscita e codice di questa funzionalità",
+    "Analizza con /how-its-made il flusso di validazione dati evidenziando guardie, mutazioni di stato e test",
+    "Verifica a livello di codice cosa succede quando viene invocato questo endpoint dall'ingresso all'uscita"
+  ]
+}

@@ -72,3 +72,22 @@ Questo documento registra vincoli stabili, particolarità del runtime di Google 
 - **Causa Radice**: Su filesystem NTFS (Windows), l'`mtime` di una directory padre varia solo quando vengono aggiunti o rimossi file figli diretti; la scrittura continua dei turni nel file annidato `.system_generated/logs/transcript.jsonl` non aggiorna l'`mtime` di `brain/<conversation-id>`.
 - **Pattern Preventivo Obbligatorio**: Per identificare programmaticamente la sessione di chat attiva (es. in `set-chat-title.mjs`), leggere prioritariamente `statSync(join(fullPath, '.system_generated', 'logs', 'transcript.jsonl')).mtimeMs`, ripiegando sull'`mtime` della directory solo come fallback.
 
+---
+
+## 8. Rendering di Blocchi Codice e Link dentro `<details><summary>` in Markdown GFM
+- **Problema Riscontrato**: Inserendo un blocco di codice recintato (` ``` `) o un link Markdown nella riga immediatamente successiva a `</summary>` all'interno di un elemento `<details>`, il parser Markdown della chat di Antigravity tratta il contenuto come blocco HTML grezzo e non formatta né la sintassi del codice né i collegamenti `file://`.
+- **Causa Radice**: La specifica CommonMark / GitHub-Flavored Markdown (GFM) interrompe il contesto di blocco HTML `<details>` e riattiva il parsing Markdown interno solo dopo aver incontrato una riga vuota dopo il tag `</summary>`.
+- **Pattern Preventivo Obbligatorio**: Nei selettori a espansione (es. skill `/how-its-made` del plugin `code-inspector`), lasciare sempre **una riga vuota** subito dopo `</summary>` e prima di `</details>`.
+
+---
+
+## 9. Illeggibilità dei Diagrammi Orizzontali (`flowchart LR`) nella Colonna di Chat
+- **Problema Riscontrato**: I diagrammi `mermaid` con orientamento orizzontale (`flowchart LR`) composti da 4 o più nodi vengono rimpiccioliti drasticamente nella chat di Antigravity, rendendo le scritte microscopiche e schiacciando le frecce dei bivi.
+- **Causa Radice**: Il pannello di chat ha una larghezza orizzontale fissa (~600px) e scorrimento verticale libero. Un grafo `LR` affianca tutti gli step in orizzontale, costringendo il contenitore SVG a scalare il fattore di zoom a $1/N$.
+- **Pattern Preventivo Obbligatorio**:
+  1. Vietare `flowchart LR` per flussi a più di 3 nodi in chat.
+  2. Usare l'**Albero Decisionale a Spina Verticale (` ```text `)** (max 65 caratteri per riga, bivi marcati con `◇ BIVIO` e rami `├── [NO] ──►` / `└── [SÌ] ──►`), che mantiene il font monospace al 100% della dimensione nativa.
+  3. Nei diagrammi `mermaid`, usare esclusivamente **`flowchart TD` (Top-Down)** spezzando i testi lunghi con `<br/>` (massimo 25–28 caratteri per riga) e distinguendo le forme (`([...])` per Ingresso/Uscita, `{...}` per Bivi, `[...]` per Step).
+
+
+

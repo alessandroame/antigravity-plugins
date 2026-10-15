@@ -27,6 +27,8 @@ L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegne
 | **`cognitive-persistence`** | Preserva la continuità architetturale e gestisce i pensieri in corso d'opera: cattura in-flight in `NOTES.md` (`/take-note`), analisi differita (`/review-notes`), diario ADR (`WORKLOG.md`), lezioni in `MEMORY.md` e matrice `DESIDERATA.md` (`/next-step`). | Regola attiva (`rules/AGENTS.md`), 4 Skill (`take-note`, `review-notes`, `next-step`, `memory-sync`) | [Leggi README](./plugins/cognitive-persistence/README.md) |
 | **`proactive-mentorship`** | Coaching architetturale e sui prompt: scrutinio critico preventivo (KISS/YAGNI/casi limite), assenza di adulazione (anti-sycophancy) e refactoring Before/After dei prompt. | Regola attiva (`rules/AGENTS.md`), Skill (`prompt-refactor`) | [Leggi README](./plugins/proactive-mentorship/README.md) |
 | **`skill-governance`** | Governance per skill: audit dimensionale dei trigger (A-E), ottimizzazione budget token, prevenzione collisioni/shadowing e scomposizione a divulgazione progressiva. | Regola attiva (`rules/AGENTS.md`), 3 Skill (`skill-audit`, `skill-token-optimizer`, `skill-collision-check`), Reference, Esempi | [Leggi README](./plugins/skill-governance/README.md) |
+| **`telemetry-analytics`** | Osservabilità e telemetria locale: tracciamento invocazioni plugin/skill, latenza turni, tassi di successo dei tool nativi ed esportazione CSV/JSON. | Regola attiva (`rules/AGENTS.md`), 2 Skill (`plugin-analytics`, `telemetry-export`), Hooks | [Leggi README](./plugins/telemetry-analytics/README.md) |
+| **`code-inspector`** | Verifica a livello di codice delle funzionalità software tramite il modello IPO Esteso (Ingresso -> Guardie -> Processo -> Uscita), tracciamento payload, stato test e selettori `<details>` con il codice sorgente coinvolto. | Regola attiva (`rules/AGENTS.md`), Skill (`/how-its-made`), Template, Esempio | [Leggi README](./plugins/code-inspector/README.md) |
 
 ---
 
@@ -72,6 +74,11 @@ L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegne
 - **Cosa fa**: Raccoglie telemetria a basso overhead tramite parsing batch del log di sessione (`PostInvocation` e `Stop` hook) senza rallentare i singoli tool. Registra volume invocazioni per plugin/skill, latenza effettiva dei turni, tassi di successo dei tool nativi e consumo di token in modalità ibrida (globale e per singolo workspace).
 - **Guida completa**: [`plugins/telemetry-analytics/README.md`](./plugins/telemetry-analytics/README.md)
 
+### 9. `code-inspector`
+- **Goal**: Consentire allo sviluppatore di ricordare, comprendere e verificare rapidamente a livello di codice come funziona una funzionalità software.
+- **Cosa fa**: Espone la regola di ispezione e il comando slash `/how-its-made`, che ricostruisce il flusso secondo il modello **Punto di Ingresso $\to$ Guardie $\to$ Processo $\to$ Punto di Uscita**, classificando ciascun passaggio (`[PURE]`, `[STATE]`, `[I/O]`), tracciando l'evoluzione del payload, collegando i test esistenti e fornendo selettori a espansione `<details>` con gli estratti chirurgici del codice sorgente coinvolto.
+- **Guida completa**: [`plugins/code-inspector/README.md`](./plugins/code-inspector/README.md)
+
 ---
 
 ## 📁 Struttura del Repository
@@ -83,6 +90,7 @@ antigravity-plugins/
 │       ├── install-plugin/            # Meta-skill per installare/collegare plugin in altri repo
 │       └── validate-plugins/          # Meta-skill per eseguire la suite di test interna
 ├── plugins/
+│   ├── code-inspector/                # Verifica flusso IPO (/how-its-made) e selettori codice
 │   ├── cognitive-persistence/         # Triade cognitiva e persistenza memoria
 │   ├── engineering-sobriety/          # Sobrietà, bonifica lessicale e integrità test
 │   ├── engineering-workflow/          # Git governance, worktrees e trace debugging
