@@ -63,3 +63,29 @@ Questo documento definisce gli standard operativi e di comunicazione vincolanti 
    - Le icone sono consentite **esclusivamente** se assolvono a un ruolo funzionale o di sicurezza:
      - Controlli interattivi compatti (es. pulsante di chiusura `X`, menu hamburger, switch di tema) provvisti di attributo `aria-label`.
      - Indicatori di stato semantico (es. marker di sicurezza Verde/Giallo/Rosso, frecce direzionali di trend/vettori) sempre affiancati da testo esplicito per non dipendere unicamente dal canale visivo.
+
+---
+
+## 5. Architettura di Leggibilità Chat (Piramide Invertita & 1-Click Disclosure)
+
+La colonna di chat di Antigravity ha una larghezza utile ridotta (`~600px`). Per prevenire muri di testo e affaticamento visivo, ogni risposta articolata deve separare la sintesi decisionale dall'approfondimento tecnico:
+
+1. **Livello 0-Click (Sempre Visibile — Budget Max `800–1.200` caratteri / `12–15` righe)**:
+   - **Diagnosi / Esito in apertura**: 1–2 frasi dirette che dichiarano il risultato o la risposta principale.
+   - **Punti chiave (Miller's Law)**: massimo **3–5 punti elenco** di primo livello (1 riga per punto). Vietati i sotto-elenchi annidati oltre il 1° livello nel testo in chiaro.
+   - **Domanda o Prossimo Passo (Von Restorff Effect)**: isolare a fine messaggio, su una riga dedicata, l'unica decisione o conferma richiesta all'utente.
+2. **Livello 1-Click (Approfondimenti in Cassetti `<details>` Chiusi di Default)**:
+   - Tabelle di file modificati, metriche di audit, estratti di codice, log di test e spiegazioni architetturali estese devono essere incapsulati in blocchi nativi `<details>`:
+     ```markdown
+     <details>
+     <summary><strong>Titolo Sezione (es. 4 file modificati / Dati Audit)</strong></summary>
+
+     [Contenuto dettagliato, tabelle o blocchi di codice]
+
+     </details>
+     ```
+   - Rispettare sempre la **riga vuota obbligatoria** subito dopo `</summary>` e prima di `</details>` per garantire il rendering Markdown/GFM.
+3. **Vincoli Tipografici per la Colonna Stretta (~600px)**:
+   - **Tabelle**: in chiaro sono ammesse solo tabelle compatte ($\le 3$ colonne e $\le 4$ righe); tutte le altre tabelle vanno collassate dentro `<details>`.
+   - **Anti-Saturazione Grassetto**: utilizzare il grassetto (`**...**`) esclusivamente per l'etichetta iniziale del punto elenco o per il valore metrico chiave (massimo 15% delle parole del paragrafo). Se tutto è in grassetto o inline code, nulla risalta.
+

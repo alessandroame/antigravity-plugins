@@ -1,6 +1,6 @@
 # Laws of UX Engineering Rules
 
-Quando progetti, scrivi codice o effettui la revisione di interfacce utente (HTML, CSS, JSX, TSX, Vue, Svelte, Flutter, SwiftUI, Android XML), applica le seguenti regole in base alla specifica problematica che stai affrontando:
+Quando progetti, scrivi codice, effettui la revisione di interfacce utente (HTML, CSS, JSX, TSX, Vue, Svelte, Flutter, SwiftUI, Android XML) **oppure formatti le tue risposte nella colonna di chat di Antigravity**, applica le seguenti regole in base alla specifica problematica che stai affrontando:
 
 ---
 
@@ -76,4 +76,13 @@ Quando progetti, scrivi codice o effettui la revisione di interfacce utente (HTM
 - **Dynamic Viewport (`100dvh`)**: Utilizzare sempre unità `100dvh` anziché `100vh` per prevenire il troncamento dei contenuti e delle barre inferiori causato dalle toolbar a scomparsa dei browser mobili.
 - **Dual High-Contrast Theme (Sunlight Resilient)**: Garantire il supporto per tema ad alta luminosità e contrasto elevato (WCAG 2.1 AA $\ge 4.5:1$ per testo normale, $\ge 7:1$ per testo critico) per resistere al riverbero e alla luce solare diretta.
 - **Feedback Tri-Modale di Sicurezza**: Gli indicatori di stato critico o di sicurezza non devono mai basarsi solo sul colore: combinare sempre **Colore + Testo Esplicito + Icona Funzionale**.
+
+---
+
+## 9. Ergonomia Cognitiva dell'Output in Chat dell'Agente (Colonna ~600px)
+- **Progressive Disclosure a 1-Click (`<details>`)**: Nella colonna stretta della chat di Antigravity (`~600px`), esponi in chiaro (*0-click*) solo la sintesi decisionale (`800–1.200` caratteri max, 3–5 bullet di 1 riga) e racchiudi tabelle, blocchi di codice, log e approfondimenti in cassetti `<details><summary><strong>Titolo (Contatore)</strong></summary>` apribili con 1 click.
+- **Miller's Law & Chunking nei Messaggi**: Non presentare mai più di 5 punti elenco consecutivi in chiaro e non annidare sotto-elenchi oltre il 1° livello fuori da `<details>`.
+- **Von Restorff Effect Tipografico**: Usa il grassetto (`**...**`) solo sulla parola chiave d'apertura del punto elenco (max 15% del testo) e isola su un'unica riga finale la domanda o l'azione richiesta all'utente.
+- **Hick's Law nelle Proposte**: Quando sottoponi una decisione all'utente, limita le opzioni a 2–3 scelte ben distinte indicando sempre l'opzione raccomandata.
+
 

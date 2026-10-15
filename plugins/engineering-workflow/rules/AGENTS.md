@@ -89,5 +89,8 @@ Quando si riscontra un'anomalia di comportamento, un fallimento di test o un err
    - **Gate 2 (Rigore di Implementazione In-Flight)**: verificare l'isolamento headless del core, l'unicità della sorgente di verità reattiva (SSOT) e la lingua inglese esclusiva nel codice.
    - **Gate 3 (Test Suite di Governance Automatizzata)**: incorporare test statici automatici (`npm test`) che scansionano i file sorgente verificando l'assenza di DOM nel core, l'assenza di token vietati, la conformità delle variabili CSS e l'integrità dei fallback.
    - **Gate 4 (Ispezione Geometrica & Visiva)**: verificare su viewport mobile ristretti (360px–390px) l'assenza di overflow orizzontale e troncamento flexbox (`min-width: 0`, `flex-shrink: 0`).
-   - **Gate 5 (Briefing di Consegna con Evidenza Pre-Flight)**: certificare esplicitamente nella risposta all'utente il superamento dei gate prima di richiedere la conferma di commit o rilascio.
+   - **Gate 5 (Briefing di Consegna Compatto a 1-Click)**: certificare il superamento dei gate senza inondare la chat:
+     - **In chiaro (0-Click)**: esporre solo il sommario dell'intervento (max 3–5 bullet di 1 riga) e l'esito sintetico dei test (es. `Test: PASS`).
+     - **A 1-Click (`<details>`)**: inserire la tabella dettagliata dei file modificati, le verifiche dei Gate 1–4 e i comandi di test eseguiti dentro `<details><summary><strong>Dettaglio File Modificati & Evidenza Pre-Flight (Gate 1–5)</strong></summary>`.
+
 
