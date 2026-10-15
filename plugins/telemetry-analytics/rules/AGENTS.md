@@ -13,34 +13,29 @@ Questo documento definisce i criteri operativi per la gestione delle metriche di
 
 ---
 
-## 2. Protocollo di Stima ETA In-Flight (Doppio Canale + Fast-Path Silence)
+## 2. Protocollo di Stima ETA In-Flight (Solo Pill dei Tool + Auto-Compressione)
 
 Ad ogni turno, l'hook `PreInvocation` (`eta-injector.mjs`) inietta un messaggio effimero `[TELEMETRY-ETA-CLOCK]` contenente l'ora attuale (`Now`), l'ora di avvio del prompt (`PromptStart`), il tempo trascorso (`Elapsed`), il numero di invocazione e i parametri storici (`Baseline` e `Calibration`).
 
 ### 2.1 Filtro Anti-Rumore per Risposte Corte (Fast-Path Silence)
-- **Condizione di Silenzio**: Se il prompt dell'utente richiede una risposta conversazionale diretta (0 tool) o si risolve in un singolo passaggio immediato (`< 10s`, $\le 1$ tool call di sola lettura senza fasi successive), **non stampare alcuna riga ETA** in chat né prefissare i tool.
+- **Condizione di Silenzio**: Se il prompt dell'utente richiede una risposta conversazionale diretta (0 tool) o si risolve in un singolo passaggio immediato (`< 10s`, $\le 1$ tool call di sola lettura senza fasi successive), usare `toolAction` e `toolSummary` ordinari senza indicatore di fase né ETA.
 
-### 2.2 Emissione Obbligatoria su Lavorazioni Multi-Step ($\ge 2$ step operativi / tool)
-Quando la richiesta richiede una lavorazione articolata ($\ge 2$ tool call, modifiche a file, esecuzione test, audit o più turni di ragionamento), applicare obbligatoriamente **entrambi i canali**:
+### 2.2 Emissione Esclusiva nelle Pill dei Tool su Lavorazioni Multi-Step ($\ge 2$ step / tool)
+Quando la richiesta richiede una lavorazione articolata ($\ge 2$ tool call, modifiche a file, esecuzione test, audit o più turni di ragionamento), applicare rigorosamente queste regole:
 
-1. **Canale 1 — Riga di Stato ETA in Chat (All'avvio e ai cambi di fase)**:
-   - Prima di invocare il primo blocco di tool (e ad ogni successivo cambio di fase nei turni intermedi), emettere in chat una riga di stato compatta su singola linea:
-     ```markdown
-     `[ETA: ~45s (Fine stimata: 20:15:10) | Elapsed: 0s | Fase 1/3: Analisi codice e manifest]`
-     ```
-   - Nei turni intermedi successivi (`Invocation #2, #3...`), aggiornare la riga ricalcolando il tempo residuo sulla base dell'`Elapsed` reale fornito da `[TELEMETRY-ETA-CLOCK]`:
-     ```markdown
-     `[ETA residuo: ~20s (Fine stimata: 20:15:08) | Elapsed: 23s | Fase 2/3: Modifica script e regole]`
-     ```
-   - Nella risposta conclusiva di consegna della lavorazione, riportare in calce il consuntivo:
-     ```markdown
-     `[Completato in 39s | ETA iniziale: ~45s | Scostamento: -6s (-13.3%)]`
-     ```
+1. **Divieto Assoluto di Righe ETA nel Testo della Chat**:
+   - È severamente vietato stampare righe `[ETA: ...]`, `[ETA residuo: ...]` o consuntivi `[Completato in ...]` nel corpo del messaggio della chat, sia durante i turni intermedi sia nella risposta finale.
+   - Emettere testo nei turni intermedi impedisce ad Antigravity di raggruppare gli step e lascia blocchi di testo permanenti che non si comprimono a lavoro concluso.
 
-2. **Canale 2 — Avanzamento ed ETA nelle Pill dei Tool (`toolAction` e `toolSummary`)**:
-   - Ogni chiamata ai tool (`view_file`, `replace_file_content`, `write_to_file`, `run_command`, ecc.) eseguita durante una lavorazione multi-step deve iniziare con il prefisso `[Fase/Tot · ETA ~Ns]`:
-     - `toolAction`: `"[1/3 · ETA ~40s] Reading collector script"`
-     - `toolSummary`: `"[1/3 · ETA ~40s] Read collector script"`
+2. **Formato Auto-Comprimibile nelle Pill dei Tool (`Fase X/Y: Descrizione · ~Ns`)**:
+   - Ogni chiamata ai tool (`view_file`, `replace_file_content`, `write_to_file`, `run_command`, ecc.) eseguita durante una lavorazione multi-step deve formattare `toolAction` e `toolSummary` ponendo **la fase e la descrizione concisa dell'azione al primo posto**, seguite dal separatore `·` e dal tempo residuo stimato `~Ns`:
+     - All'avvio (`Invocation #1`):
+       - `toolAction`: `"Fase 1/3: Analisi script e configurazione · ~35s"`
+       - `toolSummary`: `"Fase 1/3: Analisi script e configurazione · ~35s"`
+     - Nei turni successivi (`Invocation #2, #3...`), aggiornare la fase e ricalcolare il tempo residuo in base all'`Elapsed` reale fornito da `[TELEMETRY-ETA-CLOCK]`:
+       - `toolAction`: `"Fase 2/3: Aggiornamento parser e regole · ~18s"`
+       - `toolSummary`: `"Fase 2/3: Aggiornamento parser e regole · ~18s"`
+   - **Auto-Compressione Nativa a Fine Step**: Antigravity mostra `toolAction` in chiaro sopra l'indicatore `Working` mentre il tool è in esecuzione e **lo comprime automaticamente** nella riga di riepilogo (`Explored file >`, `Edited files >`, `Ran command >`) non appena lo step termina, facendo sparire l'ETA a lavoro ultimato.
 
 ### 2.3 Baseline di Calcolo per la Stima
 Per stimare l'ETA, sommare i pesi delle operazioni previste e moltiplicare per il fattore `Calibration` indicato da `[TELEMETRY-ETA-CLOCK]`:

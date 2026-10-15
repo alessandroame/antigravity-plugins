@@ -1,8 +1,8 @@
 {
   "name": "telemetry-analytics",
   "displayName": "Telemetry, Usage Analytics & Live ETA",
-  "description": "Cattura telemetria di esecuzione, inietta l'orologio real-time per stime ETA in-flight su doppio canale (chat + pill tool) e traccia l'accuratezza delle stime.",
-  "version": "1.1.0",
+  "description": "Cattura telemetria di esecuzione, inietta l'orologio real-time per stime ETA in-flight auto-comprimibili nelle pill dei tool (Fase X/Y: Azione · ~Ns) e traccia l'accuratezza delle stime.",
+  "version": "1.2.0",
   "suggestedPrompts": [
     "Mostra il report di utilizzo dei plugin e l'accuratezza delle stime ETA per questo workspace",
     "Mostra le statistiche globali aggregate di Antigravity",

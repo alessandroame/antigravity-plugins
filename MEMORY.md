@@ -93,9 +93,15 @@ Questo documento registra vincoli stabili, particolarità del runtime di Google 
 
 ## 10. Assenza di Orologio nei Sub-Turni LLM e Iniezione via Hook `PreInvocation`
 - **Problema Riscontrato**: Durante le lavorazioni multi-step, il modello LLM riceve il timestamp locale solo nel blocco `ADDITIONAL_METADATA` dell'input utente iniziale. Nelle invocazioni successive (`Invocation #2, #3...` dopo l'esecuzione di tool), il modello è privo di un riferimento temporale aggiornato e non conosce la durata effettiva impiegata dai tool appena conclusi, rischiando di produrre stime ETA inventate.
-- **Causa Radice**: I risultati dei tool contengono i timestamp nel log su disco (`transcript.jsonl`), ma il contesto conversazionale non ricalcola automaticamente `Elapsed` né espone le medie storiche di latenza del workspace. Inoltre, l'estrazione dell'ETA iniziale deve ispezionare sia `step.content` sia `step.tool_calls` (`toolAction`/`toolSummary`) escludendo le righe di `ETA residuo`.
+- **Causa Radice**: I risultati dei tool contengono i timestamp nel log su disco (`transcript.jsonl`), ma il contesto conversazionale non ricalcola automaticamente `Elapsed` né espone le medie storiche di latenza del workspace.
 - **Pattern Preventivo Obbligatorio**: Utilizzare l'hook `PreInvocation` (`plugins/telemetry-analytics/scripts/eta-injector.mjs`) per leggere l'ultimo `USER_INPUT` da `transcript.jsonl`, calcolare `Elapsed` reale (`nowMs - promptStartMs`) e iniettare un `ephemeralMessage` (`[TELEMETRY-ETA-CLOCK]`) con l'ora corrente, i secondi trascorsi, la baseline storica per step e il fattore di calibrazione del workspace (`etaCalibrationFactor`).
 
+---
 
-
-
+## 11. Inquinamento UI da Righe ETA in Chat vs Auto-Compressione Nativa di `toolAction`
+- **Problema Riscontrato**: Stampare righe di stato ETA nel corpo testuale della chat (`[ETA residuo: ...]`) durante i turni intermedi genera blocchi `code` permanenti che vanno a capo nella colonna da 600px, non possono sparire né comprimersi a fine lavoro e rompono il raggruppamento nativo degli step (`Explored file >`, `Edited files >`) di Antigravity. Inoltre, estrarre l'ETA iniziale da `step.content` causa falsi positivi se la chat menziona esempi di testo con `~Ns`.
+- **Causa Radice**: Nel frontend di Antigravity i messaggi testuali emessi dall'assistente sono immutabili e interrompono la catena collassabile dei tool call, mentre i parametri `toolAction` e `toolSummary` vengono mostrati in chiaro sopra `Working` solo finché lo step è attivo e vengono compressi automaticamente dalla UI non appena lo step termina.
+- **Pattern Preventivo Obbligatorio**:
+  1. Vietare qualsiasi emissione di testo ETA o consuntivi temporali nel corpo della chat.
+  2. Veicolare l'avanzamento esclusivamente tramite `toolAction` e `toolSummary` nel formato `Fase X/Y: Descrizione azione · ~Ns` (fase e descrizione in testa, tempo residuo in coda).
+  3. In `eta-injector.mjs` e `collector.mjs`, estrarre l'ETA iniziale esclusivamente da `step.tool_calls` (`toolAction`/`toolSummary`), ignorando `step.content`.

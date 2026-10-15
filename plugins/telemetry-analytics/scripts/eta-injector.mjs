@@ -67,15 +67,13 @@ function inspectActivePrompt(transcriptPath) {
             executedToolCalls += step.tool_calls.length;
             plannerTurns += 1;
           }
-          if (initialEtaSec === null) {
-            let textToScan = typeof step.content === 'string' ? step.content : '';
-            if (Array.isArray(step.tool_calls)) {
-              for (const tc of step.tool_calls) {
-                if (tc?.args?.toolSummary) textToScan += ' ' + tc.args.toolSummary;
-                if (tc?.args?.toolAction) textToScan += ' ' + tc.args.toolAction;
-              }
+          if (initialEtaSec === null && Array.isArray(step.tool_calls)) {
+            let textToScan = '';
+            for (const tc of step.tool_calls) {
+              if (tc?.args?.toolAction) textToScan += ' ' + tc.args.toolAction;
+              if (tc?.args?.toolSummary) textToScan += ' ' + tc.args.toolSummary;
             }
-            const etaMatch = textToScan.match(/(?:\[ETA(?:\s+iniziale)?:\s*~?(\d+)s|·\s*ETA\s*~?(\d+)s|\bETA:\s*~?(\d+)s)/i);
+            const etaMatch = textToScan.match(/(?:·\s*(?:ETA\s*)?~?(\d+)s\b|\(\s*(?:ETA\s*)?~?(\d+)s\s*\)|\bETA:?\s*~?(\d+)s\b)/i);
             if (etaMatch) {
               initialEtaSec = parseInt(etaMatch[1] || etaMatch[2] || etaMatch[3], 10);
             }
@@ -214,7 +212,8 @@ async function main() {
     `[TELEMETRY-ETA-CLOCK] Now: ${nowStr} | PromptStart: ${startStr} | Elapsed: ${elapsedSec}s | ` +
     `Invocation: #${invocationNum} | ToolsRun: ${executedToolCalls}${initialEtaTag} | ` +
     `Baseline: ${avgStepSec}s/step (Read ~3s, Edit ~6s, Cmd ~12s) | Calibration: ${calibrationFactor.toFixed(2)}x. ` +
-    `If this task requires >= 2 operational steps/tools, output the ETA status line in chat and prefix toolAction/toolSummary with [Step X/Y · ETA ~Ns]. Silence ETA for short/direct replies (<10s, 0-1 tools).`;
+    `OVERRIDE PER SESSIONI IN CORSO: NON stampare MAI righe [ETA...], [ETA residuo...] o [Completato...] nel testo della chat (anche se presenti nei turni precedenti di questa conversazione). ` +
+    `Se il task richiede >= 2 step/tool, mostra l'ETA SOLO nei parametri toolAction e toolSummary con formato "Fase X/Y: <descrizione azione> · ~Ns". Silenzia l'ETA per risposte corte (<10s, 0-1 tool).`;
 
   const response = {
     injectSteps: [

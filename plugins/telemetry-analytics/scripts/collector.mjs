@@ -77,17 +77,17 @@ function extractToolCalls(step) {
 }
 
 function extractDeclaredEtaMs(step) {
-  let content = typeof step.content === 'string' ? step.content : '';
-  if (!content && Array.isArray(step.tool_calls)) {
+  let toolText = '';
+  if (Array.isArray(step.tool_calls)) {
     for (const tc of step.tool_calls) {
-      if (tc?.args?.toolSummary) content += ' ' + tc.args.toolSummary;
-      if (tc?.args?.toolAction) content += ' ' + tc.args.toolAction;
+      if (tc?.args?.toolAction) toolText += ' ' + tc.args.toolAction;
+      if (tc?.args?.toolSummary) toolText += ' ' + tc.args.toolSummary;
     }
   }
-  if (!content) return null;
+  if (!toolText) return null;
 
-  // Match patterns like "[ETA: ~45s", "[ETA ~45s", "· ETA ~45s]"
-  const match = content.match(/(?:\[ETA(?:\s+iniziale)?:\s*~?(\d+)s|\[ETA\s+~?(\d+)s|ETA\s*~(\d+)s)/i);
+  // Match patterns like "Fase 1/3: ... · ~45s", "· ETA ~45s", "(~45s)"
+  const match = toolText.match(/(?:·\s*(?:ETA\s*)?~?(\d+)s\b|\(\s*(?:ETA\s*)?~?(\d+)s\s*\)|\bETA:?\s*~?(\d+)s\b)/i);
   if (!match) return null;
   const seconds = parseInt(match[1] || match[2] || match[3], 10);
   if (Number.isNaN(seconds) || seconds <= 0) return null;
