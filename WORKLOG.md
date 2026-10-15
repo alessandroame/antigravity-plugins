@@ -4,6 +4,25 @@ Questo documento traccia la cronologia consolidata delle decisioni architettural
 
 ---
 
+## [2026-10-15] ADR: Integrazione Anti-Rationalization Tables e Posizionamento Agentic Harness Engineering
+
+### Contesto & Motivazione
+Dal confronto architetturale con i repository open-source di riferimento nel dominio dell'**Agentic Harness Engineering** e del **Context Engineering** (`addyosmani/agent-skills`, `obra/superpowers`, `anthropics/skills`, `sevenschulte/agentic-harness`), è emerso che:
+1. I modelli LLM tendono a formulare nel proprio *chain-of-thought* razionalizzazioni interne per aggirare i gate di verifica quando un task appare ridotto (es. omettere `npm test` per modifiche di poche righe, citare numeri di riga a memoria senza `view_file`, cedere il turno su task in background senza `schedule`, o ispezionare file durante `/take-note`).
+2. `README.md` presentava emoji decorative nelle intestazioni di sezione in contrasto con `engineering-sobriety/rules/AGENTS.md`, e `package.json` non includeva i topic standard di indicizzazione open-source (`agentic-harness`, `context-engineering`, `agent-skills`, `agents-md`).
+
+### Decisioni Architetturali
+1. **Integrazione di Anti-Rationalization Tables nei 4 Plugin Operativi Chiave**:
+   - Aggiunta la sezione *Tabella di Anti-Razionalizzazione (Razionalizzazione Interna Vietata $\to$ Vincolo Inaggirabile)* in `engineering-workflow/rules/AGENTS.md`, `execution-guard/rules/AGENTS.md`, `code-inspector/rules/AGENTS.md` e `cognitive-persistence/rules/AGENTS.md`.
+2. **Bonifica `README.md` e Inquadramento Open-Source (`package.json`)**:
+   - Rimosse tutte le emoji decorative dalle intestazioni `h2` di `README.md` e allineata la descrizione di `telemetry-analytics`.
+   - Esplicitati in apertura di `README.md` e nelle `keywords` di `package.json` i descrittori standard del dominio: `agentic-harness`, `context-engineering`, `agent-skills`, `antigravity-plugins`, `antigravity-skills`, `agents-md`, `ai-guardrails`, `cognitive-persistence`.
+
+### Impatto e Verifiche
+- Validazione `npm test` (`node scripts/validate.mjs --all`): 10/10 plugin verificati, 0 errori, 0 avvisi; sincronizzazione globale `npm run sync` completata.
+
+---
+
 ## [2026-10-15] ADR: Riprogettazione ETA su Intera Lavorazione (Zero Log `ephemeralMessage`, Solo `toolAction` se Attendibile e Variata)
 
 ### Contesto & Motivazione

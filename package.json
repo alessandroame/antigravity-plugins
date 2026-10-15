@@ -1,7 +1,7 @@
 {
   "name": "antigravity-plugins",
   "version": "1.0.0",
-  "description": "Modular plugin collection for Google Antigravity",
+  "description": "Modular Agentic Harness Engineering, Context Engineering, and Cognitive Persistence plugins for Google Antigravity",
   "type": "module",
   "scripts": {
     "validate": "node scripts/validate.mjs --all",
@@ -10,7 +10,14 @@
   },
   "keywords": [
     "antigravity",
-    "plugins",
+    "antigravity-plugins",
+    "antigravity-skills",
+    "agentic-harness",
+    "context-engineering",
+    "agent-skills",
+    "agents-md",
+    "ai-guardrails",
+    "cognitive-persistence",
     "agentic-coding",
     "gemini",
     "skills",

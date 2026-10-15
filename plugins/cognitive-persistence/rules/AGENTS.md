@@ -51,3 +51,13 @@ All'inizio di una sessione di sviluppo o quando invocato tramite il comando slas
 2. **Consultazione Vincoli**: Ispeziona `MEMORY.md` per lezioni e vincoli attinenti, e `WORKLOG.md` per lo storico recente.
 3. **Presa in Carico**: Commuta lo stato in `🟡 In Lavorazione` e produce il briefing operativo con prompt deterministico prima di avviare la modifica del codice.
 4. **Ridenominazione Chat**: Rinomina la sessione di chat con il titolo dello step preso in carico (invocando `set-chat-title.mjs`), garantendo tracciabilità immediata nella sidebar di Antigravity.
+
+---
+
+## 5. Tabella di Anti-Razionalizzazione (Isolamento In-Flight & Memory Sync)
+
+| Razionalizzazione Interna dell'Agente (Vietata) | Vincolo Inaggirabile (Rebuttal) |
+| :--- | :--- |
+| *"Mentre eseguo `/take-note`, do una rapida occhiata con `view_file` al modulo citato dall'utente."* | Durante `/take-note` è tassativamente vietato ispezionare il codice o proporre soluzioni: salvare verbatim in `NOTES.md`, confermare in 1 riga e riprendere il task attivo. |
+| *"L'intervento al codice è terminato e i test passano, posso rispondere subito senza aggiornare `WORKLOG.md` e `DESIDERATA.md`."* | Nessun task strutturale è concluso senza l'End-of-Task Sync (`/memory-sync`): creare il frammento ADR e allineare `WORKLOG.md`, `MEMORY.md` e `DESIDERATA.md`. |
+| *"Inizio subito a modificare i file richiesti senza controllare `MEMORY.md`."* | All'avvio di un task, verificare sempre i vincoli stabili in `MEMORY.md` per evitare di reintrodurre bug o antipattern già risolti in passato. |

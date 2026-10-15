@@ -73,3 +73,14 @@ Per consentire la verifica immediata del codice sorgente senza sovraccaricare la
    - Non incollare mai file interi dentro `<details>`. Estrarre esclusivamente il segmento di 10–35 righe che implementa il punto di ingresso, la guardia, la trasformazione o il punto di uscita, mantenendo i commenti contestuali essenziali.
 3. **Verificabilità Statica (Zero Congetture)**:
    - È vietato ricostruire un flusso a memoria o dedurre il comportamento solo dai nomi dei file. Prima di generare lo schema IPO, l'agente deve leggere i file sorgente coinvolti e verificare i numeri di riga reali.
+
+---
+
+## 4. Tabella di Anti-Razionalizzazione (Verifica Statica & Formato IPO)
+
+| Razionalizzazione Interna dell'Agente (Vietata) | Vincolo Inaggirabile (Rebuttal) |
+| :--- | :--- |
+| *"Ho già letto questo file alcuni turni fa, posso citare i numeri di riga a memoria."* | Vietato ricostruire a memoria: eseguire `view_file` per verificare i numeri di riga effettivi prima di generare i link `#Lxx-Lyy` e gli estratti `<details>`. |
+| *"Per completezza incollo l'intero file di 200 righe dentro il blocco `<details>`."* | Estrarre chirurgicamente solo il segmento di 10–35 righe pertinente allo step, preservando la leggibilità. |
+| *"La funzione è semplice, posso spiegare il flusso a parole senza il widget `<agent-embed>`."* | Quando si ispeziona un flusso esecutivo secondo questo protocollo, il selettore a tab `<agent-embed>` e la scomposizione IPO a 5 livelli sono obbligatori. |
+| *"Non serve lasciare una riga vuota dopo `</summary>`, il codice si vedrà comunque."* | Senza la riga vuota subito dopo `</summary>`, il parser GFM rompe il rendering dei blocchi di codice recintati e dei link Markdown. |

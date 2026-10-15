@@ -93,4 +93,13 @@ Quando si riscontra un'anomalia di comportamento, un fallimento di test o un err
      - **In chiaro (0-Click)**: esporre solo il sommario dell'intervento (max 3–5 bullet di 1 riga) e l'esito sintetico dei test (es. `Test: PASS`).
      - **A 1-Click (`<details>`)**: inserire la tabella dettagliata dei file modificati, le verifiche dei Gate 1–4 e i comandi di test eseguiti dentro `<details><summary><strong>Dettaglio File Modificati & Evidenza Pre-Flight (Gate 1–5)</strong></summary>`.
 
+---
 
+## 6. Tabella di Anti-Razionalizzazione (Ingegneria, Test & Git)
+
+| Razionalizzazione Interna dell'Agente (Vietata) | Vincolo Inaggirabile (Rebuttal) |
+| :--- | :--- |
+| *"La modifica riguarda poche righe, non serve rieseguire la suite di test."* | Anche modifiche di 1 riga generano regressioni: eseguire sempre `npm test` e riportare l'esito reale prima di chiudere il task. |
+| *"Conosco già la causa probabile del bug, applico subito un fix senza trace."* | Vietato il debugging a tentativi: se la causa non è isolata con certezza statica, iniettare `[DEBUG-TRACE #X]` e identificare il *Last Known Good Checkpoint*. |
+| *"Faccio `git add .` per comodità, tanto non ci sono file estranei."* | Lo staging massivo è tassativamente vietato: verificare `git status --porcelain` e aggiungere i file singolarmente per percorso esplicito. |
+| *"È una piccola funzione di calcolo, posso lasciarla nel componente UI."* | La logica di dominio appartiene al core headless ed è testabile in Node.js puro senza dipendenze da `window` o `document`. |

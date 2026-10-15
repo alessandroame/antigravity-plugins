@@ -1,22 +1,22 @@
 # Antigravity Plugins
 
-Raccolta modulare di plugin ufficiali e standard ingegneristici per **Google Antigravity**. Ciascun plugin pacchettizza in un'unica unità distribuibile e componibile: regole di comportamento permanente, procedure operative specialistiche (skills), cataloghi di riferimento, configurazioni MCP e lifecycle hooks.
+Framework modulare di **Agentic Harness Engineering**, **Context Engineering** e **Cognitive Persistence** per **Google Antigravity**. Ciascun plugin pacchettizza in un'unica unità distribuibile e componibile: regole di comportamento permanente (`rules/AGENTS.md`), procedure operative a divulgazione progressiva (`skills/<name>/SKILL.md` compatibili con lo standard `agentskills.io`), tabelle di anti-razionalizzazione, cataloghi di riferimento, configurazioni MCP e lifecycle hooks.
 
 ---
 
-## 🏛️ Filosofia e Principi Architetturali
+## Filosofia e Principi Architetturali
 
-L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegneria del software deterministica applicata agli agenti autonomi**:
+L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del software deterministica agli agenti autonomi**:
 
-1. **Modularità e Indipendenza**: ogni plugin affronta un dominio specifico (ergonomia UX, resilienza operativa, disciplina Git, memoria contestuale) e può essere installato singolarmente o combinato con gli altri senza generare accoppiamenti rigidi.
-2. **Efficienza dei Token (Two-Phase Model)**: riduzione drastica del consumo di token del system prompt tramite descrizioni concise e trigger semantici espliciti, delegando documentazione estesa e guide pratiche a file ausiliari caricati solo su effettiva necessità.
-3. **Anti-Sycophancy e Sobrietà**: rifiuto sistematico del linguaggio promozionale, dell'adulazione passiva e dei convenevoli futili in favore di comunicazioni dirette, quantificabili e ancorate a evidenze empiriche.
-4. **Resilienza Operativa**: prevenzione attiva degli stalli silenti in background tramite watchdog reattivi, circuit breaker quantitativi salva-token e rollback immediato su regressioni.
-5. **Continuità Cognitiva**: eliminazione dell'amnesia tra sessioni diverse tramite la Triade Cognitiva di Progetto (`MEMORY.md`, `WORKLOG.md`, `DESIDERATA.md`).
+1. **Modularità e Indipendenza**: ogni plugin governa un dominio specifico (ergonomia UX, resilienza operativa, disciplina Git, memoria contestuale, verifica del codice) e può essere installato singolarmente o combinato con gli altri senza accoppiamenti rigidi.
+2. **Context Engineering & Progressive Disclosure (Two-Phase Model)**: riduzione del consumo di token del system prompt tramite frontmatter YAML concisi (80–250 caratteri) e trigger semantici espliciti, delegando documentazione estesa e guide pratiche a file ausiliari (`references/`, `examples/`, `scripts/`) caricati solo su effettiva necessità.
+3. **Anti-Sycophancy, Sobrietà e Anti-Rationalization Tables**: rifiuto sistematico del linguaggio promozionale e dell'adulazione passiva, affiancato da tabelle di anti-razionalizzazione che intercettano e bloccano le giustificazioni con cui gli LLM tentano di saltare test, verifiche o letture statiche.
+4. **Resilienza Operativa (Harness Guardrails)**: prevenzione attiva degli stalli silenti in background tramite watchdog reattivi, circuit breaker quantitativi salva-token e rollback immediato su regressioni.
+5. **Continuità Cognitiva Cross-Session**: eliminazione dell'amnesia tra sessioni tramite l'architettura 3+1 (`NOTES.md`, `MEMORY.md`, `WORKLOG.md`, `DESIDERATA.md`).
 
 ---
 
-## 📦 Catalogo Completo dei Plugin
+## Catalogo Completo dei Plugin
 
 | Plugin | Scopo Principale (Goal) | Componenti Chiave | Documentazione Dettagliata |
 | :--- | :--- | :--- | :---: |
@@ -27,12 +27,12 @@ L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegne
 | **`cognitive-persistence`** | Preserva la continuità architetturale e gestisce i pensieri in corso d'opera: cattura in-flight in `NOTES.md` (`/take-note`), analisi differita (`/review-notes`), diario ADR (`WORKLOG.md`), lezioni in `MEMORY.md` e matrice `DESIDERATA.md` (`/next-step`). | Regola attiva (`rules/AGENTS.md`), 4 Skill (`take-note`, `review-notes`, `next-step`, `memory-sync`) | [Leggi README](./plugins/cognitive-persistence/README.md) |
 | **`proactive-mentorship`** | Coaching architetturale e sui prompt: scrutinio critico preventivo (KISS/YAGNI/casi limite), assenza di adulazione (anti-sycophancy) e refactoring Before/After dei prompt. | Regola attiva (`rules/AGENTS.md`), Skill (`prompt-refactor`) | [Leggi README](./plugins/proactive-mentorship/README.md) |
 | **`skill-governance`** | Governance per skill: audit dimensionale dei trigger (A-E), ottimizzazione budget token, prevenzione collisioni/shadowing e scomposizione a divulgazione progressiva. | Regola attiva (`rules/AGENTS.md`), 3 Skill (`skill-audit`, `skill-token-optimizer`, `skill-collision-check`), Reference, Esempi | [Leggi README](./plugins/skill-governance/README.md) |
-| **`telemetry-analytics`** | Osservabilità, telemetria locale e stima ETA in-flight: iniezione orologio real-time (`PreInvocation`), output ETA su doppio canale (riga chat + pill tool), calibrazione scostamento e report CSV/JSON. | Regola attiva (`rules/AGENTS.md`), 2 Skill (`plugin-analytics`, `telemetry-export`), Hooks (`eta-injector`, `collector`) | [Leggi README](./plugins/telemetry-analytics/README.md) |
+| **`telemetry-analytics`** | Osservabilità, telemetria locale e stima ETA in-flight: iniezione orologio real-time (`PreInvocation`), output ETA su variazione significativa, calibrazione scostamento e report CSV/JSON. | Regola attiva (`rules/AGENTS.md`), 2 Skill (`plugin-analytics`, `telemetry-export`), Hooks (`eta-injector`, `collector`) | [Leggi README](./plugins/telemetry-analytics/README.md) |
 | **`code-inspector`** | Verifica a livello di codice delle funzionalità software tramite il modello IPO Esteso (Ingresso -> Guardie -> Processo -> Uscita), tracciamento payload, stato test e selettori `<details>` con il codice sorgente coinvolto. | Regola attiva (`rules/AGENTS.md`), Skill (`/how-its-made`), Template, Esempio | [Leggi README](./plugins/code-inspector/README.md) |
 
 ---
 
-## 🎯 Panoramica e Goal di Ciascun Plugin
+## Panoramica e Goal di Ciascun Plugin
 
 ### 1. `engineering-sobriety`
 - **Goal**: Garantire un tono di lavoro professionale, asciutto e scientifico.
@@ -81,7 +81,7 @@ L'ecosistema `antigravity-plugins` è progettato secondo i principi di **ingegne
 
 ---
 
-## 📁 Struttura del Repository
+## Struttura del Repository
 
 ```text
 antigravity-plugins/
@@ -109,7 +109,7 @@ antigravity-plugins/
 
 ---
 
-## 🚀 Modalità di Installazione dei Plugin
+## Modalità di Installazione dei Plugin
 
 I plugin di Antigravity operano a livello globale all'interno della directory di configurazione utente `~/.gemini/config/plugins/` e vengono attivati tramite il file `config.json`.
 
@@ -148,7 +148,7 @@ cp -r plugins/cognitive-persistence ~/.gemini/config/plugins/
 
 ---
 
-## 🛠️ Creazione di un Nuovo Plugin
+## Creazione di un Nuovo Plugin
 
 Per aggiungere un nuovo componente alla raccolta:
 
@@ -176,7 +176,7 @@ Per aggiungere un nuovo componente alla raccolta:
 
 ---
 
-## 🧪 Validazione e Controllo Qualità
+## Validazione e Controllo Qualità
 
 Il repository include uno script di verifica statica in [`scripts/validate.mjs`](./scripts/validate.mjs) invocato tramite `npm test`:
 
@@ -199,7 +199,7 @@ node scripts/validate.mjs plugins/engineering-sobriety
 
 ---
 
-## 🧰 Meta-Skill Interne di Repository (`.agents/skills/`)
+## Meta-Skill Interne di Repository (`.agents/skills/`)
 
 Quando questo repository è aperto direttamente in Antigravity, l'agente dispone di due skill operative a supporto della manutenzione:
 - **`install-plugin`**: procedura per collegare o installare un plugin in un progetto esterno tramite Directory Junction o copia, eseguendo un audit preliminare per rilevare eventuali conflitti con regole preesistenti.

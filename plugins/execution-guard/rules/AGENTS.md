@@ -69,3 +69,14 @@ I processi figli generati (browser headless, WebSocket, server) devono essere se
    - I moduli client devono fornire generatori di payload mock o fixture JSON statiche deterministiche, garantendo l'esecuzione offline affidabile e test < 1s.
 3. **Collaudo Live Mirato e Isolato**:
    - L'invocazione reale di endpoint remoti è consentita esclusivamente in test di integrazione dedicati, il cui unico obiettivo dichiarato sia validare il contratto di schema e la connettività di rete.
+
+---
+
+## 5. Tabella di Anti-Razionalizzazione (Watchdog, Circuit Breaker & Mock)
+
+| Razionalizzazione Interna dell'Agente (Vietata) | Vincolo Inaggirabile (Rebuttal) |
+| :--- | :--- |
+| *"Il comando è passato in background ma finirà tra pochi secondi, posso chiudere il turno senza timer."* | Vietato il *blind turn yielding*: ogni volta che un comando non-daemon restituisce `task-<id>`, invocare `schedule` con `TimerCondition: "<task-id>"` nello stesso turno. |
+| *"Ho ricevuto lo stesso errore due volte, ma con un piccolo ritocco al terzo tentativo funzionerà."* | Al 2° errore identico scatta l'interruzione obbligatoria del Circuit Breaker: fermarsi, analizzare la causa radice o eseguire rollback. |
+| *"Il nuovo codice ha rotto un test esistente, aggiungo una patch sopra per sistemarlo."* | Scatta il *Regression Rollback Guard*: ripristinare immediatamente lo stato funzionante (`git checkout -- <file>`) prima di riprogettare la modifica. |
+| *"Faccio una sola richiesta HTTP reale nel test automatico, non consumerà molta quota."* | I test automatici e i crawler headless devono operare al 100% con mock/fixture deterministiche offline (`?mock=1` o `NODE_ENV=test`). |
