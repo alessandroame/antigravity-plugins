@@ -4,6 +4,32 @@ Questo documento traccia la cronologia consolidata delle decisioni architettural
 
 ---
 
+## [2026-10-15] ADR: Audit Stato Installazione Plugin Globali / Progetto e Sincronizzazione Attuale
+
+### Contesto & Motivazione
+Verifica completa dello stato di allineamento e installazione della suite di plugin sia a livello globale (`~/.gemini/config/plugins/`) che per i singoli workspace/progetti, a fronte delle release SemVer e delle modifiche apportate sul repository `antigravity-plugins`.
+
+### Diagnosi Empirica Rilevata
+1. **Configurazione Globale Pre-Sync**:
+   - `code-inspector` (v1.0.0) e `skill-governance` (v1.0.0) non risultavano installati in `~/.gemini/config/plugins/`.
+   - `telemetry-analytics` era presente come Directory Junction (`d----l`), con conseguente scarto silente da parte del Language Server di Antigravity su Windows (la chiamata RPC `GetAllPlugins` enumerava solo 6 plugin).
+   - `cognitive-persistence` (v1.1.0) e `laws-of-ux` (v1.0.0) erano disallineati rispetto al repository (v1.2.0 e v1.1.0).
+   - Le regole e i runbook dei restanti plugin contenevano versioni non aggiornate ferme al 07/10/2026 (prive delle sezioni anti-razionalizzazione e delle direttive di leggibilità chat).
+2. **Ambito di Discovery per Progetto**:
+   - Confermato il vincolo architetturale: Antigravity non effettua discovery di plugin da `.agents/plugins/` di progetto; l'ingestione avviene esclusivamente dal catalogo globale utente `~/.gemini/config/plugins/`.
+   - Audit progetti: identificata la presenza di vecchie regole e skill loose in repository storici (`ParaMeteo`, `Quiz_VDS-VL`, `WeatherNerdWearOs`) risalenti alla fase pre-plugin, ora incapsulate e gestite globalmente dai rispettivi plugin ufficiali.
+
+### Decisioni Architetturali & Interventi
+1. **Sincronizzazione Fisica Globale (`npm run sync`)**:
+   - Rimozione sicura della junction e copia fisica integrale di tutti i 9 plugin in `~/.gemini/config/plugins/`.
+   - Registrazione formale e abilitazione (`"enabled": true`) di ciascun plugin nel file di configurazione runtime `~/.gemini/config/config.json`.
+2. **Verifica Funzionale Connect-RPC**:
+   - Eseguita interrogazione diretta all'endpoint `LanguageServerService/GetAllPlugins`: tutti i 9 plugin risultano attivi, riconosciuti con `isGlobal: true` e `disabled: false`.
+3. **Validazione Suite di Test**:
+   - Eseguito `npm test` (`scripts/validate.mjs --all`): 10/10 plugin verificati con 0 errori e 0 avvisi.
+
+---
+
 ## [2026-10-15] ADR: Integrazione Anti-Rationalization Tables e Posizionamento Agentic Harness Engineering
 
 ### Contesto & Motivazione
