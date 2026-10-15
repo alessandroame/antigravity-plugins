@@ -86,8 +86,10 @@ function extractDeclaredEtaMs(step) {
   }
   if (!toolText) return null;
 
-  // Match patterns like "Fase 1/3: ... · ~45s", "· ETA ~45s", "(~45s)"
-  const match = toolText.match(/(?:·\s*(?:ETA\s*)?~?(\d+)s\b|\(\s*(?:ETA\s*)?~?(\d+)s\s*\)|\bETA:?\s*~?(\d+)s\b)/i);
+  // Match patterns like "· ETA tot ~45s", "· ETA ~45s", "(~45s)"
+  const match = toolText.match(
+    /(?:·\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\b|\(\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\s*\)|\bETA(?:\s+tot)?:?\s*~?(\d+)s\b)/i
+  );
   if (!match) return null;
   const seconds = parseInt(match[1] || match[2] || match[3], 10);
   if (Number.isNaN(seconds) || seconds <= 0) return null;
@@ -296,6 +298,9 @@ async function main() {
     }
   }
 
+  let savedPausedDurationMs = 0;
+  let savedInitialEtaAtActiveSec = 0;
+
   if (existsSync(etaStateFile)) {
     try {
       const etaState = JSON.parse(readFileSync(etaStateFile, 'utf-8'));
@@ -304,6 +309,12 @@ async function main() {
       }
       if (!savedInitialEtaMs && typeof etaState.initialEtaSec === 'number') {
         savedInitialEtaMs = etaState.initialEtaSec * 1000;
+      }
+      if (typeof etaState.pausedDurationMs === 'number') {
+        savedPausedDurationMs = etaState.pausedDurationMs;
+      }
+      if (typeof etaState.initialEtaAtActiveSec === 'number') {
+        savedInitialEtaAtActiveSec = etaState.initialEtaAtActiveSec;
       }
     } catch {
       // Ignore state read errors
@@ -388,10 +399,14 @@ async function main() {
       let etaOutcome = null;
       if (isFinalize && savedInitialEtaMs && savedPromptStartMs) {
         const endTs = maxTime || Date.now();
-        const totalActualMs = Math.max(1000, endTs - savedPromptStartMs);
+        const totalActiveMs = Math.max(1000, endTs - savedPromptStartMs - savedPausedDurationMs);
+        const remainingActualFromEstimateMs = Math.max(
+          1000,
+          totalActiveMs - savedInitialEtaAtActiveSec * 1000
+        );
         etaOutcome = {
           estimatedMs: savedInitialEtaMs,
-          actualMs: totalActualMs
+          actualMs: remainingActualFromEstimateMs
         };
       }
 

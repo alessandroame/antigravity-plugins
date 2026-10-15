@@ -4,25 +4,26 @@ Questo documento traccia la cronologia consolidata delle decisioni architettural
 
 ---
 
-## [2026-10-15] ADR: Ottimizzazione Ergonomica ETA In-Flight (Solo Pill `toolAction` Auto-Comprimibili, v1.2.0)
+## [2026-10-15] ADR: Riprogettazione ETA su Intera Lavorazione (Zero Log `ephemeralMessage`, Solo `toolAction` se Attendibile e Variata)
 
 ### Contesto & Motivazione
-L'uso empirico del protocollo ETA a doppio canale (v1.1.0) ha evidenziato tre criticità di leggibilità nella colonna di chat di Antigravity:
-1. Le righe `[ETA residuo: ...]` emesse nel testo della chat durante i turni intermedi diventano messaggi permanenti che non possono sparire a lavoro concluso e spezzano il raggruppamento nativo degli step (`Explored file >`, `Edited files >`).
-2. Anteporre `[ETA residuo: ~18s (Fine stimata: HH:MM:SS) | Elapsed: Ns | ...]` costringeva a leggere metriche secondarie prima di comprendere l'azione in corso.
-3. L'analisi di `step.content` in `eta-injector.mjs` e `collector.mjs` poteva intercettare falsi positivi qualora il testo della conversazione citasse stringhe di esempio contenenti `~Ns`.
+Il collaudo sul campo delle versioni precedenti dell'ETA ha evidenziato tre problemi di usabilità:
+1. **Log invasivo nei box dei tool**: L'hook `PreInvocation` (`eta-injector.mjs`) restituiva `injectSteps: [{ ephemeralMessage: "[TELEMETRY-ETA-CLOCK]..." }]` ad ogni invocazione, che Antigravity appendeva visibilmente in fondo all'output di ogni singolo tool eseguito.
+2. **Stima sui singoli pezzi anziché sull'intera lavorazione**: Scrivere `Fase X/Y: ... · ~Ns` su ogni chiamata e dentro `toolSummary` lasciava tag temporali permanenti su ogni riga dello storico (`Explored files >`) e portava il modello a stimare la durata del singolo micro-step anziché dell'intero intervento.
+3. **Stime premature o ridondanti**: L'ETA veniva chiesta già al primo `view_file` esplorativo (quando il perimetro del lavoro non è ancora noto) e ripetuta anche quando la stima non era variata, oltre a conteggiare nell'`Elapsed` il tempo di attesa dell'utente su `ask_question`.
 
 ### Decisioni Architetturali
-1. **Abolizione del Canale Testuale in Chat (`rules/AGENTS.md`)**:
-   - Vietata l'emissione di qualsiasi riga `[ETA: ...]`, `[ETA residuo: ...]` o consuntivo `[Completato in ...]` nel corpo dei messaggi di chat.
-2. **Esclusività delle Pill Auto-Comprimibili (`toolAction` / `toolSummary`) con Formato `Fase X/Y: Descrizione · ~Ns`**:
-   - La fase e la descrizione dell'azione sono posizionate all'inizio, seguite dal tempo residuo stimato (`· ~Ns`), senza orario né `Elapsed`.
-   - Sfrutta il comportamento nativo di Antigravity: `toolAction` è visibile in chiaro sopra `Working` mentre lo step è in corso e si comprime automaticamente nella riga grigia non appena lo step termina, facendo sparire l'ETA a lavoro finito.
-3. **Estrazione ETA Esclusiva da `step.tool_calls` (`eta-injector.mjs` e `collector.mjs`)**:
-   - Rimossa la scansione di `step.content`; la regex `(?:·\s*(?:ETA\s*)?~?(\d+)s\b|\(\s*(?:ETA\s*)?~?(\d+)s\s*\)|\bETA:?\s*~?(\d+)s\b)` legge unicamente `toolAction` e `toolSummary`.
+1. **Silenziamento Totale di `stdout` in `eta-injector.mjs` (`{}\n`)**:
+   - `eta-injector.mjs` aggiorna in background `.eta_<conversationId>.json` (sottraendo le pause utente di `ask_question`) ma restituisce sempre `{}` su `stdout`, eliminando il 100% dei blocchi `[TELEMETRY-ETA-CLOCK]` dai log dei tool. L'agente usa i timestamp nativi `Created At` / `Completed At` già presenti in ogni risposta tool.
+2. **Stima Riferita Esclusivamente all'Intera Lavorazione (`ETA tot ~Ns`) e `toolSummary` Pulito (`rules/AGENTS.md`)**:
+   - Vietato inserire l'ETA in `toolSummary` (lo storico dei singoli pezzi resta sempre pulito).
+   - Nessuna ETA durante la ricognizione iniziale, durante `ask_question` o per task brevi (`< 15s`).
+   - Emissione nel solo `toolAction` (`"<Azione> · ETA tot ~Ns"`) **unicamente quando il perimetro dell'intera lavorazione diventa attendibile** e, in seguito, **solo quando la stima complessiva varia in modo significativo** ($\ge 15\text{s}$ o $\ge 30\%$) rispetto all'indicazione precedente.
+3. **Calibrazione su Tempo Attivo Residuo in `collector.mjs`**:
+   - `collector.mjs` confronta la prima stima attendibile (`initialEtaSec`) con il tempo attivo effettivamente trascorso da quel momento fino a `Stop`, al netto delle pause `ask_question`.
 
 ### Impatto e Verifiche
-- Validazione `npm test` (`node scripts/validate.mjs --all`) e sincronizzazione globale `npm run sync` completate.
+- Validazione `npm test` (`node scripts/validate.mjs --all`) e sincronizzazione globale `npm run sync` completate; verificata la scomparsa immediata dei log `[TELEMETRY-ETA-CLOCK]` dagli output dei tool.
 
 ---
 

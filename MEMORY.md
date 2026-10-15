@@ -91,17 +91,20 @@ Questo documento registra vincoli stabili, particolarità del runtime di Google 
 
 ---
 
-## 10. Assenza di Orologio nei Sub-Turni LLM e Iniezione via Hook `PreInvocation`
-- **Problema Riscontrato**: Durante le lavorazioni multi-step, il modello LLM riceve il timestamp locale solo nel blocco `ADDITIONAL_METADATA` dell'input utente iniziale. Nelle invocazioni successive (`Invocation #2, #3...` dopo l'esecuzione di tool), il modello è privo di un riferimento temporale aggiornato e non conosce la durata effettiva impiegata dai tool appena conclusi, rischiando di produrre stime ETA inventate.
-- **Causa Radice**: I risultati dei tool contengono i timestamp nel log su disco (`transcript.jsonl`), ma il contesto conversazionale non ricalcola automaticamente `Elapsed` né espone le medie storiche di latenza del workspace.
-- **Pattern Preventivo Obbligatorio**: Utilizzare l'hook `PreInvocation` (`plugins/telemetry-analytics/scripts/eta-injector.mjs`) per leggere l'ultimo `USER_INPUT` da `transcript.jsonl`, calcolare `Elapsed` reale (`nowMs - promptStartMs`) e iniettare un `ephemeralMessage` (`[TELEMETRY-ETA-CLOCK]`) con l'ora corrente, i secondi trascorsi, la baseline storica per step e il fattore di calibrazione del workspace (`etaCalibrationFactor`).
+## 10. Invasività di `ephemeralMessage` in `PreInvocation` e Uso dei Timestamp Nativi dei Tool
+- **Problema Riscontrato**: Restituire `injectSteps: [{ ephemeralMessage: "[TELEMETRY-ETA-CLOCK]..." }]` dall'hook `PreInvocation` (`eta-injector.mjs`) ad ogni turno inietta fisicamente il messaggio in coda al box di output di ogni singolo tool nella UI, generando log invasivi e ripetitivi. Inoltre, calcolare `Elapsed` come `nowMs - lastUserInputMs` include erroneamente i tempi di attesa dell'utente durante `ask_question`.
+- **Causa Radice**: Antigravity appende qualsiasi `ephemeralMessage` restituito da `PreInvocation` direttamente all'output visibile dello step precedente. Allo stesso tempo, ogni risposta nativa dei tool espone già nelle prime due righe i timestamp esatti `Created At` e `Completed At` al secondo.
+- **Pattern Preventivo Obbligatorio**:
+  1. `eta-injector.mjs` deve operare in modo silenzioso su `stdout` (`{}\n`), aggiornando il file di stato `.eta_<conversationId>.json` (sottraendo le pause `ask_question`) senza iniettare blocchi `[TELEMETRY-ETA-CLOCK]` nella UI.
+  2. Il modello utilizza direttamente i timestamp nativi `Created At` / `Completed At` presenti nelle risposte dei tool per valutare l'avanzamento temporale.
 
 ---
 
-## 11. Inquinamento UI da Righe ETA in Chat vs Auto-Compressione Nativa di `toolAction`
-- **Problema Riscontrato**: Stampare righe di stato ETA nel corpo testuale della chat (`[ETA residuo: ...]`) durante i turni intermedi genera blocchi `code` permanenti che vanno a capo nella colonna da 600px, non possono sparire né comprimersi a fine lavoro e rompono il raggruppamento nativo degli step (`Explored file >`, `Edited files >`) di Antigravity. Inoltre, estrarre l'ETA iniziale da `step.content` causa falsi positivi se la chat menziona esempi di testo con `~Ns`.
-- **Causa Radice**: Nel frontend di Antigravity i messaggi testuali emessi dall'assistente sono immutabili e interrompono la catena collassabile dei tool call, mentre i parametri `toolAction` e `toolSummary` vengono mostrati in chiaro sopra `Working` solo finché lo step è attivo e vengono compressi automaticamente dalla UI non appena lo step termina.
+## 11. Stima ETA sull'Intera Lavorazione (Mai sui Singoli Pezzi, Solo in `toolAction` se Attendibile e Variata)
+- **Problema Riscontrato**: Ripetere `Fase X/Y: ... · ~Ns` su ogni chiamata a tool e dentro `toolSummary` inquina permanentemente l'elenco espandibile dei singoli pezzi (`Explored files >`, `Edited files >`) e porta il modello a stimare la durata del singolo micro-step anziché dell'intera lavorazione, emettendo stime premature già durante la prima lettura esplorativa.
+- **Causa Radice**: `toolSummary` resta scritto in modo permanente su ogni riga dello storico dei tool, mentre `toolAction` è l'unico indicatore transitorio visibile solo durante l'esecuzione. Inoltre, prima di aver letto i file coinvolti o mentre si attende risposta a `ask_question`, il perimetro dell'intera lavorazione non è noto.
 - **Pattern Preventivo Obbligatorio**:
-  1. Vietare qualsiasi emissione di testo ETA o consuntivi temporali nel corpo della chat.
-  2. Veicolare l'avanzamento esclusivamente tramite `toolAction` e `toolSummary` nel formato `Fase X/Y: Descrizione azione · ~Ns` (fase e descrizione in testa, tempo residuo in coda).
-  3. In `eta-injector.mjs` e `collector.mjs`, estrarre l'ETA iniziale esclusivamente da `step.tool_calls` (`toolAction`/`toolSummary`), ignorando `step.content`.
+  1. L'ETA deve riferirsi **esclusivamente al completamento dell'intera lavorazione** (`ETA tot ~Ns`), mai al singolo step.
+  2. Non inserire **mai** l'ETA in `toolSummary` né nel testo della chat.
+  3. Emettere `<Azione> · ETA tot ~Ns` in `toolAction` (su un solo tool del turno) **solo quando la stima complessiva diventa attendibile** (dopo la ricognizione iniziale, se il lavoro totale residuo è $\ge 15\text{s}$) e **solo quando cambia in modo significativo** ($\ge 15\text{s}$ o $\ge 30\%$) rispetto all'indicazione precedente.
+

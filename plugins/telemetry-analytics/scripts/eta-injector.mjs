@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Real-Time ETA Clock & Baseline Injector for Antigravity PreInvocation Hook.
- * Reads the current conversation transcript and historical workspace metrics to inject
- * an ephemeral timing message before each model invocation.
+ * Event-Driven Whole-Task ETA Injector for Antigravity PreInvocation Hook.
+ * Stays completely silent ({}) during initial blind exploration or when the work
+ * is progressing along the previously announced trajectory. Injects a compact
+ * 1-line clock signal ONLY when a whole-task estimate becomes reliable or needs
+ * recalibration due to significant drift (>= 15s).
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -18,21 +20,32 @@ const safetyWatchdog = setTimeout(() => {
 }, WATCHDOG_TIMEOUT_MS);
 safetyWatchdog.unref();
 
+const SIGNIFICANT_DRIFT_SEC = 15;
+
 function getAnalyticsDir() {
   const custom = process.env.ANTIGRAVITY_ANALYTICS_DIR;
   if (custom) return resolve(custom);
   return join(homedir(), '.gemini', 'antigravity', 'analytics');
 }
 
-function formatClockTime(ms) {
-  const d = new Date(ms);
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
+function parseEtaSecondsFromToolCalls(toolCalls) {
+  if (!Array.isArray(toolCalls)) return null;
+  let textToScan = '';
+  for (const tc of toolCalls) {
+    if (tc?.args?.toolAction) textToScan += ' ' + tc.args.toolAction;
+    if (tc?.args?.toolSummary) textToScan += ' ' + tc.args.toolSummary;
+  }
+  if (!textToScan) return null;
+
+  const etaMatch = textToScan.match(
+    /(?:·\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\b|\(\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\s*\)|\bETA(?:\s+tot)?:?\s*~?(\d+)s\b)/i
+  );
+  if (!etaMatch) return null;
+  const val = parseInt(etaMatch[1] || etaMatch[2] || etaMatch[3], 10);
+  return Number.isNaN(val) || val <= 0 ? null : val;
 }
 
-function inspectActivePrompt(transcriptPath) {
+function inspectActiveWork(transcriptPath, nowMs) {
   if (!transcriptPath || !existsSync(transcriptPath)) {
     return null;
   }
@@ -41,42 +54,69 @@ function inspectActivePrompt(transcriptPath) {
     const raw = readFileSync(transcriptPath, 'utf-8');
     const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
 
-    let lastUserInputMs = null;
+    let workStartMs = null;
+    let pausedDurationMs = 0;
+    let pendingAskQuestionStartMs = null;
     let executedToolCalls = 0;
     let plannerTurns = 0;
-    let initialEtaSec = null;
+    let firstReliableEtaSec = null;
+    let firstReliableEtaAtActiveSec = 0;
+    let lastAnnouncedEtaSec = null;
+    let lastAnnouncedAtActiveSec = 0;
 
     for (const line of lines) {
       try {
         const step = JSON.parse(line);
+        const stepTs = step.created_at ? new Date(step.created_at).getTime() : null;
+        const validTs = stepTs !== null && !Number.isNaN(stepTs);
+
         const isUserStep =
           step.type === 'USER_INPUT' ||
           step.source === 'USER_EXPLICIT' ||
           step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
 
-        if (isUserStep && step.created_at) {
-          const ts = new Date(step.created_at).getTime();
-          if (!Number.isNaN(ts)) {
-            lastUserInputMs = ts;
-            executedToolCalls = 0;
-            plannerTurns = 0;
-            initialEtaSec = null;
-          }
-        } else if (lastUserInputMs !== null) {
-          if (Array.isArray(step.tool_calls) && step.tool_calls.length > 0) {
-            executedToolCalls += step.tool_calls.length;
-            plannerTurns += 1;
-          }
-          if (initialEtaSec === null && Array.isArray(step.tool_calls)) {
-            let textToScan = '';
-            for (const tc of step.tool_calls) {
-              if (tc?.args?.toolAction) textToScan += ' ' + tc.args.toolAction;
-              if (tc?.args?.toolSummary) textToScan += ' ' + tc.args.toolSummary;
+        if (isUserStep && validTs) {
+          workStartMs = stepTs;
+          pausedDurationMs = 0;
+          pendingAskQuestionStartMs = null;
+          executedToolCalls = 0;
+          plannerTurns = 0;
+          firstReliableEtaSec = null;
+          firstReliableEtaAtActiveSec = 0;
+          lastAnnouncedEtaSec = null;
+          lastAnnouncedAtActiveSec = 0;
+          continue;
+        }
+
+        if (workStartMs === null) continue;
+
+        // If returning from an ask_question pause, accumulate the user wait time
+        if (pendingAskQuestionStartMs !== null && validTs && stepTs >= pendingAskQuestionStartMs) {
+          pausedDurationMs += stepTs - pendingAskQuestionStartMs;
+          pendingAskQuestionStartMs = null;
+        }
+
+        if (Array.isArray(step.tool_calls) && step.tool_calls.length > 0) {
+          executedToolCalls += step.tool_calls.length;
+          plannerTurns += 1;
+
+          const activeSecAtStep = validTs
+            ? Math.max(0, Math.round((stepTs - workStartMs - pausedDurationMs) / 1000))
+            : 0;
+
+          const declaredEta = parseEtaSecondsFromToolCalls(step.tool_calls);
+          if (declaredEta !== null) {
+            if (firstReliableEtaSec === null) {
+              firstReliableEtaSec = declaredEta;
+              firstReliableEtaAtActiveSec = activeSecAtStep;
             }
-            const etaMatch = textToScan.match(/(?:·\s*(?:ETA\s*)?~?(\d+)s\b|\(\s*(?:ETA\s*)?~?(\d+)s\s*\)|\bETA:?\s*~?(\d+)s\b)/i);
-            if (etaMatch) {
-              initialEtaSec = parseInt(etaMatch[1] || etaMatch[2] || etaMatch[3], 10);
-            }
+            lastAnnouncedEtaSec = declaredEta;
+            lastAnnouncedAtActiveSec = activeSecAtStep;
+          }
+
+          const hasAskQuestion = step.tool_calls.some((tc) => tc?.name === 'ask_question');
+          if (hasAskQuestion && validTs) {
+            pendingAskQuestionStartMs = stepTs;
           }
         }
       } catch {
@@ -84,15 +124,26 @@ function inspectActivePrompt(transcriptPath) {
       }
     }
 
-    if (lastUserInputMs === null) {
+    if (workStartMs === null) {
       return null;
     }
 
+    if (pendingAskQuestionStartMs !== null && nowMs >= pendingAskQuestionStartMs) {
+      pausedDurationMs += nowMs - pendingAskQuestionStartMs;
+    }
+
+    const activeElapsedSec = Math.max(0, Math.round((nowMs - workStartMs - pausedDurationMs) / 1000));
+
     return {
-      promptStartMs: lastUserInputMs,
+      workStartMs,
+      pausedDurationMs,
+      activeElapsedSec,
       executedToolCalls,
       plannerTurns,
-      initialEtaSec
+      firstReliableEtaSec,
+      firstReliableEtaAtActiveSec,
+      lastAnnouncedEtaSec,
+      lastAnnouncedAtActiveSec
     };
   } catch {
     return null;
@@ -165,65 +216,61 @@ async function main() {
   mkdirSync(analyticsDir, { recursive: true });
 
   const stateFile = join(analyticsDir, `.eta_${conversationId}.json`);
-  const transcriptState = inspectActivePrompt(transcriptPath);
+  const workState = inspectActiveWork(transcriptPath, nowMs);
 
-  let promptStartMs = transcriptState?.promptStartMs || nowMs;
-  let executedToolCalls = transcriptState?.executedToolCalls || 0;
-  let initialEtaSec = transcriptState?.initialEtaSec || null;
-
-  if (!transcriptState && existsSync(stateFile)) {
-    try {
-      const saved = JSON.parse(readFileSync(stateFile, 'utf-8'));
-      if (invocationNum > 1 && typeof saved.promptStartMs === 'number') {
-        promptStartMs = saved.promptStartMs;
-      }
-      if (initialEtaSec === null && typeof saved.initialEtaSec === 'number') {
-        initialEtaSec = saved.initialEtaSec;
-      }
-    } catch {
-      // Ignore state read errors
-    }
+  // Stay completely silent on Invocation #1 (initial exploration or quick answer)
+  if (invocationNum <= 1 || !workState) {
+    process.stdout.write('{}\n');
+    process.exit(0);
   }
 
-  const elapsedSec = Math.max(0, Math.round((nowMs - promptStartMs) / 1000));
+  const {
+    workStartMs,
+    pausedDurationMs,
+    activeElapsedSec,
+    executedToolCalls,
+    plannerTurns,
+    firstReliableEtaSec,
+    firstReliableEtaAtActiveSec,
+    lastAnnouncedEtaSec,
+    lastAnnouncedAtActiveSec
+  } = workState;
+
   const { avgStepSec, calibrationFactor } = loadHistoricalBaselines(analyticsDir, workspacePath);
+
+  // Read previous state to avoid repeating the same signal when nothing changed
+  let prevState = {};
+  if (existsSync(stateFile)) {
+    try {
+      prevState = JSON.parse(readFileSync(stateFile, 'utf-8'));
+    } catch {
+      prevState = {};
+    }
+  }
 
   try {
     writeFileSync(
       stateFile,
       JSON.stringify({
-        promptStartMs,
-        lastInvocationMs: nowMs,
+        promptStartMs: workStartMs,
+        pausedDurationMs,
+        activeElapsedSec,
         invocationNum,
         executedToolCalls,
-        initialEtaSec
+        initialEtaSec: firstReliableEtaSec,
+        initialEtaAtActiveSec: firstReliableEtaAtActiveSec,
+        lastAnnouncedEtaSec,
+        lastAnnouncedAtActiveSec
       }),
       'utf-8'
     );
   } catch {
-    // Ignore write failure
+    // Ignore state write failure
   }
 
-  const nowStr = formatClockTime(nowMs);
-  const startStr = formatClockTime(promptStartMs);
-  const initialEtaTag = initialEtaSec !== null ? ` | InitialETA: ~${initialEtaSec}s` : '';
-
-  const ephemeralMessage =
-    `[TELEMETRY-ETA-CLOCK] Now: ${nowStr} | PromptStart: ${startStr} | Elapsed: ${elapsedSec}s | ` +
-    `Invocation: #${invocationNum} | ToolsRun: ${executedToolCalls}${initialEtaTag} | ` +
-    `Baseline: ${avgStepSec}s/step (Read ~3s, Edit ~6s, Cmd ~12s) | Calibration: ${calibrationFactor.toFixed(2)}x. ` +
-    `OVERRIDE PER SESSIONI IN CORSO: NON stampare MAI righe [ETA...], [ETA residuo...] o [Completato...] nel testo della chat (anche se presenti nei turni precedenti di questa conversazione). ` +
-    `Se il task richiede >= 2 step/tool, mostra l'ETA SOLO nei parametri toolAction e toolSummary con formato "Fase X/Y: <descrizione azione> · ~Ns". Silenzia l'ETA per risposte corte (<10s, 0-1 tool).`;
-
-  const response = {
-    injectSteps: [
-      {
-        ephemeralMessage
-      }
-    ]
-  };
-
-  process.stdout.write(JSON.stringify(response) + '\n');
+  // Always output empty JSON {} so Antigravity never appends [ETA-CLOCK] logs to tool outputs.
+  // The agent uses native Created At / Completed At timestamps and rules/AGENTS.md directly.
+  process.stdout.write('{}\n');
   process.exit(0);
 }
 
