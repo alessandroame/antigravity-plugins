@@ -63,6 +63,7 @@ function inspectActiveWork(transcriptPath, nowMs) {
     let firstReliableEtaAtActiveSec = 0;
     let lastAnnouncedEtaSec = null;
     let lastAnnouncedAtActiveSec = 0;
+    let lastTurnCompleted = true;
 
     for (const line of lines) {
       try {
@@ -76,15 +77,19 @@ function inspectActiveWork(transcriptPath, nowMs) {
           step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
 
         if (isUserStep && validTs) {
-          workStartMs = stepTs;
-          pausedDurationMs = 0;
-          pendingAskQuestionStartMs = null;
-          executedToolCalls = 0;
-          plannerTurns = 0;
-          firstReliableEtaSec = null;
-          firstReliableEtaAtActiveSec = 0;
-          lastAnnouncedEtaSec = null;
-          lastAnnouncedAtActiveSec = 0;
+          // Reset only if no active task is running or the previous task completed its final response
+          if (workStartMs === null || lastTurnCompleted) {
+            workStartMs = stepTs;
+            pausedDurationMs = 0;
+            pendingAskQuestionStartMs = null;
+            executedToolCalls = 0;
+            plannerTurns = 0;
+            firstReliableEtaSec = null;
+            firstReliableEtaAtActiveSec = 0;
+            lastAnnouncedEtaSec = null;
+            lastAnnouncedAtActiveSec = 0;
+            lastTurnCompleted = false;
+          }
           continue;
         }
 
@@ -97,6 +102,7 @@ function inspectActiveWork(transcriptPath, nowMs) {
         }
 
         if (Array.isArray(step.tool_calls) && step.tool_calls.length > 0) {
+          lastTurnCompleted = false;
           executedToolCalls += step.tool_calls.length;
           plannerTurns += 1;
 
@@ -118,6 +124,8 @@ function inspectActiveWork(transcriptPath, nowMs) {
           if (hasAskQuestion && validTs) {
             pendingAskQuestionStartMs = stepTs;
           }
+        } else if (step.type === 'PLANNER_RESPONSE') {
+          lastTurnCompleted = true;
         }
       } catch {
         // Ignore malformed transcript lines

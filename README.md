@@ -70,8 +70,8 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 - **Guida completa**: [`plugins/skill-governance/README.md`](./plugins/skill-governance/README.md)
 
 ### 8. `telemetry-analytics`
-- **Goal**: Fornire osservabilità, stima ETA in-flight delle lavorazioni in corso e metriche sull'efficienza di esecuzione.
-- **Cosa fa**: Inietta l'orologio real-time e la baseline storica ad ogni invocazione tramite l'hook `PreInvocation` (`eta-injector.mjs`), consentendo all'agente di stampare l'ETA prevista su doppio canale (riga di stato in chat + prefisso `[Step X/Y · ETA ~Ns]` nelle pill dei tool) per le lavorazioni multi-step e silenziando le risposte corte. Raccoglie inoltre telemetria a basso overhead (`PostInvocation` e `Stop` hook) registrando l'accuratezza delle stime ETA (`etaCalibrationFactor`), il volume invocazioni per plugin/skill, i tassi di successo dei tool e il consumo di token.
+- **Goal**: Fornire osservabilità, stima ETA complessiva in-flight delle lavorazioni in corso e metriche sull'efficienza di esecuzione.
+- **Cosa fa**: Governa l'emissione dell'ETA riferita all'intera lavorazione (`· ETA tot ~Ns` accoppiata in `toolAction` e `toolSummary` sui soli tool di checkpoint entro il 2° turno e sul primo tool operativo top-level, con zero rumore sui restanti step e zero iniezioni nei box di output). Raccoglie telemetria a basso overhead (`PostInvocation` e `Stop` hook) registrando l'accuratezza delle stime ETA (`etaCalibrationFactor`), il volume invocazioni per plugin/skill, i tassi di successo dei tool e il consumo di token.
 - **Guida completa**: [`plugins/telemetry-analytics/README.md`](./plugins/telemetry-analytics/README.md)
 
 ### 9. `code-inspector`

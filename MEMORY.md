@@ -100,11 +100,16 @@ Questo documento registra vincoli stabili, particolarità del runtime di Google 
 
 ---
 
-## 11. Stima ETA sull'Intera Lavorazione (Mai sui Singoli Pezzi, Solo in `toolAction` se Attendibile e Variata)
-- **Problema Riscontrato**: Ripetere `Fase X/Y: ... · ~Ns` su ogni chiamata a tool e dentro `toolSummary` inquina permanentemente l'elenco espandibile dei singoli pezzi (`Explored files >`, `Edited files >`) e porta il modello a stimare la durata del singolo micro-step anziché dell'intera lavorazione, emettendo stime premature già durante la prima lettura esplorativa.
-- **Causa Radice**: `toolSummary` resta scritto in modo permanente su ogni riga dello storico dei tool, mentre `toolAction` è l'unico indicatore transitorio visibile solo durante l'esecuzione. Inoltre, prima di aver letto i file coinvolti o mentre si attende risposta a `ask_question`, il perimetro dell'intera lavorazione non è noto.
+## 11. Visibilità Persistente dell'ETA sui Soli Checkpoint (`toolAction` + `toolSummary`) e Finalizzazione `Stop` Hook
+- **Problema Riscontrato**:
+  1. Inserire `· ETA tot ~Ns` solo in `toolAction` (vietandolo in `toolSummary`) rende la stima invisibile all'utente: nella UI di Antigravity `toolAction` appare solo per i millisecondi di esecuzione del tool (`0.2s–0.8s`) e viene immediatamente sovrascritto da `toolSummary` a fine step, mentre i batch di `view_file` collassano dentro `Explored N files >`.
+  2. Consentire il silenzio per l'intera "ricognizione iniziale" senza un tetto massimo di turni fa sì che durante sessioni di debug multi-file il modello non emetta mai la prima stima per oltre 10–15 step.
+  3. In `collector.mjs`, l'hook `Stop` (`--finalize`) viene invocato subito dopo l'ultimo `PostInvocation` con `newSteps.length === 0`, saltando il blocco `if (newSteps.length > 0)` che registrava `etaTrackedTasks`, e cancellava `.cursor_<id>.json` causando la ri-lettura dell'intero transcript al prompt successivo.
+- **Causa Radice**:
+  - `toolSummary` è l'unica stringa persistente nel log dei tool, e i tool di modifica/comando (`replace_file_content`, `write_to_file`, `run_command`) sono gli unici che restano espansi a livello top-level fuori da `Explored N files >`.
+  - `PostInvocation` avanza `lastIndex` prima che scatti `Stop`.
 - **Pattern Preventivo Obbligatorio**:
-  1. L'ETA deve riferirsi **esclusivamente al completamento dell'intera lavorazione** (`ETA tot ~Ns`), mai al singolo step.
-  2. Non inserire **mai** l'ETA in `toolSummary` né nel testo della chat.
-  3. Emettere `<Azione> · ETA tot ~Ns` in `toolAction` (su un solo tool del turno) **solo quando la stima complessiva diventa attendibile** (dopo la ricognizione iniziale, se il lavoro totale residuo è $\ge 15\text{s}$) e **solo quando cambia in modo significativo** ($\ge 15\text{s}$ o $\ge 30\%$) rispetto all'indicazione precedente.
+  1. **Soglia Massima 2° Turno**: Se il task dura $\ge 15\text{s}$, la prima stima dell'intera lavorazione (`· ETA tot ~Ns`) deve essere emessa **entro e non oltre il 2° turno di chiamate tool**.
+  2. **Accoppiamento `toolAction` + `toolSummary` sui soli Checkpoint e Primo Tool Operativo**: Scrivere `· ETA tot ~Ns` sia in `toolAction` sia in `toolSummary` di un singolo tool nei soli turni di emissione/ricalibrazione ($\ge 15\text{s}$) e sul **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`), lasciando puliti tutti gli altri tool.
+  3. **Finalizzazione `Stop` a `newSteps` Vuoti e Conservazione `lastIndex`**: In `collector.mjs`, calcolare `etaOutcome` su `isFinalize` anche quando `newSteps.length === 0` e preservare `lastIndex` nel file `.cursor_<id>.json` azzerando solo i campi ETA di turno.
 

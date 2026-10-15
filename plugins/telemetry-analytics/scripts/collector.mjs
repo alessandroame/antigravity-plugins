@@ -280,6 +280,7 @@ async function main() {
   let lastIndex = -1;
   let savedInitialEtaMs = null;
   let savedPromptStartMs = null;
+  let savedInitialEtaAtActiveSec = 0;
 
   if (existsSync(cursorFile)) {
     try {
@@ -293,13 +294,15 @@ async function main() {
       if (typeof cursor.promptStartMs === 'number') {
         savedPromptStartMs = cursor.promptStartMs;
       }
+      if (typeof cursor.initialEtaAtActiveSec === 'number') {
+        savedInitialEtaAtActiveSec = cursor.initialEtaAtActiveSec;
+      }
     } catch {
       // Ignore corrupted cursor
     }
   }
 
   let savedPausedDurationMs = 0;
-  let savedInitialEtaAtActiveSec = 0;
 
   if (existsSync(etaStateFile)) {
     try {
@@ -344,9 +347,10 @@ async function main() {
             step.type === 'USER_INPUT' ||
             step.source === 'USER_EXPLICIT' ||
             step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
-          if (isUserStep) {
+          if (isUserStep && !savedPromptStartMs) {
             savedPromptStartMs = t;
             savedInitialEtaMs = null;
+            savedInitialEtaAtActiveSec = 0;
           }
         }
 
@@ -354,6 +358,15 @@ async function main() {
           const detectedEta = extractDeclaredEtaMs(step);
           if (detectedEta) {
             savedInitialEtaMs = detectedEta;
+            if (savedPromptStartMs && step.created_at) {
+              const stepTs = new Date(step.created_at).getTime();
+              if (!Number.isNaN(stepTs) && stepTs >= savedPromptStartMs) {
+                savedInitialEtaAtActiveSec = Math.max(
+                  0,
+                  Math.round((stepTs - savedPromptStartMs - savedPausedDurationMs) / 1000)
+                );
+              }
+            }
           }
         }
 
@@ -436,13 +449,58 @@ async function main() {
       const summaryFile = join(analyticsDir, 'metrics-summary.json');
       updateSummaryStore(summaryFile, eventRecord, etaOutcome);
 
-      // Save cursor
+      // Save cursor (reset per-prompt ETA state on finalize, but preserve lastIndex)
       writeFileSync(
         cursorFile,
         JSON.stringify({
           lastIndex: newLastIndex,
-          initialEtaMs: savedInitialEtaMs,
-          promptStartMs: savedPromptStartMs,
+          initialEtaMs: isFinalize ? null : savedInitialEtaMs,
+          promptStartMs: isFinalize ? null : savedPromptStartMs,
+          initialEtaAtActiveSec: isFinalize ? 0 : savedInitialEtaAtActiveSec,
+          updatedAt: new Date().toISOString()
+        }),
+        'utf-8'
+      );
+    } else if (isFinalize) {
+      // PostInvocation already ingested the steps of the final turn; finalize ETA metrics now
+      if (savedInitialEtaMs && savedPromptStartMs) {
+        const totalActiveMs = Math.max(1000, Date.now() - savedPromptStartMs - savedPausedDurationMs);
+        const remainingActualFromEstimateMs = Math.max(
+          1000,
+          totalActiveMs - savedInitialEtaAtActiveSec * 1000
+        );
+        const etaOutcome = {
+          estimatedMs: savedInitialEtaMs,
+          actualMs: remainingActualFromEstimateMs
+        };
+        const eventRecord = {
+          ts: new Date().toISOString(),
+          conversationId,
+          workspace: workspacePath,
+          workspaceName: basename(workspacePath),
+          durationMs: 0,
+          etaEstimatedMs: etaOutcome.estimatedMs,
+          etaActualMs: etaOutcome.actualMs,
+          tokens: { input: 0, output: 0, cacheRead: 0 },
+          plugins: {},
+          tools: {},
+          stepCount: 0
+        };
+        const eventsFile = join(analyticsDir, 'events.ndjson');
+        appendFileSync(eventsFile, JSON.stringify(eventRecord) + '\n', 'utf-8');
+
+        const summaryFile = join(analyticsDir, 'metrics-summary.json');
+        updateSummaryStore(summaryFile, eventRecord, etaOutcome);
+      }
+
+      // Preserve lastIndex so subsequent prompts in the same conversation only read delta steps
+      writeFileSync(
+        cursorFile,
+        JSON.stringify({
+          lastIndex,
+          initialEtaMs: null,
+          promptStartMs: null,
+          initialEtaAtActiveSec: 0,
           updatedAt: new Date().toISOString()
         }),
         'utf-8'
@@ -450,20 +508,11 @@ async function main() {
     }
   }
 
-  if (isFinalize) {
-    if (existsSync(cursorFile)) {
-      try {
-        unlinkSync(cursorFile);
-      } catch {
-        // Ignore unlink errors
-      }
-    }
-    if (existsSync(etaStateFile)) {
-      try {
-        unlinkSync(etaStateFile);
-      } catch {
-        // Ignore unlink errors
-      }
+  if (isFinalize && existsSync(etaStateFile)) {
+    try {
+      unlinkSync(etaStateFile);
+    } catch {
+      // Ignore unlink errors
     }
   }
 

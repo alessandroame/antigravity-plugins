@@ -13,30 +13,34 @@ Questo documento definisce i criteri operativi per la gestione delle metriche di
 
 ---
 
-## 2. Protocollo di Stima ETA Complessiva (Solo se Attendibile e Variata)
+## 2. Protocollo di Stima ETA Complessiva (Visibilità Persistente sui Checkpoint)
 
-L'indicazione dell'ETA riguarda **esclusivamente il tempo residuo per completare l'intera lavorazione richiesta dall'utente**, mai la durata del singolo step o del singolo tool. Deve comparire **solo quando la stima complessiva diventa attendibile** e **solo quando varia in modo significativo rispetto all'indicazione precedente**.
+L'indicazione dell'ETA riguarda **esclusivamente il tempo residuo per completare l'intera lavorazione richiesta dall'utente**, mai la durata del singolo step o del singolo tool.
 
-### 2.1 Quando la Stima è Attendibile (Divieto di Stima al Buio)
-1. **Silenzio in Ricognizione, Domande Utente e Task Brevi**:
-   - Durante i primi step esplorativi (lettura file per comprendere il problema) o mentre si attende una risposta dall'utente (`ask_question`), il perimetro dell'intera lavorazione non è ancora noto: **non emettere alcuna ETA**.
-   - Se l'intera lavorazione richiede meno di `15s` complessivi o si risolve in una risposta diretta, **non emettere alcuna ETA**.
-2. **Prima Emissione (Perimetro dell'Intera Lavorazione Definito)**:
-   - Non appena l'agente ha acquisito gli elementi necessari e conosce il piano completo fino alla conclusione (file da modificare, test/comandi da eseguire), se il tempo totale residuo stimato è $\ge 15\text{s}$, emette la prima stima attendibile dell'**intera lavorazione** (`ETA tot ~Ns`).
+### 2.1 Quando Emettere la Prima Stima (Soglia Massima 2° Turno)
+1. **Silenzio al 1° Turno Esplorativo, Domande Utente e Task Brevi**:
+   - Al **1° turno** di ricognizione iniziale (prima lettura file per inquadrare il problema), mentre si attende una risposta dall'utente (`ask_question`) o per lavorazioni rapide (`< 15s` complessivi), **non emettere alcuna ETA**.
+2. **Obbligo di Prima Emissione entro il 2° Turno Operativo**:
+   - **Entro e non oltre il 2° turno di chiamate tool** (o già al 1° turno se il perimetro è noto fin dal prompt), se il tempo totale residuo per completare l'intera lavorazione è $\ge 15\text{s}$, l'agente **DEVE** emettere la prima stima complessiva (`· ETA tot ~Ns`).
+   - È vietato procrastinare la prima stima oltre il 2° turno anche durante sessioni di debug o ricerca multi-file.
 
-### 2.2 Emissione Solo su Variazione Significativa (Zero Rumore sui Singoli Pezzi)
-1. **Criterio di Variazione Rispetto all'Indicazione Precedente**:
-   - Una volta emessa una stima (es. `ETA tot ~45s`), **non ripeterla** nei tool successivi.
-   - Emettere un nuovo valore di `ETA tot ~Ns` **solo se e quando** la previsione residua per completare l'intera lavorazione è cambiata in modo significativo rispetto all'indicazione precedente (variazione $\ge 15\text{s}$ o $\ge 30\%$ dovuta a completamento di una macro-fase, imprevisti, test da correggere o cambio di portata).
-2. **Canale Esclusivo (`toolAction` su Unico Tool) e Pulizia del Log (`toolSummary`)**:
-   - **Divieto nel testo della chat**: non stampare mai righe `[ETA...]` nel corpo dei messaggi di chat.
-   - **`toolSummary` sempre pulito**: non inserire **mai** l'ETA in `toolSummary`. Il registro storico dei singoli pezzi (`Explored files >`, `Edited files >`) deve contenere unicamente la descrizione tecnica dell'azione.
-   - **`toolAction` solo su un singolo tool quando la stima cambia**: quando la stima diventa attendibile o cambia significativamente rispetto alla precedente, aggiungerla **solo in `toolAction`** del primo tool del batch:
+### 2.2 Visibilità Persistente sui Soli Tool di Svolta (`toolAction` + `toolSummary` Accoppiati)
+Nella UI di Antigravity, `toolAction` è visibile solo per poche centinaia di millisecondi durante l'esecuzione del tool e viene subito sostituito da `toolSummary`, mentre le letture consecutive (`view_file`) vengono collassate nel gruppo `Explored N files >`. Per garantire che l'ETA sia sempre visibile all'utente senza inquinare ogni riga dello storico:
+
+1. **Accoppiamento `toolAction` + `toolSummary` sul Singolo Tool di Checkpoint**:
+   - Quando si emette la prima stima o quando la stima viene ricalibrata, inserire il suffisso `· ETA tot ~Ns` **sia in `toolAction` sia in `toolSummary` di un unico tool del turno**:
      - `toolAction`: `"<Descrizione azione> · ETA tot ~40s"`
-     - `toolSummary`: `"<Descrizione azione>"` (sempre senza ETA)
+     - `toolSummary`: `"<Descrizione azione> · ETA tot ~40s"`
+   - Nei batch di sole letture (`view_file`), applicare il tag sull'**ultimo tool del batch** (così resta visibile più a lungo nello spinner e in fondo al gruppo).
+2. **Ancoraggio Obbligatorio sul Primo Tool Operativo Top-Level (Uscita da `Explored files >`)**:
+   - Poiché i gruppi `view_file` vengono chiusi automaticamente da Antigravity, al passaggio dalla ricognizione alla fase operativa (**primo `replace_file_content`, `write_to_file` o `run_command` di modifica/verifica**), riportare l'ETA residua aggiornata (`· ETA tot ~Ns`) in `toolAction` e `toolSummary` di quel primo tool operativo (che resta sempre visibile in primo piano nella colonna di chat).
+3. **Silenzio su Tutti gli Altri Tool e nel Testo Chat**:
+   - Tutti gli altri tool del task devono mantenere `toolAction` e `toolSummary` privi di ETA.
+   - Emettere un nuovo aggiornamento di `· ETA tot ~Ns` **solo se** la previsione residua varia in modo significativo rispetto all'ultima stima visibile ($\ge 15\text{s}$ o $\ge 30\%$).
+   - Non stampare righe `[ETA...]` nel corpo testuale dei messaggi di chat.
 
 ### 2.3 Baseline di Calcolo per l'Intera Lavorazione
-Sommare il peso di tutti i passaggi rimanenti fino al termine dell'intera lavorazione e moltiplicare per `Calib` (se indicato da `[ETA-CLOCK]`):
+Sommare il peso di tutti i passaggi rimanenti fino al termine dell'intera lavorazione:
 - **Turno di lettura / ricerca**: `3s – 5s` per batch parallelo.
 - **Turno di modifica file** (`replace_file_content`, `write_to_file`): `6s – 10s` per batch.
 - **Comandi CLI / Suite di Test** (`run_command`): `8s – 20s` per comando.
@@ -50,3 +54,13 @@ Sommare il peso di tutti i passaggi rimanenti fino al termine dell'intera lavora
    - È severamente vietato trasmettere eventi di telemetria, payload di log o percorsi a endpoint di rete esterni.
 2. **Isolamento Workspace**:
    - Quando si presentano report su richiesta dell'utente, limitare la visualizzazione predefinita al workspace corrente, a meno che l'utente non richieda esplicitamente la vista globale cross-project.
+
+---
+
+## 4. Tabella di Anti-Razionalizzazione (Visibilità ETA)
+
+| Razionalizzazione Interna dell'Agente (Vietata) | Vincolo Inaggirabile (Rebuttal) |
+| :--- | :--- |
+| *"Sto ancora cercando la causa del bug nel CSS, aspetto di aver trovato la soluzione prima di emettere l'ETA."* | Vietato superare il 2° turno di tool senza stima: se il task dura $\ge 15\text{s}$, emettere la prima stima `· ETA tot ~Ns` entro il 2° turno e ricalibrarla se necessario. |
+| *"Metto `· ETA tot ~40s` solo in `toolAction` e lascio `toolSummary` senza ETA."* | `toolAction` scompare dopo `< 1s` a fine tool: sul singolo tool di svolta/checkpoint, `· ETA tot ~Ns` va scritto sia in `toolAction` sia in `toolSummary`. |
+| *"Ho già messo l'ETA su un `view_file`, non serve rimetterla sul primo `replace_file_content`."* | I `view_file` finiscono collassati dentro `Explored N files >`: riportare sempre la stima residua sul primo tool operativo top-level (`replace_file_content`, `write_to_file`, `run_command`). |

@@ -1,17 +1,16 @@
 # Telemetry, Usage Analytics & Live ETA (`telemetry-analytics`)
 
-Plugin di osservabilità, telemetria e stima in-flight dei tempi di completamento (ETA) per Google Antigravity. Raccoglie in modo deterministico e a basso overhead metriche sull'utilizzo dei plugin, inietta l'orologio real-time nei turni dell'agente per mostrare l'ETA direttamente nelle pill dei tool (che si comprimono automaticamente a fine step) e auto-calibra le stime confrontando il tempo previsto con la durata effettiva.
+Plugin di osservabilità, telemetria e stima in-flight dei tempi di completamento (ETA) sull'intera lavorazione per Google Antigravity. Raccoglie in modo deterministico e a basso overhead metriche sull'utilizzo dei plugin, traccia lo stato temporale senza inquinare i box di output dei tool e auto-calibra le stime confrontando il tempo previsto con la durata attiva effettiva.
 
 ---
 
 ## 1. Obiettivo Primario
 
-Nel runtime di Antigravity, i plugin modulari operano come componenti integrati senza un layer nativo di reporting quantitativo né un orologio visibile all'LLM durante i sub-turni intermedi. Il plugin `telemetry-analytics` introduce un'infrastruttura completa:
-- **Stima ETA In-Flight Auto-Comprimibile nelle Pill dei Tool**: Tramite l'hook `PreInvocation` (`scripts/eta-injector.mjs`), inietta nel contesto del modello l'ora corrente esatta, il tempo trascorso (`Elapsed`) dal prompt utente e la baseline storica. Per le lavorazioni multi-step ($\ge 2$ step/tool), l'agente formatta i badge `toolAction` e `toolSummary` come `Fase X/Y: Descrizione azione · ~Ns`, senza mai inquinare il testo della chat con righe ETA permanenti. Quando lo step termina, Antigravity comprime automaticamente la pill in `Explored file >` / `Edited files >`, facendo sparire l'ETA a lavoro concluso.
-- **Auto-Calibrazione dell'Errore di Stima**: Alla chiusura del task (`Stop`), `collector.mjs` confronta l'ETA iniziale dichiarata nella prima pill con il tempo effettivo e aggiorna la media mobile esponenziale `etaCalibrationFactor` del workspace.
-- **Calcolo dei Tempi di Esecuzione**: Misura la latenza effettiva wall-clock di ciascun turno, sessione e singolo step.
-- **Riconoscimento di Plugin e Skill**: Identifica le skill attivate tramite pattern matching deterministico sui file `SKILL.md` letti dall'agente.
-- **Affidabilità dei Tool ed Economia dei Token**: Traccia invocazioni, errori, success rate e cache-read ratio ad ogni turno.
+Nel runtime di Antigravity, i plugin modulari operano come componenti integrati senza un layer nativo di reporting quantitativo. Il plugin `telemetry-analytics` introduce un'infrastruttura completa:
+- **Stima ETA Complessiva Persistente sui Soli Checkpoint (`· ETA tot ~Ns`)**: Entro e non oltre il 2° turno di chiamate tool (per lavorazioni $\ge 15\text{s}$), e al passaggio al primo tool operativo top-level (`replace_file_content`, `write_to_file`, `run_command`), l'agente inserisce `· ETA tot ~Ns` sia in `toolAction` sia in `toolSummary` di un singolo tool di svolta, garantendo la visibilità persistente fuori dai gruppi collassati (`Explored N files >`) e lasciando puliti tutti gli altri tool.
+- **Zero Log Invasivi nei Tool (`eta-injector.mjs`)**: L'hook `PreInvocation` aggiorna silenziosamente lo stato temporale (`.eta_<conversationId>.json`, al netto delle pause `ask_question`) restituendo `{}` su `stdout` per non iniettare mai testo nei box dei tool.
+- **Auto-Calibrazione dell'Errore di Stima**: Alla chiusura del task (`Stop`), `collector.mjs` confronta l'ETA iniziale dichiarata con il tempo attivo effettivo (anche quando `PostInvocation` ha già avanzato `lastIndex`) e aggiorna la media mobile esponenziale `etaCalibrationFactor` del workspace.
+- **Riconoscimento di Plugin, Skill e Affidabilità Tool**: Identifica le skill attivate, misura le latenze e traccia invocazioni, errori e cache-read ratio ad ogni turno.
 
 ---
 
@@ -21,7 +20,7 @@ Nel runtime di Antigravity, i plugin modulari operano come componenti integrati 
 flowchart TD
     subgraph AntigravityRuntime["Antigravity Runtime Loop"]
         PreInv["Hook PreInvocation"] -->|stdin JSON| EtaInj["scripts/eta-injector.mjs"]
-        EtaInj -->|ephemeralMessage: Clock + Elapsed + Baseline| Turn["Turno LLM / Pill Tool Auto-Comprimibili<br/>(Fase X/Y: Azione · ~Ns)"]
+        EtaInj -->|Stato silenzioso .eta_id.json| Turn["Turno LLM / Checkpoint Tool<br/>(Azione · ETA tot ~Ns)"]
         Turn --> PostInv["Hook PostInvocation / Stop"]
         PostInv -->|stdin JSON| Collector["scripts/collector.mjs"]
     end
@@ -41,10 +40,10 @@ flowchart TD
 ```
 
 ### Caratteristiche Architetturali
-1. **Orologio Deterministico nei Sub-Turni (`PreInvocation`)**: L'LLM non tira mai a indovinare l'ora o il tempo trascorso; `eta-injector.mjs` legge il timestamp `created_at` dell'ultimo `USER_INPUT` da `transcript.jsonl` e calcola `Elapsed` al secondo.
-2. **Scomparsa Automatica a Fine Lavoro**: Vietando l'emissione di righe ETA nel testo della chat e usando solo `toolAction`/`toolSummary`, l'indicatore è visibile sopra `Working` mentre l'agente opera e si comprime automaticamente appena lo step finisce.
-3. **Fast-Path Silence**: Nessun indicatore ETA sulle risposte dirette o single-step (`< 10s`).
-4. **Resilienza e Timeout**: Tutti gli script integrano watchdog rigidi di sicurezza (`WATCHDOG_TIMEOUT_MS`) con `.unref()` per garantire che il loop dell'agente non resti mai bloccato.
+1. **Soglia Massima 2° Turno e Ancoraggio Top-Level**: L'ETA dell'intera lavorazione viene emessa entro il 2° turno di tool e ancorata sul primo tool operativo (`replace_file_content`, `write_to_file`, `run_command`) affinché resti sempre visibile in primo piano nella chat.
+2. **Accoppiamento `toolAction` + `toolSummary` sui Soli Checkpoint**: Poiché Antigravity sostituisce `toolAction` con `toolSummary` dopo `< 1s`, il tag `· ETA tot ~Ns` viene applicato a entrambi i campi del singolo tool di svolta, mantenendo puliti tutti gli altri tool finché la stima non varia di $\ge 15\text{s}$ o $\ge 30\%$.
+3. **Esclusione Pause Utente e Messaggi in Coda**: I tempi di attesa su `ask_question` vengono sottratti dall'`Elapsed` e i messaggi utente accodati in corsa non azzerano la stima attiva.
+4. **Resilienza e Timeout**: Tutti gli script integrano watchdog rigidi di sicurezza (`WATCHDOG_TIMEOUT_MS`) con `.unref()`.
 
 ---
 
@@ -52,15 +51,15 @@ flowchart TD
 
 ```text
 plugins/telemetry-analytics/
-├── plugin.json                    # Manifest del plugin (SemVer 1.2.0, 3 prompt)
+├── plugin.json                    # Manifest del plugin (SemVer 1.4.0, 3 prompt)
 ├── README.md                      # Documentazione tecnica
 ├── hooks.json                     # Hook PreInvocation, PostInvocation e Stop
 ├── scripts/
-│   ├── eta-injector.mjs           # Iniettore real-time dell'orologio ETA e baseline su PreInvocation
-│   ├── collector.mjs              # Ingestore batch da transcript.jsonl e calcolo calibrazione ETA
+│   ├── eta-injector.mjs           # Tracciatore silenzioso dello stato ETA su PreInvocation
+│   ├── collector.mjs              # Ingestore delta da transcript.jsonl e finalizzazione calibrazione ETA
 │   └── report.mjs                 # Motore di aggregazione e reporting CLI
 ├── rules/
-│   └── AGENTS.md                  # Regole di emissione ETA nelle pill dei tool, fast-path silence e sobrietà
+│   └── AGENTS.md                  # Regole di visibilità ETA sui checkpoint, soglia 2° turno e anti-razionalizzazione
 └── skills/
     ├── plugin-analytics/
     │   └── SKILL.md               # Skill per consultare metriche e calibrazione ETA (/plugin-analytics)
@@ -72,13 +71,12 @@ plugins/telemetry-analytics/
 
 ## 4. Formato dell'Output ETA Durante le Lavorazioni
 
-Per ogni task multi-step ($\ge 2$ step operativi), l'agente imposta `toolAction` e `toolSummary` con la fase e la descrizione al primo posto e il tempo residuo in coda:
+Per ogni lavorazione con durata residua $\ge 15\text{s}$, l'agente inserisce `· ETA tot ~Ns` in `toolAction` e `toolSummary` del singolo tool di checkpoint (entro il 2° turno e sul primo tool operativo top-level):
 
-- `Fase 1/3: Analisi script e configurazione · ~35s`
-- `Fase 2/3: Aggiornamento parser e regole · ~18s`
-- `Fase 3/3: Esecuzione test e sincronizzazione · ~8s`
+- `Read plugin-analytics SKILL.md · ETA tot ~30s` (2° turno esplorativo, ultimo tool del batch)
+- `Upgrade telemetry-analytics to v1.4.0 · ETA tot ~15s` (primo tool operativo top-level, sempre visibile in chat)
 
-Non viene stampata alcuna riga `[ETA: ...]` nel testo della chat: al termine di ciascuno step, Antigravity comprime automaticamente le pill nella barra grigia (`Explored file >`, `Edited files >`).
+Tutti gli altri tool intermedi restano privi di tag temporali e non viene stampata alcuna riga `[ETA: ...]` nel corpo testuale della chat.
 
 ---
 
