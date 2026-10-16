@@ -94,5 +94,18 @@ describe('Shift-Left Architectural Governance', () => {
     };
     scanDir('ui');
   });
+
+  it('enforces Cognitive Memory Hygiene ceilings (MEMORY.md <= 200 lines, WORKLOG.md <= 300 lines)', () => {
+    if (existsSync('MEMORY.md')) {
+      const memoryLines = readFileSync('MEMORY.md', 'utf-8').split(/\r?\n/);
+      assert.ok(memoryLines.length <= 200, `MEMORY.md exceeds 200-line ceiling (${memoryLines.length})`);
+      const h2Count = memoryLines.filter(l => l.startsWith('## ')).length;
+      assert.ok(h2Count <= 8, `MEMORY.md has ${h2Count} H2 sections (max 8 domain sections allowed)`);
+    }
+    if (existsSync('WORKLOG.md')) {
+      const worklogLines = readFileSync('WORKLOG.md', 'utf-8').split(/\r?\n/);
+      assert.ok(worklogLines.length <= 300, `WORKLOG.md exceeds 300-line rolling window ceiling (${worklogLines.length})`);
+    }
+  });
 });
 ```

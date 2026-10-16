@@ -264,6 +264,25 @@ function main() {
     }
   }
 
+  if (args.includes('--all')) {
+    const memoryPath = join(root, 'MEMORY.md');
+    if (existsSync(memoryPath)) {
+      const memLines = readFileSync(memoryPath, 'utf-8').split(/\r?\n/);
+      if (memLines.length > 200) {
+        totalErrors++;
+        console.log(`\n[✖ FALLITO] MEMORY.md: ${memLines.length} righe (tetto massimo: 200 righe)`);
+      }
+    }
+    const worklogPath = join(root, 'WORKLOG.md');
+    if (existsSync(worklogPath)) {
+      const wlLines = readFileSync(worklogPath, 'utf-8').split(/\r?\n/);
+      if (wlLines.length > 300) {
+        totalErrors++;
+        console.log(`\n[✖ FALLITO] WORKLOG.md: ${wlLines.length} righe (tetto massimo rolling window: 300 righe)`);
+      }
+    }
+  }
+
   console.log('\n' + '='.repeat(50));
   console.log(`Riepilogo: ${pluginDirs.length} plugin verificati | ${totalErrors} errori | ${totalWarnings} avvisi\n`);
 
