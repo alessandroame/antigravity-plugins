@@ -19,6 +19,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit√
 - **Divieto di Directory Junctions su Windows & Sync Fisico (`npm run sync`)**:
   - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`) e non effettua discovery da `.agents/plugins/` nei workspace.
   - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
+- **Plugin On-Demand, Dormienza Predefinita e Routing Peer-to-Peer (`shizzo`)**:
+  - *Insidia*: Disabilitare un plugin in `~/.gemini/config/config.json` (`"enabled": false`) nasconde anche le sue skill (`/shizzo`); inoltre `send_message` √® asincrono (richiede cessione del turno per il wakeup reattivo) e il `<subagent_reminder>` nativo spinge i subagent a usare l'ID del `parent` Orchestratore come `Recipient`.
+  - *Regola*: Mantenere il plugin abilitato in `config.json` con *Clausola di Dormienza Predefinita* in `rules/AGENTS.md`; nella negoziazione `--mediator` (max 1 round), `Gamma` deve cedere il turno dopo aver inviato `send_message` ad `Alpha`/`Beta` per ricevere il wakeup reattivo prima di riferire al `parent`, e `Alpha`/`Beta` devono rispondere a `Recipient: "<id-gamma>"` (`sender`, non `parent`).
 
 ---
 

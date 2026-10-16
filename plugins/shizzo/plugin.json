@@ -1,0 +1,11 @@
+{
+  "name": "shizzo",
+  "displayName": "Shizzo — Dual-Track Technical vs Domain Dialectics",
+  "description": "Orchestra una competizione e collaborazione parallela a doppio binario (Subagent Alpha orientato al tecnicismo e purezza architetturale vs Subagent Beta orientato al dominio e punto di vista dell'utente) con Mediatore interattivo opzionale (Subagent Gamma via /shizzo --mediator) e banner esplicito in output, attivabile come toggle di sessione tramite /shizzo.",
+  "version": "1.1.0",
+  "suggestedPrompts": [
+    "Esegui /shizzo per attivare o disattivare la modalità dual-track (Tecnico vs Dominio) nella sessione corrente",
+    "Attiva /shizzo --mediator e implementa questa funzionalità facendo negoziare Subagent Alpha (Tecnico) e Subagent Beta (Dominio) tramite Subagent Gamma (Mediatore)",
+    "Esegui /shizzo --proto su questo requisito generando due prototipi completi in Git Worktrees isolati"
+  ]
+}

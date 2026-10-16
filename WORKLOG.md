@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-16 — Creazione ed Evoluzione Plugin `shizzo` v1.1.0 (Dual-Track Tecnico vs Dominio, Mediatore Interattivo `--mediator` e Banner `conversation://`)
+- **Tipo**: Nuovo Plugin & Orchestrazione Multi-Agente Avversariale (`plugins/shizzo/` v1.0.0 $\to$ v1.1.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_shizzo-dual-track-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-16_shizzo-dual-track-plugin.md)
+- **Sintesi**:
+  - Implementato il plugin `shizzo` (dormiente di default, toggle `/shizzo` con titolo `[SHIZZO]` / `[SHIZZO+MED]`) che delega ogni task in parallelo a 2 subagent isolati (`Subagent Alpha` Tecnico vs `Subagent Beta` Dominio), con opzione `--mediator` (`Subagent Gamma` che negozia via `send_message` max 1 round sui disaccordi) e banner `[!IMPORTANT]` obbligatorio al rigo 1 con link cliccabili `conversation://<id>`.
+
+---
+
 ## 2026-10-16 — Formato Ad Alto Contrasto "Badge + Semaforo" (`【🟢/🟡/🔴 ETA tot ~Ns】`) per `toolAction` e `toolSummary`
 - **Tipo**: Telemetria & Ergonomia Visiva In-Flight (`telemetry-analytics` v1.5.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md`](file:///.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md)
