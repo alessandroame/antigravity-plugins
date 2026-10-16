@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-16 — Formato Ad Alto Contrasto "Badge + Semaforo" (`【🟢/🟡/🔴 ETA tot ~Ns】`) per `toolAction` e `toolSummary`
+- **Tipo**: Telemetria & Ergonomia Visiva In-Flight (`telemetry-analytics` v1.5.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md`](file:///.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md)
+- **Sintesi**:
+  - Introdotto in [`plugins/telemetry-analytics/rules/AGENTS.md`](file:///plugins/telemetry-analytics/rules/AGENTS.md) il formato `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` $\le 20\text{s}$, `🟡` $21\text{–}60\text{s}$, `🔴` $> 60\text{s}$) per dare risalto cromatico e geometrico nei campi plain-text (`textContent`) dei tool, estendendo il parser in `collector.mjs` ed `eta-injector.mjs`.
+
+---
+
 ## 2026-10-16 — Governance Anti-Bloat per `MEMORY.md` (In-Place per Dominio) e `WORKLOG.md` (Rolling Window & Pointer Index)
 - **Tipo**: Context Engineering / Governance Memoria (`cognitive-persistence` v1.3.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md`](file:///.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md)

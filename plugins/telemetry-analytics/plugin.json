@@ -1,8 +1,8 @@
 {
   "name": "telemetry-analytics",
   "displayName": "Telemetry, Usage Analytics & Live ETA",
-  "description": "Cattura telemetria di esecuzione, governa la stima ETA sull'intera lavorazione (ETA tot ~Ns persistente in toolAction e toolSummary sui soli checkpoint entro il 2° turno) e auto-calibra le stime.",
-  "version": "1.4.0",
+  "description": "Cattura telemetria di esecuzione, governa la stima ETA ad alto contrasto (【🟢/🟡/🔴 ETA tot ~Ns】 persistente in toolAction e toolSummary sui soli checkpoint entro il 2° turno) e auto-calibra le stime.",
+  "version": "1.5.0",
   "suggestedPrompts": [
     "Mostra il report di utilizzo dei plugin e l'accuratezza delle stime ETA per questo workspace",
     "Mostra le statistiche globali aggregate di Antigravity",

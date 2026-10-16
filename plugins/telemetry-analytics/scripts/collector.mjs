@@ -6,7 +6,17 @@
  * Also tracks multi-step ETA accuracy and computes workspace calibration factors.
  */
 
-import { readFileSync, appendFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
+import {
+  readFileSync,
+  appendFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  unlinkSync,
+  readdirSync,
+  statSync,
+  renameSync
+} from 'node:fs';
 import { homedir } from 'node:os';
 import { join, basename, resolve } from 'node:path';
 
@@ -17,6 +27,41 @@ const safetyWatchdog = setTimeout(() => {
   process.exit(0);
 }, WATCHDOG_TIMEOUT_MS);
 safetyWatchdog.unref();
+
+const CURSOR_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const MAX_EVENTS_FILE_BYTES = 5 * 1024 * 1024; // 5 MB cap before rotation
+
+function pruneStaleStateAndRotateLogs(analyticsDir, currentConversationId) {
+  try {
+    const now = Date.now();
+    const entries = readdirSync(analyticsDir);
+    for (const name of entries) {
+      if ((name.startsWith('.cursor_') || name.startsWith('.eta_')) && name.endsWith('.json')) {
+        if (currentConversationId && name.includes(currentConversationId)) continue;
+        const fullPath = join(analyticsDir, name);
+        try {
+          const st = statSync(fullPath);
+          if (now - st.mtimeMs > CURSOR_TTL_MS) {
+            unlinkSync(fullPath);
+          }
+        } catch {
+          // Ignore concurrent access or missing file
+        }
+      }
+    }
+
+    const eventsFile = join(analyticsDir, 'events.ndjson');
+    if (existsSync(eventsFile)) {
+      const st = statSync(eventsFile);
+      if (st.size > MAX_EVENTS_FILE_BYTES) {
+        const archiveFile = join(analyticsDir, 'events.archive.ndjson');
+        renameSync(eventsFile, archiveFile);
+      }
+    }
+  } catch {
+    // Non-blocking maintenance
+  }
+}
 
 function getAnalyticsDir() {
   const custom = process.env.ANTIGRAVITY_ANALYTICS_DIR;
@@ -86,12 +131,12 @@ function extractDeclaredEtaMs(step) {
   }
   if (!toolText) return null;
 
-  // Match patterns like "· ETA tot ~45s", "· ETA ~45s", "(~45s)"
+  // Match patterns like "【🟡 ETA tot ~45s】", "· ETA tot ~45s", "· ETA ~45s", "(~45s)"
   const match = toolText.match(
-    /(?:·\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\b|\(\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\s*\)|\bETA(?:\s+tot)?:?\s*~?(\d+)s\b)/i
+    /(?:【\s*(?:[🟢🟡🔴🟠]\s*)?(?:ETA(?:\s+tot)?:?\s*)?~?(\d+)s\s*】|·\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\b|\(\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\s*\)|\bETA(?:\s+tot)?:?\s*~?(\d+)s\b)/iu
   );
   if (!match) return null;
-  const seconds = parseInt(match[1] || match[2] || match[3], 10);
+  const seconds = parseInt(match[1] || match[2] || match[3] || match[4], 10);
   if (Number.isNaN(seconds) || seconds <= 0) return null;
   return seconds * 1000;
 }
@@ -508,12 +553,15 @@ async function main() {
     }
   }
 
-  if (isFinalize && existsSync(etaStateFile)) {
-    try {
-      unlinkSync(etaStateFile);
-    } catch {
-      // Ignore unlink errors
+  if (isFinalize) {
+    if (existsSync(etaStateFile)) {
+      try {
+        unlinkSync(etaStateFile);
+      } catch {
+        // Ignore unlink errors
+      }
     }
+    pruneStaleStateAndRotateLogs(analyticsDir, conversationId);
   }
 
   // Antigravity hook stdout expectation

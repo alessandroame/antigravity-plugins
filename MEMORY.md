@@ -52,9 +52,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Silenzio `PreInvocation` (`eta-injector.mjs`) e Timestamp Nativi**:
   - *Insidia*: Restituire `ephemeralMessage` in `PreInvocation` stampa log ripetitivi nella UI; calcolare `Elapsed` da `lastUserInputMs` include le pause utente su `ask_question`.
   - *Regola*: `eta-injector.mjs` deve emettere `{}\n` su `stdout`, sottraendo le pause `ask_question` in `.eta_<id>.json`.
-- **Visibilità Persistente dell'ETA sui Checkpoint (`toolAction` + `toolSummary`) e Finalizzazione `Stop`**:
-  - *Insidia*: `toolAction` dura $< 1\text{s}$ a schermo e i `view_file` collassano in `Explored N files >`; inoltre su `Stop` (`--finalize`) `newSteps.length` è `0` perché `PostInvocation` ha già avanzato `lastIndex`.
-  - *Regola*: Emettere la prima stima (`· ETA tot ~Ns`) **entro il 2° turno** scrivendola sia in `toolAction` sia in `toolSummary` dell'ultimo `view_file` del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`). In `collector.mjs`, processare `etaOutcome` su `isFinalize` anche a `newSteps` vuoti e preservare `lastIndex` in `.cursor_<id>.json`.
+- **Visibilità Persistente dell'ETA con Badge + Semaforo (`【🟢/🟡/🔴 ETA tot ~Ns】`) e Finalizzazione `Stop`**:
+  - *Insidia*: `toolAction` e `toolSummary` sono nodi `textContent` puri (HTML/CSS/ANSI vengono stampati letteralmente), `toolAction` dura $< 1\text{s}$ e i `view_file` collassano in `Explored N files >`; inoltre su `Stop` (`--finalize`) `newSteps.length` è `0` perché `PostInvocation` ha già avanzato `lastIndex`.
+  - *Regola*: Emettere la prima stima entro il 2° turno usando parentesi lenticolari + semaforo semantico di fascia (`【🟢 ETA tot ~15s】` $\le 20\text{s}$, `【🟡 ETA tot ~40s】` $21\text{–}60\text{s}$, `【🔴 ETA tot ~90s】` $> 60\text{s}$) sia in `toolAction` sia in `toolSummary` dell'ultimo `view_file` del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`). In `collector.mjs`, processare `etaOutcome` su `isFinalize` anche a `newSteps` vuoti e preservare `lastIndex` in `.cursor_<id>.json`.
 
 ---
 

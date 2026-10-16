@@ -38,10 +38,10 @@ function parseEtaSecondsFromToolCalls(toolCalls) {
   if (!textToScan) return null;
 
   const etaMatch = textToScan.match(
-    /(?:·\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\b|\(\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\s*\)|\bETA(?:\s+tot)?:?\s*~?(\d+)s\b)/i
+    /(?:【\s*(?:[🟢🟡🔴🟠]\s*)?(?:ETA(?:\s+tot)?:?\s*)?~?(\d+)s\s*】|·\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\b|\(\s*(?:ETA(?:\s+tot)?\s*)?~?(\d+)s\s*\)|\bETA(?:\s+tot)?:?\s*~?(\d+)s\b)/iu
   );
   if (!etaMatch) return null;
-  const val = parseInt(etaMatch[1] || etaMatch[2] || etaMatch[3], 10);
+  const val = parseInt(etaMatch[1] || etaMatch[2] || etaMatch[3] || etaMatch[4], 10);
   return Number.isNaN(val) || val <= 0 ? null : val;
 }
 
