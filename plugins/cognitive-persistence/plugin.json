@@ -1,8 +1,8 @@
 {
   "name": "cognitive-persistence",
   "displayName": "Cognitive Persistence & Project Memory",
-  "description": "Preserva la continuità architetturale e la memoria tra sessioni: cattura pensieri in-flight in NOTES.md (/take-note), analisi differita (/review-notes), lezioni in MEMORY.md, ADR in WORKLOG.md e stato in DESIDERATA.md (/next-step).",
-  "version": "1.2.0",
+  "description": "Preserva la continuità architetturale e la memoria tra sessioni: cattura pensieri in-flight in NOTES.md (/take-note), analisi differita (/review-notes), vincoli distillati per dominio in MEMORY.md (max 200 righe), ADR in WORKLOG.md e stato in DESIDERATA.md (/next-step).",
+  "version": "1.3.0",
   "suggestedPrompts": [
     "Annota un pensiero rapido in NOTES.md senza interrompere il task con /take-note",
     "Mostra le note aperte in NOTES.md e avvia l'analisi approfondita con /review-notes",

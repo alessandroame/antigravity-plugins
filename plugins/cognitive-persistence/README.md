@@ -23,11 +23,12 @@ Il plugin governa quattro file standard posizionati alla radice del repository d
 ```
 <radice-progetto>/
 ├── NOTES.md                  # Buffer di cattura rapida In-Flight (/take-note) e triage differito (/review-notes)
-├── MEMORY.md                 # Vincoli stabili, lezioni apprese, antipattern banditi
-├── WORKLOG.md                # Giornale mastro cronologico degli interventi e decisioni architetturali
+├── MEMORY.md                 # Registro distillato per dominio dei vincoli stabili (tetto max 200 righe)
+├── WORKLOG.md                # Giornale a finestra mobile (Pointer Index: max 15 interventi / <= 300 righe)
 ├── DESIDERATA.md             # Matrice dello stato di avanzamento delle funzionalità validate
 └── .agents/
-    └── worklog.d/            # Frammenti ADR granulari (YYYY-MM-DD_<argomento>.md)
+    ├── worklog.d/            # Schede ADR granulari estese (YYYY-MM-DD_<argomento>.md)
+    └── archive/              # Snapshot storici ruotati (MEMORY_v<N>_archive.md, WORKLOG_v<N>_archive.md)
 ```
 
 ### 0. `NOTES.md` (Buffer di Cattura In-Flight & Staging Pre-Desiderata)
@@ -35,16 +36,17 @@ Raccoglie osservazioni grezze, dubbi di UX o anomalie notate dall'utente mentre 
 - **Cattura passiva (`/take-note`)**: salva la nota con ID progressivo (`NOTE-XXX`), data/ora e riferimento all'eventuale task `🟡 In Lavorazione` in `DESIDERATA.md`, con **divieto tassativo** per l'agente di ispezionare il codice o interrompere il task attivo.
 - **Mostra ed esegui analisi (`/review-notes`)**: a lavorazione conclusa, mostra la tabella delle note aperte (`📥 Da Analizzare`), permette di selezionare quale approfondire ed esegue l'ispezione sul codice aggiornato per promuoverla in `DESIDERATA.md` o implementarla.
 
-### 1. `MEMORY.md` (Vincoli Stabili & Lezioni Apprese)
-Registra la conoscenza empirica non ovvia acquisita durante lo sviluppo. Ogni voce viene strutturata secondo uno schema causale rigido:
-- **Problema riscontrato**: sintomo o malfunzionamento rilevato.
-- **Causa radice**: spiegazione tecnica dettagliata (es. race condition, peculiarità del runtime Node/DOM, incompatibilità fra librerie).
-- **Pattern preventivo vincolante**: regola architetturale o vincolo da seguire tassativamente in ogni sessione futura.
+### 1. `MEMORY.md` (Vincoli Stabili & Governance Anti-Bloat — Max 200 Righe)
+Registra esclusivamente gli invarianti architetturali e la conoscenza empirica non ovvia acquisita durante lo sviluppo (la cronologia degli interventi appartiene a `WORKLOG.md`). Per prevenire l'inflazione del contesto (*context bloat*):
+- **Tetto Massimo Rigido (`200 righe`) e Partizionamento per Dominio**: il file è suddiviso in **5–8 sezioni stabili di dominio**; è **vietato l'append cronologico numerato** (`## 175. ...`).
+- **Aggiornamento In-Place e Formato a 2 Punti**: le nuove regole vengono fuse *in-place* nella sezione di dominio pertinente (sostituendo i vincoli superati) con il formato compatto `- **<Invariante>**:` $\to$ `- *Insidia*: <sintomo e causa radice in 1 riga>` / `- *Regola*: <pattern vincolante in 1-2 righe>`.
+- **Graduazione nei Test & Compattazione in `.agents/archive/`**: i vincoli verificabili via codice vengono codificati nei test statici (`shiftLeftGovernance.test.mjs`, `validate.mjs`); quando `MEMORY.md` supera le 200 righe, lo snapshot integrale viene archiviato in `.agents/archive/MEMORY_v<N>_archive.md` e il file attivo viene distillato sotto le 120–150 righe.
 
-### 2. `WORKLOG.md` & Frammenti Granulari (`.agents/worklog.d/`)
-Per evitare conflitti di merge e consentire tracciabilità atomica:
-- L'agente genera dapprima una scheda di dettaglio in `.agents/worklog.d/YYYY-MM-DD_<argomento>.md` contenente contesto, motivazione, decisioni architetturali e impatti.
-- I frammenti vengono successivamente consolidati nel documento unificato `WORKLOG.md`.
+### 2. `WORKLOG.md` (Rolling Window & Pointer Index — Max 300 Righe) & `.agents/worklog.d/`
+Per prevenire la duplicazione del testo e la crescita illimitata del diario cronologico:
+- **Frammento Esteso in `.agents/worklog.d/YYYY-MM-DD_<argomento>.md`**: contiene l'ADR completo (*Contesto & Motivazione*, *Decisioni Architetturali*, *Impatto e Conseguenze*).
+- **Pointer Record in `WORKLOG.md` (Zero Copia Integrale)**: in `WORKLOG.md` viene inserito esclusivamente un indice puntatore di 4–5 righe (`Tipo`, link cliccabile al file in `.agents/worklog.d/` e 1–2 bullet di sintesi).
+- **Finestra Mobile (`Max 15 Interventi` / $\le 300\text{ righe}$) e Log Rotation**: `WORKLOG.md` espone in testa l'*Indice Sintetico delle Fasi Consolidate* seguito dagli ultimi 10–15 interventi; le voci più vecchie vengono ruotate in `.agents/archive/WORKLOG_v<N>_archive.md`.
 
 ### 3. `DESIDERATA.md` (Matrice di Stato Funzionale)
 Mappa l'intero ciclo di vita delle funzionalità tramite uno schema tabellare con indicatori di stato espliciti:
@@ -58,11 +60,11 @@ Mappa l'intero ciclo di vita delle funzionalità tramite uno schema tabellare co
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Governa l'isolamento cognitivo durante `/take-note`, il triage differito con `/review-notes`, l'avvio `/next-step` e la chiusura `/memory-sync`. |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Governa l'isolamento cognitivo durante `/take-note`, il triage differito con `/review-notes`, l'avvio `/next-step`, la chiusura `/memory-sync` e le guardie anti-bloat di `MEMORY.md` ($\le 200$ righe) e `WORKLOG.md` ($\le 300$ righe). |
 | **`take-note`** | Skill / Comando Slash | [`skills/take-note/SKILL.md`](./skills/take-note/SKILL.md) | Cattura pensieri singoli o multipli in `NOTES.md` a zero cambio di contesto (nessuna lettura codice sorgente, conferma in 1 riga, ripresa immediata del task attivo). |
 | **`review-notes`** | Skill / Comando Slash | [`skills/review-notes/SKILL.md`](./skills/review-notes/SKILL.md) | Mostra il cruscotto delle note aperte in `NOTES.md`, consente di selezionare quali esaminare ed esegue il task di analisi approfondita sul codice per promuoverle in `DESIDERATA.md`. |
 | **`next-step`** | Skill / Comando Slash | [`skills/next-step/SKILL.md`](./skills/next-step/SKILL.md) | Runbook di accoglienza requisiti invocabile con `/next-step`: scansiona `DESIDERATA.md`, recupera vincoli da `MEMORY.md`, commuta lo stato in `🟡 In Lavorazione` e produce il briefing operativo. |
-| **`memory-sync`** | Skill / Comando Slash | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook operativo di fine task: redige il frammento ADR, consolida `WORKLOG.md`, aggiorna `MEMORY.md` e allinea `DESIDERATA.md` e `NOTES.md`. |
+| **`memory-sync`** | Skill / Comando Slash | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook operativo di fine task: redige il frammento esteso in `worklog.d/`, aggiunge il *Pointer Record* in `WORKLOG.md` (con rotazione oltre 15 voci), aggiorna `MEMORY.md` *in-place* per dominio e allinea `DESIDERATA.md` e `NOTES.md`. |
 | **`set-chat-title`** | Script di utilità | [`scripts/set-chat-title.mjs`](./scripts/set-chat-title.mjs) | Script Node.js che comunica via Connect-RPC con Antigravity Language Server per aggiornare istantaneamente il titolo della conversazione nella sidebar e nel database. |
 
 ---
@@ -81,7 +83,7 @@ flowchart TD
     subgraph Avvio ["1. Start-of-Task (/next-step)"]
         N5 --> A["Invocazione /next-step"]
         A --> B["Scansione DESIDERATA.md<br/>(Ripresa 🟡 o selezione primo 🔴)"]
-        B --> C["Iniezione Vincoli MEMORY.md<br/>& Storico WORKLOG.md"]
+        B --> C["Iniezione Vincoli MEMORY.md<br/>& Rolling Window WORKLOG.md"]
         C --> D["Transizione stato: 🟡 In Lavorazione<br/>+ Ridenominazione Chat (set-chat-title.mjs)<br/>+ Briefing Operativo con Prompt"]
     end
 
@@ -91,10 +93,10 @@ flowchart TD
     end
 
     subgraph Chiusura ["3. End-of-Task Sync (/memory-sync)"]
-        F --> G["Redazione Frammento ADR<br/>(.agents/worklog.d/YYYY-MM-DD_topic.md)"]
-        G --> H["Consolidamento Cronologico (WORKLOG.md)"]
-        H --> I{"Nuove insidie o antipattern?"}
-        I -- Sì --> L["Registrazione Lezione (MEMORY.md)"]
+        F --> G["Redazione Frammento Esteso<br/>(.agents/worklog.d/YYYY-MM-DD_topic.md)"]
+        G --> H["Pointer Record in WORKLOG.md (<= 300 righe)<br/>+ Rotazione in .agents/archive/ se > 15 voci"]
+        H --> I{"Nuovo invariante non ovvio?"}
+        I -- Sì --> L["Update In-Place per Dominio (MEMORY.md <= 200 righe)<br/>o Archiviazione (.agents/archive/) + Distillazione"]
         I -- No --> M["Allineamento Matrice (DESIDERATA: 🟡 ➔ 🟢)"]
         L --> M
         M --> N["Resoconto Finale all'Utente"]

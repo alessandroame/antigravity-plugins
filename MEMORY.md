@@ -1,115 +1,69 @@
 # Vincoli Stabili & Lezioni Apprese (MEMORY)
 
-Questo documento registra vincoli stabili, particolarità del runtime di Google Antigravity e lezioni apprese a caro prezzo durante lo sviluppo della raccolta `antigravity-plugins`.
+Registro distillato per dominio dei vincoli architetturali e delle particolarità del runtime di Google Antigravity per `antigravity-plugins`.
+> **Governance anti-bloat**: tetto massimo **200 righe**. Vietato l'append cronologico numerato: aggiornare le sezioni *in-place* sostituendo le regole superate. Le regole verificabili via codice risiedono in [`scripts/validate.mjs`](file:///c:/github/antigravity-plugins/scripts/validate.mjs).
 
 ---
 
-## 1. Regole dei Plugin (`rules/AGENTS.md`)
-- **Problema Riscontrato**: L'inserimento di frontmatter YAML (`---`) all'inizio di `rules/AGENTS.md` o delle regole contestuali dei plugin causa anomalie di rendering o fa sì che il testo venga trattato come blocco raw anziché iniettato direttamente nel system prompt dell'agente.
-- **Causa Radice**: Il loader dei plugin di Antigravity si aspetta che i file sotto `rules/` siano file Markdown puri. A differenza delle skill, le regole non richiedono metadati YAML.
-- **Pattern Preventivo Obbligatorio**: `rules/AGENTS.md` e ogni file `.md` nella cartella `rules/` devono essere composti esclusivamente da Markdown standard senza alcun blocco `---` di apertura. Questa proprietà è verificata automaticamente da `scripts/validate.mjs`.
+## 1. Architettura Plugin, Regole & Skill Loader
+
+- **Purezza Markdown delle Regole (`rules/AGENTS.md`)**:
+  - *Insidia*: Inserire frontmatter YAML (`---`) in `rules/*.md` fa sì che il loader tratti il file come blocco raw anziché iniettarlo nel system prompt.
+  - *Regola*: Zero blocchi `---` di apertura nei file sotto `rules/` (verificato da `scripts/validate.mjs`).
+- **Frontmatter Obbligatorio delle Skill (`skills/<name>/SKILL.md`)**:
+  - *Insidia*: Skill prive di `name` o `description` YAML non vengono indicizzate nella fase 1 del system prompt.
+  - *Regola*: Includere sempre `name` (`kebab-case`) e `description` (80–250 caratteri con trigger esplicito `Use this skill when...`).
+- **Vincoli Manifest (`plugin.json`)**:
+  - *Insidia*: Più di 3 elementi in `suggestedPrompts` o `version` non SemVer rompono la validazione e la UI di avvio rapido.
+  - *Regola*: Usare sempre versione `X.Y.Z` e massimo 3 `suggestedPrompts`.
+- **Divieto di Directory Junctions su Windows & Sync Fisico (`npm run sync`)**:
+  - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`) e non effettua discovery da `.agents/plugins/` nei workspace.
+  - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
 
 ---
 
-## 2. Skill on-Demand (`skills/<name>/SKILL.md`)
-- **Problema Riscontrato**: Se una skill è sprovvista di `name` o `description` nel frontmatter YAML, non viene indicizzata nel catalogo del runtime Antigravity e non può essere attivata dall'agente.
-- **Causa Radice**: La fase 1 del caricamento a due fasi (System Prompt Fisso) scansiona i blocchi frontmatter di tutte le cartelle in `skills/` per popolare la panoramica delle skill disponibili.
-- **Pattern Preventivo Obbligatorio**: Ogni skill deve includere all'inizio del file `SKILL.md`:
-  ```yaml
-  ---
-  name: <kebab-case-name>
-  description: >-
-    <Descrizione concisa e chiara tra 80 e 250 caratteri con trigger 'Use this skill when...'>
-  ---
-  ```
+## 2. Parsing Transcript, Windows NTFS & Connect-RPC
+
+- **Normalizzazione Percorsi nel Parsing di `transcript.jsonl`**:
+  - *Insidia*: Gli argomenti tool su Windows contengono backslash raddoppiati (`\\\\`) e apici; `.replace(/\\/g, '/')` genera `//` e workspace come `antigravity-plugins` attivano match spuri su `plugins`.
+  - *Regola*: Normalizzare con `p.replace(/^["']|["']$/g, '').replace(/\\+/g, '/').replace(/\/+/g, '/').toLowerCase()` e ancorare le regex con `(?:^|\/)plugins\/`.
+- **Rilevamento Conversazione Attiva su NTFS (`transcript.jsonl` mtime)**:
+  - *Insidia*: Su NTFS l'`mtime` di `brain/<conversation-id>` non si aggiorna quando viene scritto il file annidato `.system_generated/logs/transcript.jsonl`.
+  - *Regola*: In `set-chat-title.mjs`, ordinare le sessioni leggendo `statSync(join(fullPath, '.system_generated', 'logs', 'transcript.jsonl')).mtimeMs`.
+- **Ridenominazione Dinamica Chat via Connect-RPC (`set-chat-title.mjs`)**:
+  - *Insidia*: Modificare direttamente `conversation_summaries.db` non aggiorna la sidebar Electron in tempo reale.
+  - *Regola*: Invocare `POST https://127.0.0.1:<port>/exa.language_server_pb.LanguageServerService/UpdateConversationAnnotations` con `x-codeium-csrf-token` e payload `{"cascadeId": "<id>", "annotations": {"title": "<titolo>"}}`.
 
 ---
 
-## 3. Manifest del Plugin (`plugin.json`)
-- **Problema Riscontrato**: Fallimento della validazione o comportamenti inattesi se `suggestedPrompts` contiene più di 3 elementi o se `version` non è SemVer standard.
-- **Causa Radice**: La UI di Antigravity riserva spazio per un massimo di 3 prompt di avvio rapido per ciascun plugin abilitato; stringhe di versione arbitrarie impediscono il corretto tracciamento degli aggiornamenti.
-- **Pattern Preventivo Obbligatorio**: Mantenere la versione conforme a `X.Y.Z` e non definire più di 3 prompt in `suggestedPrompts`.
+## 3. Ergonomia Chat (~600px), Markdown GFM & Visualizzazione Flussi
+
+- **Riga Vuota Obbligatoria dopo `</summary>` in GFM**:
+  - *Insidia*: Incollare codice recintato (` ``` `) o link Markdown subito dopo `</summary>` in `<details>` disattiva il parser Markdown di Antigravity.
+  - *Regola*: Lasciare tassativamente **una riga vuota** subito dopo `</summary>` e prima di `</details>`.
+- **Divieto di `flowchart LR` e Selettore Dual-Tab (`code-inspector`)**:
+  - *Insidia*: Nella colonna di chat (~600px), i grafi `flowchart LR` con $\ge 4$ nodi scalano il testo a dimensioni illeggibili.
+  - *Regola*: Usare il widget `<agent-embed>` dual-tab (`Albero Testuale` a spina verticale max 65 char + `Grafico a Blocchi`) o `flowchart TD` con etichette $\le 28$ char.
 
 ---
 
-## 4. Divieto di Directory Junctions su Windows & Sincronizzazione Fisica Globale
-- **Problema Riscontrato**: Collegare i plugin tramite Directory Junction (`New-Item -ItemType Junction`) in `.agents/plugins/` o in `~/.gemini/config/plugins/` causa il fallimento silenzioso del caricamento: il Language Server non indicizza i plugin né le relative skill, e i comandi slash (es. `/next-step`) non appaiono nell'autocompletamento dell'interfaccia utente.
-- **Causa Radice**: 
-  1. Il runtime e il file scanner del Language Server di Antigravity su Windows scartano a priori i reparse point / Junctions NTFS (trattati come symlink e ignorati per evitare loop di ricorsione).
-  2. Antigravity non riconosce le directory `.agents/plugins/` all'interno dei singoli workspace come root di plugin: l'architettura dei plugin richiede che risiedano fisicamente nella directory utente globale `~/.gemini/config/plugins/` e siano registrati con `"enabled": true` in `~/.gemini/config/config.json`.
-  3. L'interfaccia client (Electron / webview) popola la cache visuale dei comandi slash all'inizializzazione della finestra: dopo l'installazione di una nuova cartella fisica di plugin, è necessario ricaricare la finestra (`Developer: Reload Window`) o riavviare l'IDE.
-- **Pattern Preventivo Obbligatorio**:
-  - È tassativamente vietato l'uso di Directory Junction o collegamenti simbolici per i plugin su Windows.
-  - Per installare e mantenere aggiornati i plugin durante lo sviluppo, eseguire sempre lo script di sincronizzazione fisica:
-    ```bash
-    npm run sync
-    ```
-    che clona ricorsivamente le directory reali da `plugins/` a `~/.gemini/config/plugins/`, rimuovendo automaticamente eventuali vecchi junction rimasti orfani.
-  - Se una specifica skill deve essere confinata a un singolo workspace anziché esposta globalmente, deve essere posizionata come cartella fisica in `.agents/skills/<nome-skill>/`, mai in `.agents/plugins/`.
+## 4. Telemetria Ibrida & Visibilità Stime ETA (`telemetry-analytics`)
+
+- **Silenzio `PreInvocation` (`eta-injector.mjs`) e Timestamp Nativi**:
+  - *Insidia*: Restituire `ephemeralMessage` in `PreInvocation` stampa log ripetitivi nella UI; calcolare `Elapsed` da `lastUserInputMs` include le pause utente su `ask_question`.
+  - *Regola*: `eta-injector.mjs` deve emettere `{}\n` su `stdout`, sottraendo le pause `ask_question` in `.eta_<id>.json`.
+- **Visibilità Persistente dell'ETA sui Checkpoint (`toolAction` + `toolSummary`) e Finalizzazione `Stop`**:
+  - *Insidia*: `toolAction` dura $< 1\text{s}$ a schermo e i `view_file` collassano in `Explored N files >`; inoltre su `Stop` (`--finalize`) `newSteps.length` è `0` perché `PostInvocation` ha già avanzato `lastIndex`.
+  - *Regola*: Emettere la prima stima (`· ETA tot ~Ns`) **entro il 2° turno** scrivendola sia in `toolAction` sia in `toolSummary` dell'ultimo `view_file` del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`). In `collector.mjs`, processare `etaOutcome` su `isFinalize` anche a `newSteps` vuoti e preservare `lastIndex` in `.cursor_<id>.json`.
 
 ---
 
-## 5. Normalizzazione Percorsi e Parsing Transcript su Windows
-- **Problema Riscontrato**: Nel parsing di `transcript.jsonl`, gli argomenti dei tool (es. `AbsolutePath`) possono contenere backslash raddoppiati (`\\\\`) e stringhe racchiuse tra apici. Una sostituzione ordinaria `.replace(/\\/g, '/')` genera doppie barre (`//`), rompendo il matching delle regex. Inoltre, workspace con la parola `plugins` nel nome (es. `antigravity-plugins`) attivano match spuri se non delimitati da slash.
-- **Causa Radice**: Serializzazione protojson/JSON su Windows e assenza di delimitatori di percorso `(?:^|\/)`.
-- **Pattern Preventivo Obbligatorio**: Normalizzare sempre i percorsi eliminando apici, comprimendo backslash e slash multipli prima del matching:
-  ```javascript
-  p.replace(/^["']|["']$/g, '').replace(/\\+/g, '/').replace(/\/+/g, '/').toLowerCase();
-  ```
-  e vincolare tassativamente le espressioni regolari con prefissi `(?:^|\/)plugins\/`.
+## 5. Continuità Cognitiva & Governance Anti-Bloat (`cognitive-persistence`)
 
----
-
-## 6. Aggiornamento Dinamico del Titolo Chat in Antigravity
-- **Problema Riscontrato**: Antigravity non include un tool predefinito per rinominare le conversazioni; l'invocazione di prompt o skill come `/next-step` produce titoli generici ("Next Step Planning") nella sidebar, rendendo difficoltosa la navigazione storica tra chat.
-- **Causa Radice**: Il processo locale `language_server` genera un riassunto del primo turno e aggiorna `conversation_summaries.db`. La modifica diretta del database SQLite non forza la notifica reattiva al frontend Electron.
-- **Pattern Preventivo Obbligatorio**: Per aggiornare la titolazione di una sessione attiva in tempo reale, invocare l'endpoint Connect-RPC `https://127.0.0.1:<port>/exa.language_server_pb.LanguageServerService/UpdateConversationAnnotations` con metodo `POST`, header `x-codeium-csrf-token: <csrf>` (estratto dal runtime frontend) e payload `{"cascadeId": "<id>", "annotations": {"title": "<titolo>"}}`. L'operazione sincronizza contestualmente il database SQLite e invia lo stream reattivo alla sidebar dell'interfaccia utente.
-
----
-
-## 7. Risoluzione Automatica della Conversazione Attiva su NTFS (`transcript.jsonl` mtime)
-- **Problema Riscontrato**: Ordinare le directory `~/.gemini/antigravity/brain/<conversation-id>` utilizzando `statSync(fullPath).mtimeMs` della cartella padre seleziona l'ultima conversazione in cui è stato creato un artefatto alla radice, non la conversazione attualmente attiva.
-- **Causa Radice**: Su filesystem NTFS (Windows), l'`mtime` di una directory padre varia solo quando vengono aggiunti o rimossi file figli diretti; la scrittura continua dei turni nel file annidato `.system_generated/logs/transcript.jsonl` non aggiorna l'`mtime` di `brain/<conversation-id>`.
-- **Pattern Preventivo Obbligatorio**: Per identificare programmaticamente la sessione di chat attiva (es. in `set-chat-title.mjs`), leggere prioritariamente `statSync(join(fullPath, '.system_generated', 'logs', 'transcript.jsonl')).mtimeMs`, ripiegando sull'`mtime` della directory solo come fallback.
-
----
-
-## 8. Rendering di Blocchi Codice e Link dentro `<details><summary>` in Markdown GFM
-- **Problema Riscontrato**: Inserendo un blocco di codice recintato (` ``` `) o un link Markdown nella riga immediatamente successiva a `</summary>` all'interno di un elemento `<details>`, il parser Markdown della chat di Antigravity tratta il contenuto come blocco HTML grezzo e non formatta né la sintassi del codice né i collegamenti `file://`.
-- **Causa Radice**: La specifica CommonMark / GitHub-Flavored Markdown (GFM) interrompe il contesto di blocco HTML `<details>` e riattiva il parsing Markdown interno solo dopo aver incontrato una riga vuota dopo il tag `</summary>`.
-- **Pattern Preventivo Obbligatorio**: Nei selettori a espansione (es. skill `/how-its-made` del plugin `code-inspector`), lasciare sempre **una riga vuota** subito dopo `</summary>` e prima di `</details>`.
-
----
-
-## 9. Illeggibilità dei Diagrammi Orizzontali (`flowchart LR`) nella Colonna di Chat
-- **Problema Riscontrato**: I diagrammi `mermaid` con orientamento orizzontale (`flowchart LR`) composti da 4 o più nodi vengono rimpiccioliti drasticamente nella chat di Antigravity, rendendo le scritte microscopiche e schiacciando le frecce dei bivi.
-- **Causa Radice**: Il pannello di chat ha una larghezza orizzontale fissa (~600px) e scorrimento verticale libero. Un grafo `LR` affianca tutti gli step in orizzontale, costringendo il contenitore SVG a scalare il fattore di zoom a $1/N$.
-- **Pattern Preventivo Obbligatorio**:
-  1. Vietare `flowchart LR` per flussi a più di 3 nodi in chat.
-  2. Usare l'**Albero Decisionale a Spina Verticale (` ```text `)** (max 65 caratteri per riga, bivi marcati con `◇ BIVIO` e rami `├── [NO] ──►` / `└── [SÌ] ──►`), che mantiene il font monospace al 100% della dimensione nativa.
-  3. Nei diagrammi `mermaid`, usare esclusivamente **`flowchart TD` (Top-Down)** spezzando i testi lunghi con `<br/>` (massimo 25–28 caratteri per riga) e distinguendo le forme (`([...])` per Ingresso/Uscita, `{...}` per Bivi, `[...]` per Step).
-
----
-
-## 10. Invasività di `ephemeralMessage` in `PreInvocation` e Uso dei Timestamp Nativi dei Tool
-- **Problema Riscontrato**: Restituire `injectSteps: [{ ephemeralMessage: "[TELEMETRY-ETA-CLOCK]..." }]` dall'hook `PreInvocation` (`eta-injector.mjs`) ad ogni turno inietta fisicamente il messaggio in coda al box di output di ogni singolo tool nella UI, generando log invasivi e ripetitivi. Inoltre, calcolare `Elapsed` come `nowMs - lastUserInputMs` include erroneamente i tempi di attesa dell'utente durante `ask_question`.
-- **Causa Radice**: Antigravity appende qualsiasi `ephemeralMessage` restituito da `PreInvocation` direttamente all'output visibile dello step precedente. Allo stesso tempo, ogni risposta nativa dei tool espone già nelle prime due righe i timestamp esatti `Created At` e `Completed At` al secondo.
-- **Pattern Preventivo Obbligatorio**:
-  1. `eta-injector.mjs` deve operare in modo silenzioso su `stdout` (`{}\n`), aggiornando il file di stato `.eta_<conversationId>.json` (sottraendo le pause `ask_question`) senza iniettare blocchi `[TELEMETRY-ETA-CLOCK]` nella UI.
-  2. Il modello utilizza direttamente i timestamp nativi `Created At` / `Completed At` presenti nelle risposte dei tool per valutare l'avanzamento temporale.
-
----
-
-## 11. Visibilità Persistente dell'ETA sui Soli Checkpoint (`toolAction` + `toolSummary`) e Finalizzazione `Stop` Hook
-- **Problema Riscontrato**:
-  1. Inserire `· ETA tot ~Ns` solo in `toolAction` (vietandolo in `toolSummary`) rende la stima invisibile all'utente: nella UI di Antigravity `toolAction` appare solo per i millisecondi di esecuzione del tool (`0.2s–0.8s`) e viene immediatamente sovrascritto da `toolSummary` a fine step, mentre i batch di `view_file` collassano dentro `Explored N files >`.
-  2. Consentire il silenzio per l'intera "ricognizione iniziale" senza un tetto massimo di turni fa sì che durante sessioni di debug multi-file il modello non emetta mai la prima stima per oltre 10–15 step.
-  3. In `collector.mjs`, l'hook `Stop` (`--finalize`) viene invocato subito dopo l'ultimo `PostInvocation` con `newSteps.length === 0`, saltando il blocco `if (newSteps.length > 0)` che registrava `etaTrackedTasks`, e cancellava `.cursor_<id>.json` causando la ri-lettura dell'intero transcript al prompt successivo.
-- **Causa Radice**:
-  - `toolSummary` è l'unica stringa persistente nel log dei tool, e i tool di modifica/comando (`replace_file_content`, `write_to_file`, `run_command`) sono gli unici che restano espansi a livello top-level fuori da `Explored N files >`.
-  - `PostInvocation` avanza `lastIndex` prima che scatti `Stop`.
-- **Pattern Preventivo Obbligatorio**:
-  1. **Soglia Massima 2° Turno**: Se il task dura $\ge 15\text{s}$, la prima stima dell'intera lavorazione (`· ETA tot ~Ns`) deve essere emessa **entro e non oltre il 2° turno di chiamate tool**.
-  2. **Accoppiamento `toolAction` + `toolSummary` sui soli Checkpoint e Primo Tool Operativo**: Scrivere `· ETA tot ~Ns` sia in `toolAction` sia in `toolSummary` di un singolo tool nei soli turni di emissione/ricalibrazione ($\ge 15\text{s}$) e sul **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`), lasciando puliti tutti gli altri tool.
-  3. **Finalizzazione `Stop` a `newSteps` Vuoti e Conservazione `lastIndex`**: In `collector.mjs`, calcolare `etaOutcome` su `isFinalize` anche quando `newSteps.length === 0` e preservare `lastIndex` nel file `.cursor_<id>.json` azzerando solo i campi ETA di turno.
+- **Isolamento In-Flight (`/take-note`) vs Analisi Differita (`/review-notes`)**:
+  - *Insidia*: Ispezionare il codice durante `/take-note` inquina il contesto del task attivo e analizza file in mutazione.
+  - *Regola*: Durante `/take-note` toccare solo `NOTES.md` (e leggere `DESIDERATA.md`), rimandando l'ispezione del codice a `/review-notes`.
+- **Tetto Max 200 Righe (`MEMORY.md`) e Rolling Window Pointer Index (`WORKLOG.md` $\le 300$ Righe)**:
+  - *Insidia*: Accodare sezioni numerate (`## N. ...`) in `MEMORY.md` o copiare per intero i frammenti di `.agents/worklog.d/` dentro `WORKLOG.md` gonfia entrambi i file oltre 1.000 righe, degradando l'attenzione del modello e duplicando informazioni.
+  - *Regola*: `MEMORY.md` deve restare $\le 200\text{ righe}$ diviso in 5–8 sezioni di dominio aggiornate *in-place* (`Insidia`/`Regola`); `WORKLOG.md` deve restare $\le 300\text{ righe}$ (max 15 *Pointer Record* da 4–5 righe con link a `.agents/worklog.d/`), ruotando gli storici eccedenti in `.agents/archive/`.
 

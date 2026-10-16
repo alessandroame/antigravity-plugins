@@ -16,14 +16,14 @@ Garantire che l'esperienza acquisita, i refactoring complessi e le decisioni arc
 [Verifica Test Superata: 100%]
                │
                ▼
-[1. Scrittura Frammento] ──► Crea .agents/worklog.d/YYYY-MM-DD_<topic>.md
+[1. Scrittura Frammento] ──► Crea ADR esteso in .agents/worklog.d/YYYY-MM-DD_<topic>.md
                │
                ▼
-[2. Consolidamento Log]  ──► Unione cronologica in WORKLOG.md
-               │
+[2. Pointer in WORKLOG]  ──► Aggiunge Pointer Record (4-5 righe) in WORKLOG.md (max 15 voci / <= 300 righe)
+               │             + Log Rotation in .agents/archive/WORKLOG_v<N>_archive.md se oltre soglia
                ▼
-[3. Sync MEMORY.md]      ──► Registrazione di lezioni apprese e antipattern
-               │
+[3. Sync MEMORY.md]      ──► Aggiornamento in-place per dominio (vietato append numerato)
+               │             + Compattazione in .agents/archive/ se > 200 righe
                ▼
 [4. Sync DESIDERATA.md]  ──► Aggiornamento stato feature (🟡 -> 🟢) e chiusura eventuale NOTE-XXX in NOTES.md
                │
@@ -33,27 +33,64 @@ Garantire che l'esperienza acquisita, i refactoring complessi e le decisioni arc
 
 ---
 
-## 3. Formato dei Documenti
+## 3. Formato dei Documenti e Governance Anti-Bloat
 
-### A. Frammento Worklog (`.agents/worklog.d/YYYY-MM-DD_<argomento>.md`)
-```markdown
-# [YYYY-MM-DD] ADR: Titolo dell'Intervento
+### A. Frammento ADR Esteso (`.agents/worklog.d/YYYY-MM-DD_<argomento>.md`) e Pointer Record in `WORKLOG.md`
+Per evitare di duplicare centinaia di righe tra `.agents/worklog.d/` e `WORKLOG.md`:
 
-## Contesto & Motivazione
-Descrizione sintetica del problema o requisito che ha reso necessario l'intervento.
+1. **Scheda Granulare Estesa (`.agents/worklog.d/YYYY-MM-DD_<argomento>.md`)**:
+   Contiene il dettaglio architetturale completo dell'intervento:
+   ```markdown
+   # [YYYY-MM-DD] ADR: Titolo dell'Intervento
 
-## Decisioni Architetturali
-I pattern, le astrazioni o le modifiche strutturali adottate.
+   ## Contesto & Motivazione
+   Descrizione sintetica del problema o requisito che ha reso necessario l'intervento.
 
-## Impatto e Conseguenze
-Moduli modificati, suite di test eseguite e comportamento verificato.
-```
+   ## Decisioni Architetturali
+   I pattern, le astrazioni o le modifiche strutturali adottate.
 
-### B. Voce in `MEMORY.md` (Lezioni Apprese)
-Se è stata riscontrata una fragilità non ovvia:
-- **Insidia Rilevata**: Comportamento imprevisto o limite di ambiente.
-- **Causa Radice**: Spiegazione tecnica del fenomeno.
-- **Pattern Preventivo Obbligatorio**: Regola architetturale da seguire in futuro.
+   ## Impatto e Conseguenze
+   Moduli modificati, suite di test eseguite e comportamento verificato.
+   ```
+2. **Pointer Record in `WORKLOG.md` (Vietata la Copia Integrale — Max 4–5 righe per voce)**:
+   In `WORKLOG.md` è **vietato incollare l'intero frammento**. Aggiungere solo un record puntatore sintetico:
+   ```markdown
+   ## YYYY-MM-DD — Titolo Sintetico dell'Intervento
+   - **Tipo**: <Ambito / Categoria>
+   - **Dettagli**: [`.agents/worklog.d/YYYY-MM-DD_<argomento>.md`](file:///.agents/worklog.d/YYYY-MM-DD_<argomento>.md)
+   - **Sintesi**:
+     - 1–2 bullet asciutti con file chiave toccati e decisione tecnica principale.
+   ```
+3. **Finestra Mobile (`Rolling Window`: Max 15 Interventi / $\le 300\text{ righe}$) e Log Rotation**:
+   - `WORKLOG.md` mantiene in testa un blocco compatto `## Indice Sintetico delle Fasi Consolidate` (1 riga per macro-fase storica) seguito dagli **ultimi 10–15 Pointer Record**.
+   - Se `WORKLOG.md` supera le **300 righe** o i **15 interventi** (o contiene ancora vecchi ADR copiati per intero), spostare le voci meno recenti in `.agents/archive/WORKLOG_v<N>_archive.md` e riassumerle nell'*Indice Sintetico delle Fasi Consolidate*.
+
+### B. Governance di `MEMORY.md` (In-Place per Dominio & Tetto Max 200 Righe)
+`MEMORY.md` non è un diario cronologico (ruolo già coperto da `WORKLOG.md`), ma un registro distillato di invarianti architetturali e insidie di runtime, letto ad ogni `/next-step`. Per prevenire la crescita incontrollata (*context bloat*):
+
+1. **Filtro di Rilevanza (Zero Rumore Ordinario)**:
+   - Non aggiungere voci in `MEMORY.md` per normali implementazioni di feature o fix banali già tracciati in `WORKLOG.md`.
+   - Registrare solo **insidie tecniche non ovvie**, **incompatibilità di runtime/librerie** o **invarianti architetturali** che un agente futuro rischierebbe di violare.
+2. **Divieto di Append Cronologico Numerato & Aggiornamento In-Place**:
+   - È **tassativamente vietato** accodare sezioni numerate progressive (`## 175. ...`, `## 176. ...`) in fondo al file.
+   - `MEMORY.md` deve essere strutturato in **5–8 sezioni stabili di dominio** (es. *Core & Matematica*, *API & Dominio*, *UI & Ergonomia*, *Persistenza*, *Test & Ambiente*).
+   - Ogni nuova regola va inserita o fusa **in-place** nella sezione di dominio pertinente, **sostituendo o rimuovendo** contestualmente le regole precedenti rese obsolete dal nuovo intervento.
+3. **Formato Compatto a 2 Righe (`Insidia` / `Regola`)**:
+   ```markdown
+   - **<Titolo Invariante / Componente>**:
+     - *Insidia*: <1 riga: sintomo e causa radice tecnica>.
+     - *Regola*: <1-2 righe: vincolo operativo obbligatorio e file/test di riferimento>.
+   ```
+4. **Graduazione nei Test Automatici (Shift-Left Governance)**:
+   - Quando una lezione appresa è verificabile staticamente (es. assenza di DOM in `core/`, selettori CSS vietati, invarianti di configurazione), codificarla nel test di governance del progetto (es. `shiftLeftGovernance.test.mjs` o `validate.mjs`) e comprimere la voce in `MEMORY.md` a un richiamo di 1 riga.
+5. **Tetto Massimo (`200 righe`) e Protocollo di Bonifica / Archiviazione**:
+   - Prima di salvare `MEMORY.md`, verificare che il file non superi le **200 righe** complessive.
+   - Se `MEMORY.md` supera le **200 righe** (o presenta ancora una struttura cronologica numerata `## 1..N`), eseguire la **Distillazione per Dominio**:
+     1. Archiviare lo snapshot integrale corrente in `.agents/archive/MEMORY_v<N>_archive.md`.
+     2. Riscrivere `MEMORY.md` raggruppando e fondendo i vincoli attivi in 5–8 sezioni di dominio sotto le **120–150 righe**, inserendo in testa il callout di governance con il link all'archivio e alla suite di test automatici:
+        ```markdown
+        > **Governance anti-bloat**: tetto massimo **200 righe**. Vietato l'append cronologico numerato: aggiornare le sezioni *in-place* sostituendo le regole superate. Storico pre-distillazione archiviato in [`.agents/archive/MEMORY_v1_archive.md`](file:///...).
+        ```
 
 ### C. Matrice in `DESIDERATA.md` e Allineamento `NOTES.md`
 - Aggiornare lo stato della riga corrispondente in `DESIDERATA.md` (`🟡 In Lavorazione` $\to$ `🟢 Completato`) aggiungendo una nota concisa con il riferimento all'implementazione.

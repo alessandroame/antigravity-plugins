@@ -1,350 +1,70 @@
 # Giornale Cronologico degli Interventi & ADR (WORKLOG)
 
-Questo documento traccia la cronologia consolidata delle decisioni architetturali (ADR) e delle evoluzioni strutturali del repository `antigravity-plugins`.
+Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 15 interventi**) delle decisioni architetturali e operative nel repository `antigravity-plugins`.
+> **Archivio Storico**: Il diario cronologico esteso pre-compattazione è conservato in [`.agents/archive/WORKLOG_v1_archive.md`](file:///c:/github/antigravity-plugins/.agents/archive/WORKLOG_v1_archive.md) e nelle singole schede granulari in `.agents/worklog.d/`.
 
 ---
 
-## [2026-10-16] ADR: Visibilità Persistente dell'ETA sui Checkpoint (`toolAction` + `toolSummary`), Soglia Max 2° Turno e Fix Finalizzazione `Stop` Hook
+## Indice Sintetico delle Fasi Consolidate (Archiviate in `WORKLOG_v1_archive.md`)
 
-### Contesto & Motivazione
-L'analisi dei log reali (`transcript.jsonl` delle sessioni GlideMind `00cebad8` e `28af2dc6`) a fronte della segnalazione dell'utente (*"non vedo mai comparire l'output dell'ETA"*) ha evidenziato tre cause tecniche:
-1. **Scomparsa immediata di `toolAction` (< 1s)**: Nella UI di Antigravity, `toolAction` viene mostrato solo durante i millisecondi di esecuzione del tool (`0.2s–0.8s` per `view_file` o `replace_file_content`) e viene subito sostituito da `toolSummary`. Vietando l'ETA in `toolSummary`, le stime emesse dall'agente (es. `ETA tot ~35s` e `ETA tot ~40s` in `00cebad8`) scomparivano dallo schermo in meno di un secondo.
-2. **Collasso di `Explored N files >` e Ricognizione Prolungata**: I tool `view_file` consecutivi vengono raggruppati e chiusi dentro `Explored N files >`, mentre durante sessioni di debug CSS (`28af2dc6`, 14+ turni di lettura) l'assenza di un tetto massimo di turni esplorativi posticipava indefinitamente la prima stima.
-3. **Salto di `etaOutcome` su `Stop` (`newSteps.length === 0`) e Reset su Messaggi in Coda**: `PostInvocation` consuma gli step prima che scatti l'hook `Stop` (`--finalize`), per cui su `Stop` `newSteps.length` è `0` e `collector.mjs` saltava il salvataggio di `etaTrackedTasks`; inoltre, l'`unlinkSync(cursorFile)` su `Stop` forzava la ri-lettura dell'intero transcript al prompt successivo.
-
-### Decisioni Architetturali
-1. **Accoppiamento `toolAction` + `toolSummary` sui soli Checkpoint e Primo Tool Operativo (`rules/AGENTS.md`)**:
-   - Obbligo di emettere la prima stima dell'intera lavorazione (`· ETA tot ~Ns`) **entro e non oltre il 2° turno di chiamate tool** (se il lavoro residuo è $\ge 15\text{s}$).
-   - Inserimento di `· ETA tot ~Ns` sia in `toolAction` sia in `toolSummary` del singolo tool di svolta (ultimo tool nei batch `view_file`) e sul **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`), che resta sempre visibile in primo piano fuori dal cassetto `Explored N files >`.
-   - Tutti gli altri tool restano privi di ETA finché la stima non varia di $\ge 15\text{s}$ o $\ge 30\%$.
-2. **Fix Finalizzazione `Stop` e Conservazione `lastIndex` (`collector.mjs` & `eta-injector.mjs`)**:
-   - Gestione esplicita di `else if (isFinalize)` in `collector.mjs` per registrare `etaOutcome` in `metrics-summary.json` anche quando `PostInvocation` ha già avanzato `lastIndex`.
-   - Conservazione di `lastIndex` in `.cursor_<conversationId>.json` a fine task (azzerando solo i campi ETA di turno) ed esclusione dei messaggi utente accodati in-flight dal reset di `workStartMs`.
+- **Fase 1 (Catalogo Base, Validatore & Documentazione — 2026-10-07)**: Creazione dei 7 plugin fondativi (`engineering-sobriety`, `laws-of-ux`, `execution-guard`, `engineering-workflow`, `cognitive-persistence`, `proactive-mentorship`, `skill-governance`), template `starter-plugin` e validatore `scripts/validate.mjs`.
+- **Fase 2 (Start-of-Task `/next-step`, Ridenominazione Connect-RPC & Telemetria Base — 2026-10-07)**: Introduzione di `/next-step`, script `set-chat-title.mjs` su Connect-RPC (`UpdateConversationAnnotations`) e plugin `telemetry-analytics` v1.0.0 (`collector.mjs`, `report.mjs`).
+- **Fase 3 (Sync Fisico Globale Anti-Junction & Integrazione Audit GlideMind — 2026-10-09/10)**: Divieto di NTFS Directory Junctions su Windows con introduzione di `scripts/sync-to-global.mjs` (`npm run sync`), skill `shift-left-governance`, `ux-outdoor-and-field-ergonomics`, bando emoji decorative e guardia mock API esterne.
 
 ---
 
-## [2026-10-15] ADR: Audit Stato Installazione Plugin Globali / Progetto e Sincronizzazione Attuale
-
-### Contesto & Motivazione
-Verifica completa dello stato di allineamento e installazione della suite di plugin sia a livello globale (`~/.gemini/config/plugins/`) che per i singoli workspace/progetti, a fronte delle release SemVer e delle modifiche apportate sul repository `antigravity-plugins`.
-
-### Diagnosi Empirica Rilevata
-1. **Configurazione Globale Pre-Sync**:
-   - `code-inspector` (v1.0.0) e `skill-governance` (v1.0.0) non risultavano installati in `~/.gemini/config/plugins/`.
-   - `telemetry-analytics` era presente come Directory Junction (`d----l`), con conseguente scarto silente da parte del Language Server di Antigravity su Windows (la chiamata RPC `GetAllPlugins` enumerava solo 6 plugin).
-   - `cognitive-persistence` (v1.1.0) e `laws-of-ux` (v1.0.0) erano disallineati rispetto al repository (v1.2.0 e v1.1.0).
-   - Le regole e i runbook dei restanti plugin contenevano versioni non aggiornate ferme al 07/10/2026 (prive delle sezioni anti-razionalizzazione e delle direttive di leggibilità chat).
-2. **Ambito di Discovery per Progetto**:
-   - Confermato il vincolo architetturale: Antigravity non effettua discovery di plugin da `.agents/plugins/` di progetto; l'ingestione avviene esclusivamente dal catalogo globale utente `~/.gemini/config/plugins/`.
-   - Audit progetti: identificata la presenza di vecchie regole e skill loose in repository storici (`ParaMeteo`, `Quiz_VDS-VL`, `WeatherNerdWearOs`) risalenti alla fase pre-plugin, ora incapsulate e gestite globalmente dai rispettivi plugin ufficiali.
-
-### Decisioni Architetturali & Interventi
-1. **Sincronizzazione Fisica Globale (`npm run sync`)**:
-   - Rimozione sicura della junction e copia fisica integrale di tutti i 9 plugin in `~/.gemini/config/plugins/`.
-   - Registrazione formale e abilitazione (`"enabled": true`) di ciascun plugin nel file di configurazione runtime `~/.gemini/config/config.json`.
-2. **Verifica Funzionale Connect-RPC**:
-   - Eseguita interrogazione diretta all'endpoint `LanguageServerService/GetAllPlugins`: tutti i 9 plugin risultano attivi, riconosciuti con `isGlobal: true` e `disabled: false`.
-3. **Validazione Suite di Test**:
-   - Eseguito `npm test` (`scripts/validate.mjs --all`): 10/10 plugin verificati con 0 errori e 0 avvisi.
+## 2026-10-16 — Governance Anti-Bloat per `MEMORY.md` (In-Place per Dominio) e `WORKLOG.md` (Rolling Window & Pointer Index)
+- **Tipo**: Context Engineering / Governance Memoria (`cognitive-persistence` v1.3.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md`](file:///.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md)
+- **Sintesi**:
+  - Formalizzato in [`plugins/cognitive-persistence/rules/AGENTS.md`](file:///plugins/cognitive-persistence/rules/AGENTS.md) e [`skills/memory-sync/SKILL.md`](file:///plugins/cognitive-persistence/skills/memory-sync/SKILL.md) il tetto di **200 righe** per `MEMORY.md` (5–8 sezioni di dominio aggiornate *in-place*, formato `Insidia`/`Regola`, archiviazione in `.agents/archive/MEMORY_v<N>_archive.md`).
+  - Formalizzato per `WORKLOG.md` il modello **Rolling Window + Pointer Index** ($\le 300\text{ righe}$ / max 15 voci da 4–5 righe con link a `.agents/worklog.d/`, divieto di copia integrale del frammento e rotazione in `.agents/archive/WORKLOG_v<N>_archive.md`) e reso `scripts/sync-to-global.mjs` resiliente a lock `EBUSY` su Windows.
 
 ---
 
-## [2026-10-15] ADR: Integrazione Anti-Rationalization Tables e Posizionamento Agentic Harness Engineering
-
-### Contesto & Motivazione
-Dal confronto architetturale con i repository open-source di riferimento nel dominio dell'**Agentic Harness Engineering** e del **Context Engineering** (`addyosmani/agent-skills`, `obra/superpowers`, `anthropics/skills`, `sevenschulte/agentic-harness`), è emerso che:
-1. I modelli LLM tendono a formulare nel proprio *chain-of-thought* razionalizzazioni interne per aggirare i gate di verifica quando un task appare ridotto (es. omettere `npm test` per modifiche di poche righe, citare numeri di riga a memoria senza `view_file`, cedere il turno su task in background senza `schedule`, o ispezionare file durante `/take-note`).
-2. `README.md` presentava emoji decorative nelle intestazioni di sezione in contrasto con `engineering-sobriety/rules/AGENTS.md`, e `package.json` non includeva i topic standard di indicizzazione open-source (`agentic-harness`, `context-engineering`, `agent-skills`, `agents-md`).
-
-### Decisioni Architetturali
-1. **Integrazione di Anti-Rationalization Tables nei 4 Plugin Operativi Chiave**:
-   - Aggiunta la sezione *Tabella di Anti-Razionalizzazione (Razionalizzazione Interna Vietata $\to$ Vincolo Inaggirabile)* in `engineering-workflow/rules/AGENTS.md`, `execution-guard/rules/AGENTS.md`, `code-inspector/rules/AGENTS.md` e `cognitive-persistence/rules/AGENTS.md`.
-2. **Bonifica `README.md` e Inquadramento Open-Source (`package.json`)**:
-   - Rimosse tutte le emoji decorative dalle intestazioni `h2` di `README.md` e allineata la descrizione di `telemetry-analytics`.
-   - Esplicitati in apertura di `README.md` e nelle `keywords` di `package.json` i descrittori standard del dominio: `agentic-harness`, `context-engineering`, `agent-skills`, `antigravity-plugins`, `antigravity-skills`, `agents-md`, `ai-guardrails`, `cognitive-persistence`.
-
-### Impatto e Verifiche
-- Validazione `npm test` (`node scripts/validate.mjs --all`): 10/10 plugin verificati, 0 errori, 0 avvisi; sincronizzazione globale `npm run sync` completata.
+## 2026-10-16 — Visibilità Persistente dell'ETA sui Checkpoint (`toolAction` + `toolSummary`), Soglia Max 2° Turno e Fix Finalizzazione `Stop`
+- **Tipo**: Telemetria & UX In-Flight (`telemetry-analytics` v1.4.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_eta-persistent-checkpoint-visibility.md`](file:///.agents/worklog.d/2026-10-16_eta-persistent-checkpoint-visibility.md)
+- **Sintesi**:
+  - Obbligo di emettere la prima stima (`· ETA tot ~Ns`) **entro il 2° turno** scrivendola sia in `toolAction` sia in `toolSummary` dell'ultimo tool di lettura del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`).
+  - Corretto `collector.mjs` per registrare `etaOutcome` su `Stop` (`--finalize`) anche quando `newSteps.length === 0` e preservare `lastIndex` in `.cursor_<id>.json`.
 
 ---
 
-## [2026-10-15] ADR: Riprogettazione ETA su Intera Lavorazione (Zero Log `ephemeralMessage`, Solo `toolAction` se Attendibile e Variata)
-
-### Contesto & Motivazione
-Il collaudo sul campo delle versioni precedenti dell'ETA ha evidenziato tre problemi di usabilità:
-1. **Log invasivo nei box dei tool**: L'hook `PreInvocation` (`eta-injector.mjs`) restituiva `injectSteps: [{ ephemeralMessage: "[TELEMETRY-ETA-CLOCK]..." }]` ad ogni invocazione, che Antigravity appendeva visibilmente in fondo all'output di ogni singolo tool eseguito.
-2. **Stima sui singoli pezzi anziché sull'intera lavorazione**: Scrivere `Fase X/Y: ... · ~Ns` su ogni chiamata e dentro `toolSummary` lasciava tag temporali permanenti su ogni riga dello storico (`Explored files >`) e portava il modello a stimare la durata del singolo micro-step anziché dell'intero intervento.
-3. **Stime premature o ridondanti**: L'ETA veniva chiesta già al primo `view_file` esplorativo (quando il perimetro del lavoro non è ancora noto) e ripetuta anche quando la stima non era variata, oltre a conteggiare nell'`Elapsed` il tempo di attesa dell'utente su `ask_question`.
-
-### Decisioni Architetturali
-1. **Silenziamento Totale di `stdout` in `eta-injector.mjs` (`{}\n`)**:
-   - `eta-injector.mjs` aggiorna in background `.eta_<conversationId>.json` (sottraendo le pause utente di `ask_question`) ma restituisce sempre `{}` su `stdout`, eliminando il 100% dei blocchi `[TELEMETRY-ETA-CLOCK]` dai log dei tool. L'agente usa i timestamp nativi `Created At` / `Completed At` già presenti in ogni risposta tool.
-2. **Stima Riferita Esclusivamente all'Intera Lavorazione (`ETA tot ~Ns`) e `toolSummary` Pulito (`rules/AGENTS.md`)**:
-   - Vietato inserire l'ETA in `toolSummary` (lo storico dei singoli pezzi resta sempre pulito).
-   - Nessuna ETA durante la ricognizione iniziale, durante `ask_question` o per task brevi (`< 15s`).
-   - Emissione nel solo `toolAction` (`"<Azione> · ETA tot ~Ns"`) **unicamente quando il perimetro dell'intera lavorazione diventa attendibile** e, in seguito, **solo quando la stima complessiva varia in modo significativo** ($\ge 15\text{s}$ o $\ge 30\%$) rispetto all'indicazione precedente.
-3. **Calibrazione su Tempo Attivo Residuo in `collector.mjs`**:
-   - `collector.mjs` confronta la prima stima attendibile (`initialEtaSec`) con il tempo attivo effettivamente trascorso da quel momento fino a `Stop`, al netto delle pause `ask_question`.
-
-### Impatto e Verifiche
-- Validazione `npm test` (`node scripts/validate.mjs --all`) e sincronizzazione globale `npm run sync` completate; verificata la scomparsa immediata dei log `[TELEMETRY-ETA-CLOCK]` dagli output dei tool.
+## 2026-10-15 — Audit Stato Installazione Plugin Globali e Sincronizzazione `config.json`
+- **Tipo**: Infrastruttura & Discovery Runtime (`scripts/sync-to-global.mjs`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-15_global_and_project_plugin_sync_audit.md`](file:///.agents/worklog.d/2026-10-15_global_and_project_plugin_sync_audit.md)
+- **Sintesi**:
+  - Rimossa la junction residua su `telemetry-analytics`, sincronizzati fisicamente tutti i 9 plugin in `~/.gemini/config/plugins/` con abilitazione in `~/.gemini/config/config.json` e verificato il caricamento tramite endpoint RPC `GetAllPlugins`.
 
 ---
 
-## [2026-10-15] ADR: Integrazione Stima ETA In-Flight su Doppio Canale e Auto-Calibrazione in `telemetry-analytics` (v1.1.0)
-
-### Contesto & Motivazione
-Durante l'esecuzione di prompt articolati in più fasi, lo sviluppatore non disponeva di una stima dell'orario di fine lavorazione (ETA) né di un riscontro sull'avanzamento residuo in tempo reale. Inoltre, richiedere al solo modello LLM di stimare l'ETA tramite una regola testuale presenta un limite strutturale: il modello riceve l'orario solo al primo messaggio utente (`ADDITIONAL_METADATA`) ma è privo di un orologio durante i sub-turni intermedi post-tool.
-
-### Decisioni Architetturali
-1. **Integrazione Diretta in `telemetry-analytics` (v1.1.0)**:
-   - Invece di introdurre un plugin separato con duplicazione della lettura di `transcript.jsonl`, il motore ETA è stato integrato direttamente in `telemetry-analytics`.
-2. **Iniettore Real-Time su Hook `PreInvocation` (`scripts/eta-injector.mjs`)**:
-   - Legge l'ultimo step `USER_INPUT` da `transcript.jsonl`, calcola i secondi trascorsi (`Elapsed`), estrae la latenza media storica per step e il fattore di calibrazione da `metrics-summary.json`, e inietta nel contesto un `ephemeralMessage` (`[TELEMETRY-ETA-CLOCK]`).
-3. **Emissione ETA su Doppio Canale + Fast-Path Silence (`rules/AGENTS.md`)**:
-   - **Fast-Path Silence**: nessun banner ETA per risposte corte o dirette (`< 10s`, 0–1 tool) per evitare rumore visivo.
-   - **Canale 1 (Riga di Stato in Chat)**: emissione della riga `[ETA: ~Ns (Fine stimata: HH:MM:SS) | Elapsed: Ns | Fase X/Y: ...]` ad inizio lavorazione e ad ogni cambio di fase, con consuntivo finale `[Completato in Ns | ETA iniziale: ~Ns | Scostamento: ...]`.
-   - **Canale 2 (Pill dei Tool)**: prefisso `[Fase/Tot · ETA ~Ns]` in `toolAction` e `toolSummary` per ogni chiamata a tool durante le lavorazioni multi-step.
-4. **Auto-Calibrazione dell'Errore di Stima (`scripts/collector.mjs` & `scripts/report.mjs`)**:
-   - Alla chiusura del task (`Stop`), `collector.mjs` confronta l'ETA iniziale dichiarata con la durata effettiva del prompt e aggiorna la media mobile esponenziale `etaCalibrationFactor` del workspace, esposta nel report `/plugin-analytics`.
-
-### Impatto e Verifiche
-- Validazione `npm test` (`node scripts/validate.mjs --all`): 10/10 plugin verificati, 0 errori, 0 avvisi.
-- Collaudo `eta-injector.mjs` e `report.mjs` su transcript reale superato.
-- Sincronizzazione fisica globale `npm run sync` completata.
+## 2026-10-15 — Integrazione Anti-Rationalization Tables e Posizionamento Agentic Harness Engineering
+- **Tipo**: Governance Cognitiva & Documentazione (`engineering-workflow`, `execution-guard`, `code-inspector`, `cognitive-persistence`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-15_anti-rationalization-tables-and-harness-positioning.md`](file:///.agents/worklog.d/2026-10-15_anti-rationalization-tables-and-harness-positioning.md)
+- **Sintesi**:
+  - Integrate le *Anti-Rationalization Tables* nei 4 plugin operativi principali per bloccare le scorciatoie del modello su test, numeri di riga, task asincroni e cattura note, e bonificato `README.md` rimuovendo tutte le emoji decorative dalle intestazioni.
 
 ---
 
-## [2026-10-15] ADR: Creazione Plugin `code-inspector` e Skill `/how-its-made` per Verifica Flusso e Codice
-
-### Contesto & Motivazione
-Quando uno sviluppatore riprende in mano un modulo software o deve verificare a livello di codice il comportamento di una funzionalità, le spiegazioni testuali ad alto livello risultano insufficienti (omettono guardie di uscita anticipata, mutazioni collaterali di stato e riferimenti puntuali alle linee), mentre il dump integrale dei file sorgente genera sovraccarico cognitivo. Era necessario un plugin dedicato che strutturasse la ricostruzione del flusso secondo il modello **Punto di Ingresso $\to$ Processo $\to$ Punto di Uscita** con selettori a espansione per ispezionare il codice coinvolto.
-
-### Decisioni Architetturali
-1. **Nuovo Plugin `code-inspector` (`plugins/code-inspector/`)**:
-   - Progettato il protocollo **IPO Esteso (Ingresso $\to$ Guardie $\to$ Processo $\to$ Uscita)** in `rules/AGENTS.md` e nella skill `/how-its-made` (`skills/how-its-made/SKILL.md`).
-2. **Quattro Dimensioni Diagnostiche Integrate**:
-   - **Guardie e Uscite Anticipate (`Early Returns`)**: mappatura esplicita delle precondizioni che interrompono il flusso prima del processo.
-   - **Classificazione Computazionale degli Step**: marcatura obbligatoria di ogni passaggio con `[PURE]`, `[STATE]` o `[I/O]`.
-   - **Tracciamento del Payload (`Data Shape Evolution`)**: documentazione di come muta la struttura dati da `Input Grezzo` a `Output Finale`.
-   - **Stato di Verifica (`Test Coverage`)**: collegamento diretto ai file di test esistenti e segnalazione dei rami privi di copertura.
-3. **Selettori a Espansione in Markdown Nativo (`<details><summary>`)**:
-   - Scelto il rendering nativo GFM in chat per garantire zero latenza aggiuntiva e link `file://` cliccabili verso i numeri di riga verificati (`#Lstart-Lend`), con estratti chirurgici di 10–35 righe per step.
-   - Estratti il template standard in `references/inspection-template.md` e l'esempio reale in `examples/sample-inspection.md` in conformità al principio di divulgazione progressiva (`skill-governance`).
-4. **Auto-Registrazione in `config.json` tramite `scripts/sync-to-global.mjs`**:
-   - Esteso `scripts/sync-to-global.mjs` affinché registri automaticamente ogni nuovo plugin sincronizzato con `"enabled": true` in `~/.gemini/config/config.json`.
-
-### Impatto e Verifiche
-- Suite di validazione `npm test` (`node scripts/validate.mjs --all`): 10/10 plugin verificati, 0 errori, 0 avvisi.
-- Sincronizzazione `npm run sync`: `code-inspector` copiato fisicamente in `~/.gemini/config/plugins/code-inspector` e abilitato in `config.json`.
+## 2026-10-15 — Silenziamento `ephemeralMessage` in `eta-injector.mjs` e Stima Riferita all'Intera Lavorazione
+- **Tipo**: Telemetria & Pulizia Output (`telemetry-analytics` v1.2.0–1.3.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-15_telemetry-eta-pill-only.md`](file:///.agents/worklog.d/2026-10-15_telemetry-eta-pill-only.md), [`.agents/worklog.d/2026-10-15_telemetry-live-eta.md`](file:///.agents/worklog.d/2026-10-15_telemetry-live-eta.md)
+- **Sintesi**:
+  - Silenziato `stdout` (`{}\n`) in `eta-injector.mjs` per eliminare i blocchi `[TELEMETRY-ETA-CLOCK]` dagli output dei tool, sottraendo le pause `ask_question` dal calcolo di `Elapsed` e introducendo l'auto-calibrazione `etaCalibrationFactor`.
 
 ---
 
-## [2026-10-15] ADR: Buffer Pre-Desiderata `NOTES.md`, Cattura In-Flight (`/take-note`) e Triage Differito (`/review-notes`)
-
-### Contesto & Motivazione
-Durante l'uso di un'applicazione (es. GlideMind) o mentre è già aperta una lavorazione in corso (`🟡 In Lavorazione` in `DESIDERATA.md`), emergono osservazioni di UX, idee o anomalie da annotare. Scriverle direttamente nella conversazione attiva innesca cambi di contesto prematuri e spinge l'agente ad analizzare file sorgente che la lavorazione corrente sta ancora modificando. Era necessario un meccanismo a due fasi (CQRS cognitivo): cattura istantanea passiva durante il lavoro e comando dedicato per mostrare le note ed eseguire il task di analisi approfondita a lavorazione conclusa.
-
-### Decisioni Architetturali
-1. **Estensione di `cognitive-persistence` (v1.2.0) a Ciclo Cognitivo 3+1**:
-   - In conformità al principio di *Univocità Semantica del Dominio* (`skill-governance`), il buffer pre-desiderata `NOTES.md` è stato integrato in `cognitive-persistence` anziché frammentato in un plugin separato.
-2. **Skill `/take-note` (`plugins/cognitive-persistence/skills/take-note/SKILL.md`)**:
-   - Registra una nota singola o un batch multi-nota in `NOTES.md` con ID incrementale (`NOTE-XXX`), data/ora e metadato `Lavorazione Attiva al Momento della Nota` (estratto da `DESIDERATA.md`).
-   - Impone una **Guardia Rigida Anti-Analisi Prematura**: divieto assoluto di invocare tool di lettura/ricerca sul codice applicativo o di formulare ipotesi risolutive durante la cattura. Risposta di 1 riga e ripresa immediata del task attivo.
-3. **Skill `/review-notes` (`plugins/cognitive-persistence/skills/review-notes/SKILL.md`)**:
-   - Comando unificato per **mostrare il cruscotto delle note aperte** (`📥 Da Analizzare`) ed **eseguire il task di analisi approfondita** (selettore interattivo `ask_question`, `/review-notes NOTE-XXX` o `/review-notes all`).
-   - Esegue la riconciliazione del delta post-lavorazione (verifica se i task completati nel frattempo hanno impattato l'oggetto della nota), ispeziona il codice sorgente aggiornato, applica le lenti `laws-of-ux` / `proactive-mentorship`, rinomina la sessione via `set-chat-title.mjs` e consolida l'esito promuovendo il requisito in `DESIDERATA.md` e spostando la nota sotto `✅ Analizzate & Consolidate`.
-
-### Impatto e Verifiche
-- Validazione statica `node scripts/validate.mjs --all`: 0 errori.
-- Sincronizzazione fisica globale `npm run sync` completata in `~/.gemini/config/plugins/cognitive-persistence`.
-- Inizializzato `c:/github/glidemind/NOTES.md` con le prime 3 note (`NOTE-001`, `NOTE-002`, `NOTE-003`).
+## 2026-10-15 — Creazione Plugin `code-inspector` e Comando `/how-its-made` con Widget Dual-Tab `<agent-embed>`
+- **Tipo**: Nuovo Plugin / Ispezione Flussi Esecutivi (`plugins/code-inspector/`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-15_code-inspector-plugin.md`](file:///.agents/worklog.d/2026-10-15_code-inspector-plugin.md)
+- **Sintesi**:
+  - Implementato il protocollo IPO Esteso a 5 livelli (*Ingresso $\to$ Guardie $\to$ Processo `[PURE]/[STATE]/[I/O]` $\to$ Payload $\to$ Uscita & Test*) con selettore interattivo `<agent-embed>` dual-tab (`Albero Testuale` + `Grafico a Blocchi`) e cassetti `<details>` con estratti chirurgici verificati.
 
 ---
 
-## [2026-10-09] ADR: Protocollo di Installazione Fisica Globale e Divieto Directory Junction su Windows
-
-### Contesto & Motivazione
-Durante il collaudo dell'attivazione dei plugin su progetti esterni (es. GlideMind), i comandi slash (tra cui `/next-step` e `/memory-sync`) risultavano assenti dall'autocompletamento della chat, nonostante i plugin fossero stati collegati tramite NTFS Directory Junction (`New-Item -ItemType Junction`).
-
-### Diagnosi Empirica & Causa Radice
-1. **Scarto Reparse Points su Windows**: Chiamate Connect-RPC al Language Server (`exa.language_server_pb.LanguageServerService/GetAllPlugins`) hanno dimostrato che il file scanner su Windows ignora i reparse points / Directory Junctions NTFS (trattati come link e scartati).
-2. **Ambito di Discovery dei Plugin**: Antigravity non scansiona `.agents/plugins/` di progetto come root di plugin. I plugin sono scoperti unicamente nella cartella utente globale `~/.gemini/config/plugins/` e abilitati in `~/.gemini/config/config.json`.
-3. **Cache Visuale dei Comandi Slash**: La webview Electron popola la lista dei comandi slash all'inizializzazione della finestra. Per visualizzare nuovi comandi slash nell'autocompletamento, dopo la sincronizzazione fisica è necessario ricaricare la finestra (`Developer: Reload Window`) o riavviare Antigravity.
-4. **Collisioni tra Skill di Workspace e Plugin Globali**: La presenza di una copia locale loose in `<workspace>/.agents/skills/<name>` assieme al plugin globale genera duplicati visivi nella UI. Le skill distribuite tramite plugin globale non devono essere duplicate nel workspace.
-
-### Decisioni Architetturali
-1. **Divieto Assoluto di Directory Junction per i Plugin**: Bandito l'uso di junction o symlink per la registrazione dei plugin su Windows.
-2. **Adozione di Sincronizzazione Fisica Automatizzata (`npm run sync`)**: Implementato lo script `scripts/sync-to-global.mjs` invocabile via `npm run sync`. Lo script rimuove eventuali vecchie junction e clona ricorsivamente le cartelle reali in `~/.gemini/config/plugins/`.
-3. **Allineamento Documentazione e Regole**:
-   - Aggiornato `README.md` con il runbook di sincronizzazione globale (`npm run sync`).
-   - Aggiornato `MEMORY.md` (Sezione 4) registrando il vincolo permanente sul Language Server.
-   - Aggiornato `.agents/skills/install-plugin/SKILL.md` (Sezione 3) rimuovendo le indicazioni errate sulle junction.
-
-### Impatto e Verifiche
-- Validazione automatica `npm test` verificata con 9/9 plugin OK, 0 errori e 0 avvisi.
-- Riconoscimento immediato di tutti gli 8 plugin da parte del Language Server.
-- Eliminati duplicati visivi nel menu di autocompletamento.
-
----
-
-## [2026-10-07] ADR: Ridenominazione Automatica della Sessione di Chat in `/next-step`
-
-### Contesto & Motivazione
-Durante l'avvio di nuove sessioni con `/next-step`, Antigravity assegnava alla sessione un titolo generico ("Next Step Planning") basato sul prompt iniziale. Questo generava ambiguità nella cronologia della sidebar. Era necessario che `/next-step` aggiornasse programmaticamente il titolo della chat con la denominazione dello step preso in carico da `DESIDERATA.md`.
-
-### Decisioni Architetturali
-1. **Integrazione con Antigravity Language Server (Connect-RPC)**:
-   - Identificato l'endpoint Connect-RPC locale `LanguageServerService/UpdateConversationAnnotations`.
-   - Creato lo script autonomo `plugins/cognitive-persistence/scripts/set-chat-title.mjs` (Node.js nativo con zero dipendenze).
-   - Risoluzione automatica della porta di Language Server e del token di autenticazione `x-codeium-csrf-token`.
-   - Rilevamento automatico dell'ID di conversazione attivo da `~/.gemini/antigravity/brain/` quando non esplicitato da linea di comando.
-2. **Aggiornamento Runbook `/next-step` e Regole**:
-   - Aggiunto lo Step 5 ("Ridenominazione Automatica Titolo Chat") nel runbook di `plugins/cognitive-persistence/skills/next-step/SKILL.md`.
-   - Aggiornato `rules/AGENTS.md` (punto 4 nella Direttiva di Avvio Task).
-   - Documentato il componente e aggiornato il diagramma di flusso in `plugins/cognitive-persistence/README.md`.
-3. **Allineamento Configurazione Globale**:
-   - Replicati i file aggiornati in `~/.gemini/config/plugins/cognitive-persistence/`.
-
-### Impatto e Verifiche
-- Collaudo eseguito: sessione corrente ridenominata con successo e riscontrata sia via Connect-RPC che nel database locale `conversation_summaries.db`.
-- Esecuzione `node scripts/validate.mjs` completata con 8/8 plugin validati e 0 anomalie.
-
----
-
-## [2026-10-07] ADR: Introduzione del Comando Slash `/next-step` in `cognitive-persistence`
-
-
-### Contesto & Motivazione
-Il plugin `cognitive-persistence` forniva la skill `memory-sync` per la chiusura del task (End-of-Task Sync), ma necessitava di un punto di ingresso standardizzato e deterministico per l'avvio della sessione (Start-of-Task Intake). Era richiesta la capacità di scansionare automaticamente `DESIDERATA.md`, estrarre vincoli da `MEMORY.md`, generare il prompt esecutivo ed eseguire la transizione di stato verso `🟡 In Lavorazione`.
-
-### Decisioni Architetturali
-1. **Skill `next-step`**:
-   - Creata la skill `plugins/cognitive-persistence/skills/next-step/SKILL.md` esposta come comando slash nativo `/next-step`.
-   - Adottato il naming standard kebab-case (`next-step`) conforme alle specifiche di Antigravity e al validatore di repository.
-2. **Logica di Risoluzione Priorità**:
-   - Priorità 1: Ripresa prioritaria dei task già in stato `🟡 In Lavorazione` da sessioni precedenti.
-   - Priorità 2: Selezione top-down del primo task nello stato `🔴 Pianificato`.
-   - Priorità 3: Notifica di backlog esaurito se tutte le voci sono `🟢 Completato`.
-3. **Iniezione Contesto Cognitivo e Generazione Prompt**:
-   - Estrazione vincoli tecnici da `MEMORY.md` e contesto architetturale da `WORKLOG.md`.
-   - Generazione di prompt esecutivo strutturato con riferimenti mirati (`@file`) e criteri di verifica/test.
-4. **Allineamento Manifest, Regole e Documentazione**:
-   - Aggiornato `plugin.json` (versione `1.1.0`, inserito `/next-step` nei `suggestedPrompts`).
-   - Aggiunta in `rules/AGENTS.md` la sezione 3 ("Direttiva di Avvio Task - Start-of-Task Intake").
-   - Aggiornato `README.md` del plugin con diagramma del ciclo integrato di sviluppo (Avvio $\to$ Sviluppo $\to$ Chiusura).
-5. **Sincronizzazione Ambiente Globale**:
-   - Allineata la copia globale in `~/.gemini/config/plugins/cognitive-persistence/`.
-
-### Impatto e Verifiche
-- Suite di validazione `scripts/validate.mjs` superata con 8 plugin validati, 0 errori e 0 avvisi.
-- Ciclo di sviluppo governato da `cognitive-persistence` completato (avvio tramite `/next-step` e chiusura tramite `/memory-sync`).
-
----
-
-## [2026-10-07] ADR: Documentazione Globale del Repository e Guide Dedicate per Ciascun Plugin
-
-### Contesto & Motivazione
-Il repository raccoglie 7 plugin modulari e 1 template per Google Antigravity. I README iniziali erano sintetici o incompleti, privi di dettagli operativi sul goal primario, sui problemi specifici risolti nel runtime di Antigravity, sulle sinergie tra componenti e sulle modalità di installazione avanzata (es. Directory Junctions su Windows).
-
-### Decisioni Architetturali
-1. **Root `README.md`**:
-   - Esposizione formale dei 5 principi guida (modularità, two-phase token model, anti-sycophancy, resilienza operativa, continuità cognitiva).
-   - Catalogo completo con percorsi relativi e sintesi degli obiettivi primari (Goal).
-   - Sezione dettagliata per le 4 modalità di installazione (workspace, junction/symlink, globale, meta-skill).
-   - Guida alla contribuzione e documentazione dei controlli di `scripts/validate.mjs`.
-2. **Guide Dedicate per Singolo Plugin**:
-   - `cognitive-persistence`: triade cognitiva (`MEMORY.md`, `WORKLOG.md`, `DESIDERATA.md`), schema ADR in `worklog.d/` e flusso End-of-Task Sync con Mermaid.
-   - `engineering-sobriety`: pilastri anti-sycophancy, tabella di bonifica lessicale (banned vs replacement) e skill `tone-audit`.
-   - `engineering-workflow`: staging chirurgico, Conventional Commits, ciclo Git Worktree e fault localization deterministica con breadcrumb trace.
-   - `execution-guard`: watchdog reattivo su task asincroni (`schedule` e `TimerCondition`), massimali del circuit breaker salva-token e timeout Node.js.
-   - `laws-of-ux`: 30 Laws of UX articolate in 7 skill tematiche, 5 regole contestuali e report euristico P0-P3.
-   - `proactive-mentorship`: 4 pilastri di scrutinio critico (KISS/YAGNI, prompt, casi limite, standard), box di mentorship e skill `prompt-refactor`.
-   - `skill-governance`: architettura token a due stadi, audit dimensionale (A-E), scomposizione a divulgazione progressiva e collision check.
-   - `starter-plugin`: blueprint standardizzato per lo sviluppo rapido di nuovi plugin conformi a SemVer e al validatore.
-
-### Impatto e Verifiche
-- Tutti gli 8 plugin dispongono ora di documentazione approfondita.
-- Esecuzione di `npm test` superata con esito positivo: 8/8 plugin validati, 0 errori, 0 avvisi.
-
----
-
-## [2026-10-07] ADR: Ridenominazione Automatica della Sessione di Chat in `/next-step`
-
-### Contesto & Motivazione
-Durante l'avvio di una nuova sessione di sviluppo tramite il comando slash `/next-step`, Antigravity assegnava alla sessione un titolo generico ("Next Step Planning") basato sul prompt iniziale. Di conseguenza, nella sidebar dell'applicazione desktop e dell'IDE comparivano molteplici chat con identica titolazione, rendendo difficoltosa la rapida localizzazione e differenziazione degli interventi in corso o storici.
-
-### Decisioni Architetturali
-1. **Analisi del Runtime di Antigravity**:
-   - Individuato il meccanismo interno di gestione dei metadati di sessione: le conversazioni sono archiviate in `conversation_summaries.db` e gestite dal processo locale `language_server.exe`.
-   - Verificato che l'endpoint locale Connect-RPC `LanguageServerService/UpdateConversationAnnotations` (su porta dinamica `https://127.0.0.1:<port>/`) consente l'aggiornamento in tempo reale dei metadati di annotazione (`title`), notificando la UI reattiva Electron via stream `StreamCascadeSummariesReactiveUpdates`.
-2. **Creazione dello Script di Ridenominazione (`set-chat-title.mjs`)**:
-   - Creato lo script autonomo `plugins/cognitive-persistence/scripts/set-chat-title.mjs` con zero dipendenze esterne (solo moduli nativi Node.js: `fs`, `path`, `https`, `child_process`).
-   - Implementata la risoluzione deterministica della porta tramite analisi di `main.log` e fallback su porte in ascolto di sistema.
-   - Implementata l'estrazione automatica del token di autenticazione `x-codeium-csrf-token` dal file HTML dell'applicazione.
-   - Supportata la risoluzione automatica della conversazione attiva tramite scansione cronologica di `~/.gemini/antigravity/brain/` quando `--conversation-id` non viene specificato.
-3. **Integrazione nel Runbook di `/next-step`**:
-   - Aggiornato `plugins/cognitive-persistence/skills/next-step/SKILL.md` introducendo lo "Step 5: Ridenominazione Automatica del Titolo della Chat" prima della conferma di avvio sviluppo.
-   - Aggiornato `rules/AGENTS.md` inserendo il punto 4 nella "Direttiva di Avvio Task".
-   - Aggiornati il diagramma di flusso e la tabella componenti in `plugins/cognitive-persistence/README.md`.
-4. **Sincronizzazione Ambiente Globale**:
-   - Replicati lo script e le definizioni aggiornate nella configurazione globale utente `~/.gemini/config/plugins/cognitive-persistence/`.
-
-### Impatto e Verifiche
-- Validazione automatica `scripts/validate.mjs` superata con esito positivo (8 plugin verificati, 0 errori, 0 avvisi).
-- All'invocazione di `/next-step`, il titolo della chat nella barra laterale di Antigravity viene immediatamente rinominato con il nome dello step selezionato da `DESIDERATA.md`.
-
----
-
-## [2026-10-07] ADR: Creazione del Plugin `telemetry-analytics` (Invocazioni, Latenza e Tool Metrics)
-
-### Contesto & Motivazione
-Nel runtime di Antigravity mancava un meccanismo trasparente e quantitativo per misurare il tempo di utilizzo effettivo dei plugin, la frequenza delle invocazioni di skill e i tassi di successo dei tool nativi. L'approccio ingenuo con hook sincroni per-tool (`PreToolUse`/`PostToolUse`) comportava un overhead di process spawning proibitivo su Windows (~150ms per tool). L'utente ha optato per un'architettura **ibrida** (storage centrale globale con tag di workspace).
-
-### Decisioni Architetturali
-1. **Plugin `telemetry-analytics`**:
-   - Manifest SemVer `1.0.0` conforme alle specifiche con 3 suggested prompts.
-   - Registrazione hook in `hooks.json` su `PostInvocation` e `Stop`, eliminando qualsiasi overhead durante l'esecuzione dei singoli tool call.
-2. **Ingestore Batch `scripts/collector.mjs`**:
-   - Zero dipendenze esterne (solo API native `node:fs`, `node:path`, `node:os`).
-   - Normalizzazione rigorosa dei percorsi su Windows (`\\\\` -> `/`, quote stripping, boundary check `(?:^|\/)plugins\/`).
-   - Rilevamento incrementale tramite file cursore `.cursor_<sessionId>.json` per evitare ricalcoli $O(N)$ sui log di transcript.
-   - Watchdog di sicurezza rigido (`setTimeout` unref) conforme alle regole di `execution-guard`.
-3. **Persistenza e Reporting Ibrido**:
-   - Archiviazione in `~/.gemini/antigravity/analytics/` (`events.ndjson` e `metrics-summary.json`).
-   - Script CLI `scripts/report.mjs` con supporto per `--workspace`, `--global`, `--json`, `--csv`, `--reset`.
-   - Skill `plugin-analytics` (dashboard tabellare Markdown) e `telemetry-export` (esportazione CSV/JSON).
-4. **Sincronizzazione Globale**:
-   - Creata Directory Junction verso `~/.gemini/config/plugins/telemetry-analytics` per garantire disponibilità immediata a livello utente.
-
-### Impatto e Verifiche
-- Suite `npm test` superata con 9 plugin validati, 0 errori, 0 avvisi.
-- Test end-to-end eseguito con successo sul transcript reale della sessione: rilevati correttamente tempo di esecuzione, token consumati (input, output, cache ratio), tool chiamati e plugin intercettati (`laws-of-ux`, `telemetry-analytics`, ecc.).
-
----
-
-## [2026-10-10] ADR: Integrazione Standard Ingegneristici ed Ergonomici da Audit GlideMind
-
-### Contesto & Motivazione
-A seguito dell'audit delle direttive e dei comportamenti richiesti agli agenti nel repository [GlideMind](file:///c:/github/GlideMind), sono stati isolati ed estratti i pattern architetturali trasversali di valore sistemico, arricchendo la suite `antigravity-plugins` senza introdurre specifiche parassite di dominio aerologico o aeronautico.
-
-### Decisioni Architetturali
-1. **`engineering-sobriety`**:
-   - Aggiornata la regola `rules/AGENTS.md` (Sezione 4) con il bando rigoroso alle emoji decorative non funzionali (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`) sia nel codice sia nell'interfaccia.
-   - Aggiornata la skill `tone-audit` per scansionare e bonificare simboli decorativi nei sorgenti e markup.
-2. **`engineering-workflow`**:
-   - Introdotte in `rules/AGENTS.md` le Sezioni 4 e 5: prescrizione dell'architettura headless core (zero DOM nei moduli computazionali, 100% testabili in puro Node.js) con injectable storage adapter, e protocollo Shift-Left.
-   - Creata la nuova skill `shift-left-governance` dotata di template per test suite di governance automatizzata (`tests/governance.test.mjs`).
-3. **`execution-guard`**:
-   - Integrata in `rules/AGENTS.md` la Sezione 4 che vieta chiamate di rete live verso API esterne soggette a quota o rate-limit durante test e crawler automatici, prescrivendo mock deterministici e fixture offline.
-4. **`laws-of-ux`**:
-   - Aggiunta in `rules/AGENTS.md` la Sezione 8 sugli standard ergonomici outdoor, field e wearable (alta luminosità solare, touch target $\ge 48\text{px}$ con pseudo-elementi, caroselli a riga singola `pan-x`, gesti cooperativi `pan-y` per canvas/mappe, `100dvh` e feedback tri-modale colore+testo+icona).
-   - Creata la nuova skill `ux-outdoor-and-field-ergonomics`.
-5. **`proactive-mentorship`**:
-   - Aggiornata la skill `prompt-refactor` con la sezione Tabular Token Economy (serializzazione compatta Markdown/pipe-delimited per serie storiche verso LLM, con riduzione dell'80% dei token).
-
-### Impatto e Verifiche
-- Eseguito `node scripts/validate.mjs --all`: 9 plugin verificati con 0 errori e 0 avvisi.
-- Eseguito `npm run sync`: aggiornati fisicamente tutti i plugin in `~/.gemini/config/plugins/`.
-- Allineata la matrice di stato [DESIDERATA.md](file:///c:/github/antigravity-plugins/DESIDERATA.md) e redatto il frammento di worklog.
-
+## 2026-10-15 — Buffer Pre-Desiderata `NOTES.md`, Cattura In-Flight (`/take-note`) e Triage Differito (`/review-notes`)
+- **Tipo**: Architettura Cognitiva 3+1 (`cognitive-persistence` v1.2.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-15_in-flight-notes-and-review-workflow.md`](file:///.agents/worklog.d/2026-10-15_in-flight-notes-and-review-workflow.md)
+- **Sintesi**:
+  - Introdotto il file canonico `NOTES.md` con cattura passiva a zero cambio di contesto (`/take-note`, divieto di lettura codice sorgente) e comando di analisi approfondita a lavorazione ferma (`/review-notes`) per la promozione controllata in `DESIDERATA.md`.

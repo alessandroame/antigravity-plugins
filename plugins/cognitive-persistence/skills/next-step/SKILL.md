@@ -57,8 +57,10 @@ Quando questa skill viene invocata (tramite comando slash `/next-step` o richies
 
 1. Ispeziona `MEMORY.md`:
    - Cerca vincoli stabili, particolarità di runtime o antipattern banditi che abbiano attinenza con i moduli o le tecnologie impattate dal task selezionato.
-2. Ispeziona l'ultimo record in `WORKLOG.md` o i frammenti recenti in `.agents/worklog.d/`:
+   - **Check Guardia Anti-Bloat (`> 200 righe`)**: Se `MEMORY.md` supera le **200 righe** o utilizza ancora un formato ad append cronologico numerato, segnala nel briefing la necessità di eseguire una compattazione per dominio (con archiviazione in `.agents/archive/MEMORY_v<N>_archive.md`) durante il successivo `/memory-sync`.
+2. Ispeziona la finestra mobile di `WORKLOG.md` (e all'occorrenza i frammenti recenti linkati in `.agents/worklog.d/`):
    - Verifica lo stato dell'architettura e delle ultime decisioni tecniche per garantire coerenza con il nuovo intervento.
+   - **Check Finestra Mobile (`> 300 righe` / `> 15 interventi`)**: Se `WORKLOG.md` supera le **300 righe** o contiene ADR copiati per intero anziché *Pointer Record* da 4–5 righe, segnala nel briefing la necessità di eseguire la rotazione in `.agents/archive/WORKLOG_v<N>_archive.md` durante il successivo `/memory-sync`.
 
 ### Step 3: Generazione del Briefing Operativo e del Prompt Esecutivo
 

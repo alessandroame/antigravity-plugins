@@ -32,18 +32,22 @@ for (const entry of pluginEntries) {
     continue;
   }
 
-  // Remove existing symlink/junction or directory before copying
+  // Remove existing symlink/junction or directory before copying (with EBUSY fallback for active OS watchers)
   if (fs.existsSync(dest)) {
     const stat = fs.lstatSync(dest);
     if (stat.isSymbolicLink()) {
       fs.unlinkSync(dest);
     } else {
-      fs.rmSync(dest, { recursive: true, force: true });
+      try {
+        fs.rmSync(dest, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+      } catch {
+        // Directory handle held by active IDE watcher on Windows: overwrite files in-place via cpSync
+      }
     }
   }
 
-  // Perform recursive physical directory copy
-  fs.cpSync(src, dest, { recursive: true });
+  // Perform recursive physical directory copy (force: true overwrites existing files in-place)
+  fs.cpSync(src, dest, { recursive: true, force: true });
   console.log(`   [OK] Physically synchronized: ${pluginName}`);
   syncedPluginNames.push(pluginName);
 }
