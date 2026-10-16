@@ -1,56 +1,31 @@
 # Standard di Qualità, Governance e Ottimizzazione delle Skill
 
-Questo documento definisce i principi di progettazione, economia dei token e univocità semantica per la creazione e manutenzione delle skill in Antigravity.
+Questo documento definisce i principi di progettazione, economia dei token e univocità semantica per le skill in Antigravity.
 
 ---
 
-## 1. Economia del System Prompt e Regole di Trigger
+## 1. Economia del System Prompt e Regole di Trigger (`SKILL.md` Frontmatter)
 
-In Antigravity, il frontmatter YAML di ogni skill attiva (`name` e `description`) viene iniettato nel system prompt di **ogni singolo turno** di conversazione:
-
-1. **Vincolo di Lunghezza sulla `description`**:
-   - La `description` deve avere una lunghezza compresa tra **80 e 250 caratteri** (massimo 40-50 token).
-   - È vietato inserire nel frontmatter spiegazioni teoriche, elenchi puntati o la sintesi dell'intero workflow: questi dettagli appartengono al corpo del file.
+Il frontmatter YAML (`name` e `description`) di ogni skill attiva viene iniettato nel system prompt di **ogni turno**:
+1. **Lunghezza della `description` (`80–250` caratteri)**:
+   - La `description` deve contare tra **80 e 250 caratteri** ($\le 45\text{ token}$), senza elenchi né dettagli operativi che appartengono al corpo del file.
+   - **Sicurezza YAML Strict**: non usare mai i due punti seguiti da spazio (`: `) in una `description` inline non quotata (altrimenti il parser YAML di Antigravity scarta silenziosamente la skill); usare il blocco folded `>-` o racchiudere tra virgolette.
 2. **Formulazione Direttiva dei Trigger**:
-   - La `description` deve dichiarare esplicitamente i casi d'uso con frasi condizionali chiare:
-     - *"Use this skill when..."* oppure *"Utilizza questa skill quando..."*
-   - Includere sia le azioni primarie sia i contesti di attivazione (es. nomi di tool, slash command o file tipici).
-3. **Divieto di Trigger Troppo Generici**:
-   - Evitare parole chiave onnicomprensive (es. "aiuta con il codice", "ottimizza file") che provocherebbero falsi positivi e attivazioni involontarie.
+   - Includere sempre la formula condizionale esplicita *"Use this skill when..."* / *"Use this skill to..."* oppure *"Utilizza questa skill quando..."*, specificando i contesti di attivazione (comandi slash, tool o file target).
+   - Evitare trigger generici ("aiuta con il codice", "ottimizza file") che generano falsi positivi.
 
 ---
 
-## 2. Architettura a Divulgazione Progressiva (Progressive Disclosure)
+## 2. Architettura a Divulgazione Progressiva (Corpo $\le 200\text{ Righe}$)
 
-Il corpo del file `SKILL.md` viene letto on-demand dall'agente tramite `view_file` solo al momento dell'attivazione:
-
-1. **Taglia Massima di `SKILL.md`**:
-   - Il file principale non deve superare le **150–200 righe**.
-   - Deve funzionare come runbook operativo: passaggi sequenziali ordinati (Step 1, Step 2, Step 3), comandi precisi e guardie di controllo.
-2. **Estrazione di Asset Ausiliari**:
-   - **Cataloghi, schemi e teoria** $\to$ estrarre nella sottocartella `references/` (es. `references/schema.json`, `references/theory.md`).
-   - **Template di codice ed esempi d'uso** $\to$ estrarre nella sottocartella `examples/` (es. `examples/before-after.md`).
-   - **Script riutilizzabili** $\to$ estrarre nella sottocartella `scripts/` (es. `scripts/helper.mjs`).
-   - In `SKILL.md`, indicare all'agente di consultare i file ausiliari tramite percorsi relativi solo quando strettamente necessario.
+Il corpo di `SKILL.md` viene letto on-demand tramite `view_file` solo all'attivazione:
+1. **Taglia Massima di `SKILL.md`**: massimo **150–200 righe**, strutturato come runbook sequenziale (Step 1, Step 2, Step 3) con comandi e guardie di verifica.
+2. **Estrazione di Asset Ausiliari**: spostare schemi/teoria in `references/`, template in `examples/` e script eseguibili in `scripts/`, richiamandoli per percorso relativo.
 
 ---
 
-## 3. Prevenzione Collisioni e Shadowing
+## 3. Prevenzione Collisioni, Shadowing e Determinismo
 
-1. **Univocità Globale del Nome**:
-   - Il campo `name` deve essere univoco nell'intero ambiente in `kebab-case`.
-   - Se due skill hanno lo stesso nome, Antigravity applica la gerarchia di precedenza (Workspace $>$ Plugins dichiarati $>$ Global $>$ Built-in) scartando silenziosamente la skill a priorità inferiore.
-2. **Univocità Semantica del Dominio**:
-   - Prima di creare una nuova skill, verificare che non esista già una procedura con lo stesso obiettivo in un plugin collegato o nella cartella `.agents/skills/`.
-   - In caso di sovrapposizione parziale, preferire l'estensione della skill esistente o la modularizzazione tramite parametri anziché duplicare il componente.
-
----
-
-## 4. Determinismo, Tool Coupling e Punti di Verifica
-
-1. **Dichiarazione Pre-requisiti e Tool Necessari**:
-   - Ogni skill deve dichiarare esplicitamente i comandi CLI o i tool integrati richiesti (es. `node >= 18`, `git`, server MCP specifici).
-2. **Check di Verifica Obbligatori (Expected Output)**:
-   - Al termine di ogni azione critica (build, test, migrazione dati), la skill deve prescrivere una verifica deterministica dell'output (es. codice di uscita, presenza del file generato, assenza di warning).
-3. **Guardia Anti-Deadlock**:
-   - Per comandi lenti o asincroni, prescrivere timeout e controlli di stato espliciti, evitando loop di polling aperti.
+1. **Univocità Globale del Nome (`kebab-case`)**: due skill con lo stesso `name` attivano lo shadowing silenzioso (Workspace $>$ Plugins $>$ Global $>$ Built-in).
+2. **Univocità Semantica**: evitare più skill con trigger sovrapposti sullo stesso intento operativo; fondere o specializzare i trigger.
+3. **Check di Verifica e Guardia Anti-Deadlock**: dichiarare prerequisiti, output atteso verificabile e timeout espliciti per comandi asincroni.

@@ -1,8 +1,7 @@
 ---
 name: circuit-breaker
 description: >-
-  Salvaguardia salva-token e interruzione di loop agentici ricorsivi. Rileva errori invarianti,
-  blocca tentativi iterativi a vuoto su test/build e applica rollback di sicurezza in caso di regressioni.
+  Utilizza questa skill quando si verificano errori ripetuti su build o test per interrompere loop ricorsivi, rilevare errori invarianti e applicare il rollback di sicurezza sulle regressioni.
 ---
 
 # Circuit Breaker Protocol & Loop Governor

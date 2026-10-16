@@ -1,74 +1,49 @@
 # Regole di Telemetria, Stima ETA In-Flight e Riservatezza Dati
 
-Questo documento definisce i criteri operativi per la gestione delle metriche di utilizzo dei plugin, il protocollo di emissione dell'ETA (Estimated Time of Arrival) riferito all'intera lavorazione e la riservatezza dei dati nel runtime di Antigravity.
+Questo documento definisce i criteri per la gestione delle metriche di utilizzo, il protocollo di emissione dell'ETA riferito all'intera lavorazione e la riservatezza dei dati locali.
 
 ---
 
 ## 1. Principi di Trasparenza Metrica e Sobrietà
-1. **Misurazioni Oggettive**:
-   - Riportare i valori temporali in millisecondi (`ms`) o secondi (`s`), con metriche quantitative dimostrate (`calls`, `success rate`, `tokens`, `elapsed`).
-   - Evitare qualsiasi aggettivazione enfatica o stime arbitrarie non ancorate ai log di esecuzione.
-2. **Visibilità degli Errori**:
-   - Dichiarare apertamente i fallimenti dei tool di sistema, gli scostamenti tra ETA stimata e tempo reale e i tassi di successo senza omissioni o arrotondamenti compiacenti.
+1. **Misurazioni Oggettive**: riportare i tempi in `ms` o `s` con metriche quantitative dimostrate (`calls`, `success rate`, `tokens`, `elapsed`), senza stime arbitrarie né aggettivi enfatici.
+2. **Visibilità degli Errori**: dichiarare apertamente i fallimenti dei tool e gli scostamenti tra ETA stimata e tempo reale.
 
 ---
 
-## 2. Protocollo di Stima ETA Complessiva (Badge + Semaforo sui Checkpoint)
+## 2. Protocollo di Stima ETA Complessiva (`【🟢/🟡/🔴 ETA tot ~Ns】`)
 
-L'indicazione dell'ETA riguarda **esclusivamente il tempo residuo per completare l'intera lavorazione richiesta dall'utente**, mai la durata del singolo step o del singolo tool.
+L'ETA indica **esclusivamente il tempo residuo per completare l'intera lavorazione richiesta dall'utente**, mai la durata del singolo step.
 
-### 2.1 Formato Visivo Ad Alto Contrasto: Badge + Semaforo (`【🟢/🟡/🔴 ETA tot ~Ns】`)
-Poiché la UI di Antigravity renderizza `toolAction` e `toolSummary` come nodi di testo puro (`textContent`) ignorando CSS, HTML o codici ANSI, l'ETA deve essere formattata con **parentesi lenticolari piene `【...】` + semaforo semantico di durata** per garantire risalto immediato:
+### 2.1 Formato Visivo Ad Alto Contrasto: Badge + Semaforo
+Usare parentesi lenticolari piene `【...】` e semaforo di fascia:
 - `【🟢 ETA tot ~15s】` — **Fascia Breve** ($15\text{s} \le \text{ETA} \le 20\text{s}$)
 - `【🟡 ETA tot ~40s】` — **Fascia Media** ($21\text{s} \le \text{ETA} \le 60\text{s}$)
 - `【🔴 ETA tot ~90s】` — **Fascia Lunga** ($\text{ETA} > 60\text{s}$)
 
-### 2.2 Quando Emettere la Prima Stima (Soglia Massima 2° Turno)
-1. **Silenzio al 1° Turno Esplorativo, Domande Utente e Task Brevi**:
-   - Al **1° turno** di ricognizione iniziale (prima lettura file per inquadrare il problema), mentre si attende una risposta dall'utente (`ask_question`) o per lavorazioni rapide (`< 15s` complessivi), **non emettere alcuna ETA**.
-2. **Obbligo di Prima Emissione entro il 2° Turno Operativo**:
-   - **Entro e non oltre il 2° turno di chiamate tool** (o già al 1° turno se il perimetro è noto fin dal prompt), se il tempo totale residuo per completare l'intera lavorazione è $\ge 15\text{s}$, l'agente **DEVE** emettere la prima stima complessiva nel formato `【🟢/🟡/🔴 ETA tot ~Ns】`.
-   - È vietato procrastinare la prima stima oltre il 2° turno anche durante sessioni di debug o ricerca multi-file.
+### 2.2 Quando Emettere la Prima Stima (Entro il 2° Turno)
+1. **Silenzio al 1° Turno Esplorativo, Domande e Task Brevi**: al 1° turno di ricognizione, in attesa di `ask_question` o per task rapidi ($< 15\text{s}$), non emettere ETA.
+2. **Obbligo entro il 2° Turno Operativo**: entro e non oltre il 2° turno di chiamate tool (o al 1° se il perimetro è già noto), se il tempo residuo totale è $\ge 15\text{s}$, emettere la stima `【🟢/🟡/🔴 ETA tot ~Ns】`.
 
-### 2.3 Visibilità Persistente sui Soli Tool di Svolta (`toolAction` + `toolSummary` Accoppiati)
-Nella UI di Antigravity, `toolAction` è visibile solo per poche centinaia di millisecondi durante l'esecuzione del tool e viene subito sostituito da `toolSummary`, mentre le letture consecutive (`view_file`) vengono collassate nel gruppo `Explored N files >`. Per garantire che l'ETA sia sempre visibile all'utente senza inquinare ogni riga dello storico:
-
-1. **Accoppiamento `toolAction` + `toolSummary` sul Singolo Tool di Checkpoint**:
-   - Quando si emette la prima stima o quando la stima viene ricalibrata, inserire il badge `【🟢/🟡/🔴 ETA tot ~Ns】` **sia in `toolAction` sia in `toolSummary` di un unico tool del turno**:
-     - `toolAction`: `"<Descrizione azione> 【🟡 ETA tot ~40s】"`
-     - `toolSummary`: `"<Descrizione azione> 【🟡 ETA tot ~40s】"`
-   - Nei batch di sole letture (`view_file`), applicare il badge sull'**ultimo tool del batch** (così resta visibile più a lungo nello spinner e in fondo al gruppo).
-2. **Ancoraggio Obbligatorio sul Primo Tool Operativo Top-Level (Uscita da `Explored files >`)**:
-   - Poiché i gruppi `view_file` vengono chiusi automaticamente da Antigravity, al passaggio dalla ricognizione alla fase operativa (**primo `replace_file_content`, `write_to_file` o `run_command` di modifica/verifica**), riportare l'ETA residua aggiornata (`【🟢/🟡/🔴 ETA tot ~Ns】`) in `toolAction` e `toolSummary` di quel primo tool operativo (che resta sempre visibile in primo piano nella colonna di chat).
-3. **Silenzio su Tutti gli Altri Tool e nel Testo Chat**:
-   - Tutti gli altri tool del task devono mantenere `toolAction` e `toolSummary` privi di ETA.
-   - Emettere un nuovo aggiornamento di `【🟢/🟡/🔴 ETA tot ~Ns】` **solo se** la previsione residua varia in modo significativo rispetto all'ultima stima visibile ($\ge 15\text{s}$ o $\ge 30\%$).
-   - Non stampare righe `[ETA...]` nel corpo testuale dei messaggi di chat.
+### 2.3 Visibilità Persistente sui Tool di Svolta (`toolAction` + `toolSummary` Accoppiati)
+1. **Accoppiamento sul Singolo Tool di Checkpoint**: scrivere il badge `【🟢/🟡/🔴 ETA tot ~Ns】` **sia in `toolAction` sia in `toolSummary`** di un unico tool del turno (sull'ultimo tool nei batch di soli `view_file`).
+2. **Ancoraggio sul Primo Tool Operativo Top-Level**: poichè i gruppi `view_file` vengono collassati in `Explored N files >`, riportare l'ETA residua aggiornata in `toolAction` e `toolSummary` del **primo `replace_file_content`, `write_to_file` o `run_command`**.
+3. **Silenzio sugli Altri Tool e in Chat**: lasciare privi di ETA tutti gli altri tool del turno; aggiornare la stima solo se varia di $\ge 15\text{s}$ o $\ge 30\%$; non stampare righe `[ETA...]` nel testo della chat.
 
 ### 2.4 Baseline di Calcolo per l'Intera Lavorazione
-Sommare il peso di tutti i passaggi rimanenti fino al termine dell'intera lavorazione:
-- **Turno di lettura / ricerca**: `3s – 5s` per batch parallelo.
-- **Turno di modifica file** (`replace_file_content`, `write_to_file`): `6s – 10s` per batch.
-- **Comandi CLI / Suite di Test** (`run_command`): `8s – 20s` per comando.
-- **Sintesi risposta finale LLM**: `5s – 8s`.
+Sommare i passaggi residui: lettura/ricerca `3–5s` per batch; modifica file `6–10s` per batch; comandi CLI/test `8–20s`; sintesi risposta finale `5–8s`.
 
 ---
 
-## 3. Architettura Ibrida, Governance Anti-Bloat e Riservatezza Locale
-1. **Confini di Persistenza e Contenimento Disco (`~/.gemini/antigravity/analytics/`)**:
-   - Tutti i dati di telemetria e i cursori di stato (`.cursor_*`, `.eta_*`) risiedono esclusivamente nel filesystem locale dell'utente.
-   - Alla finalizzazione del task (`Stop` / `--finalize`), `collector.mjs` applica il **TTL Garbage Collection (`7 giorni`)** rimuovendo i file `.cursor_*.json` e `.eta_*.json` inattivi e ruota `events.ndjson` in `events.archive.ndjson` al superamento di **5 MB** (preservando le metriche cumulative in `metrics-summary.json`).
-   - È severamente vietato trasmettere eventi di telemetria, payload di log o percorsi a endpoint di rete esterni.
-2. **Isolamento Workspace**:
-   - Quando si presentano report su richiesta dell'utente, limitare la visualizzazione predefinita al workspace corrente, a meno che l'utente non richieda esplicitamente la vista globale cross-project.
+## 3. Governance Anti-Bloat e Riservatezza Locale (`~/.gemini/antigravity/analytics/`)
+1. **Persistenza Locale e Rotazione**: tutti i dati risiedono solo in locale. A fine task (`collector.mjs`), il TTL Garbage Collection (`7 giorni`) rimuove i cursori `.cursor_*`/`.eta_*` inattivi e ruota `events.ndjson` in `events.archive.ndjson` oltre **5 MB**. Vietato trasmettere telemetria in rete.
+2. **Isolamento Workspace**: limitare i report al workspace corrente salvo richiesta esplicita di vista globale.
 
 ---
 
-## 4. Tabella di Anti-Razionalizzazione (Visibilità ETA)
+## 4. Tabella di Anti-Razionalizzazione
 
-| Razionalizzazione Interna dell'Agente (Vietata) | Vincolo Inaggirabile (Rebuttal) |
+| Razionalizzazione Vietata | Vincolo Inaggirabile (Rebuttal) |
 | :--- | :--- |
-| *"Sto ancora cercando la causa del bug nel CSS, aspetto di aver trovato la soluzione prima di emettere l'ETA."* | Vietato superare il 2° turno di tool senza stima: se il task dura $\ge 15\text{s}$, emettere la prima stima `【🟢/🟡/🔴 ETA tot ~Ns】` entro il 2° turno e ricalibrarla se necessario. |
-| *"Metto `【🟡 ETA tot ~40s】` solo in `toolAction` e lascio `toolSummary` senza ETA."* | `toolAction` scompare dopo `< 1s` a fine tool: sul singolo tool di svolta/checkpoint, `【🟢/🟡/🔴 ETA tot ~Ns】` va scritto sia in `toolAction` sia in `toolSummary`. |
-| *"Scrivo `· ETA tot ~40s` senza parentesi `【...】` né semaforo per fare prima."* | Senza il badge `【🟢/🟡/🔴 ETA tot ~Ns】` la stima si confonde con il testo del tool: usare sempre le parentesi lenticolari `【...】` e il semaforo di fascia (`🟢` $\le 20\text{s}$, `🟡` $21\text{–}60\text{s}$, `🔴` $> 60\text{s}$). |
-| *"Ho già messo l'ETA su un `view_file`, non serve rimetterla sul primo `replace_file_content`."* | I `view_file` finiscono collassati dentro `Explored N files >`: riportare sempre la stima residua sul primo tool operativo top-level (`replace_file_content`, `write_to_file`, `run_command`). |
+| *"Cerco ancora il bug, emetterò l'ETA dopo."* | Vietato superare il 2° turno di tool senza stima se il task dura $\ge 15\text{s}$. |
+| *"Metto l'ETA solo in `toolAction` e non in `toolSummary`."* | `toolAction` scompare a fine tool: sul tool di checkpoint l'ETA va sia in `toolAction` sia in `toolSummary`. |
+| *"Ho messo l'ETA su `view_file`, non la rimetto su `replace_file_content`."* | I `view_file` collassano in `Explored files >`: riportare l'ETA sul primo tool operativo top-level. |

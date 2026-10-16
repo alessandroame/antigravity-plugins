@@ -1,9 +1,7 @@
 ---
 name: laws-of-ux-audit
 description: >-
-  Use this skill to conduct a comprehensive UX Heuristic Audit of an existing screen,
-  application, design system, or pull request across all 30 Laws of UX (Gestalt, ergonomics,
-  cognitive load, behavior, and performance). Produces a prioritized remediation report (P0-P3).
+  Use this skill when conducting a UX Heuristic Audit of a screen, application, or design system across the 30 Laws of UX (Gestalt, ergonomics, cognitive load, performance) with P0-P3 remediation.
 ---
 
 # Laws of UX Heuristic Audit Skill

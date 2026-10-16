@@ -1,9 +1,7 @@
 ---
 name: task-watchdog
 description: >-
-  Previene stalli di esecuzione dell'agente e task zombi durante l'esecuzione di comandi asincroni,
-  test lunghi o script headless. Utilizza quando un comando scivola in background, quando si configura un timer
-  di sicurezza o quando si diagnostica un processo che non risponde.
+  Utilizza questa skill quando un comando scivola in background, quando configuri un timer di sicurezza schedule o quando diagnostichi processi asincroni e task bloccati.
 ---
 
 # Task Watchdog & Anti-Freeze Runbook

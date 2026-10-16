@@ -1,6 +1,7 @@
 ---
 name: starter-action
-description: Descrizione sintetica della procedura o automazione eseguita da questa skill.
+description: >-
+  Utilizza questa skill quando devi eseguire un flusso operativo standardizzato di esempio e verificare la struttura base di un plugin Antigravity.
 ---
 
 # Procedura Operativa

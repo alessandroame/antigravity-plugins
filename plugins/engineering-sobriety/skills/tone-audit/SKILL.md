@@ -1,6 +1,7 @@
 ---
 name: tone-audit
-description: Esegue la scansione e la bonifica del codice e della documentazione per rimuovere termini promozionali, convenevoli, enfasi di marketing ed emoji decorative non funzionali.
+description: >-
+  Utilizza questa skill quando devi scansionare e bonificare codice e documentazione per rimuovere termini promozionali, convenevoli, enfasi di marketing ed emoji decorative non funzionali.
 ---
 
 # Skill: Tone & Sobriety Audit

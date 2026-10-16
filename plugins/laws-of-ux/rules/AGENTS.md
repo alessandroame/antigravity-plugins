@@ -1,88 +1,58 @@
 # Laws of UX Engineering Rules
 
-Quando progetti, scrivi codice, effettui la revisione di interfacce utente (HTML, CSS, JSX, TSX, Vue, Svelte, Flutter, SwiftUI, Android XML) **oppure formatti le tue risposte nella colonna di chat di Antigravity**, applica le seguenti regole in base alla specifica problematica che stai affrontando:
+Applica queste regole durante la progettazione, scrittura o revisione di interfacce utente e nella formattazione delle risposte nella colonna di chat di Antigravity (`~600px`).
 
 ---
 
 ## 1. Moduli, Input & Validazione Dati
-- **Postel's Law (Robustness)**: Sii tollerante con i formati inseriti dall'utente (spazi nei numeri, prefissi telefonici, separatori data). Normalizza e formatta i dati in modo trasparente prima dell'invio.
-- **Form Field Reduction (Benchmark Baymard)**: Riduci del 20-60% i campi non indispensabili (mantenere $\le 6-8$ campi per singolo step). Elimina campi opzionali superflui e adotta un layout a colonna singola per minimizzare l'affaticamento oculare.
-- **Parkinson's Law & Autofill**: Riduci al minimo il tempo necessario a completare i campi fornendo sempre attributi semantici di completamento (`autocomplete="tel"`, `autocomplete="email"`, `autocomplete="shipping address-line1"`).
-- **Law of Proximity**: Associa visivamente la label e i messaggi di hint/errore direttamente al campo input (spazio tra label e input <= 8px; spazio tra gruppi di campi >= 16-24px).
-- **Tesler's Law (Conservazione della Complessità)**: Fai svolgere la complessità al codice anziché all'utente (deduzione della banca/circuito dal numero della carta, compilazione automatica città/provincia dal CAP).
-- **Error Prevention (NN/G Euristica #5)**: Previeni gli errori tramite vincoli d'interfaccia (disabilita date non selezionabili, maschere di input) prima ancora di mostrare messaggi di errore post-invio.
-- **Chunking**: Suddividi campi lunghi (IBAN, codici fiscali, carte di credito, numeri di serie) in gruppi visivi compatti (es. 4-4-4).
+- **Postel's Law**: accetta input permissivi (spazi, separatori) e normalizza i dati in modo trasparente.
+- **Form Field Reduction & Single Column**: mantieni $\le 6\text{–}8$ campi per step in layout a colonna singola.
+- **Parkinson's Law & Autofill**: dichiara sempre attributi `autocomplete` semantici.
+- **Proximity & Error Prevention**: distanza label-input $\le 8\text{px}$, tra gruppi $\ge 16\text{–}24\text{px}$; previeni errori con vincoli UI nativi e suddividi stringhe lunghe (Chunking 4-4-4).
+- **Tesler's Law**: sposta la complessità calcolabile sul software anziché sull'utente.
 
 ---
 
-## 2. Layout, Raggruppamento Visivo & Card (Principi Gestalt)
-- **Law of Proximity**: Gli elementi logicamente correlati devono trovarsi a una distanza significativamente minore rispetto a elementi scorrelati.
-- **Law of Common Region**: Raggruppa i blocchi di informazione correlata (es. prodotti, commenti, opzioni) all'interno di confini visivi espliciti (card, sfondi dedicati, bordi ben definiti).
-- **Law of Similarity**: Elementi con lo stesso ruolo funzionale devono condividere lo stesso stile visivo.
-- **Law of Uniform Connectedness**: Usa connettori grafici (linee, frecce) per rappresentare flussi sequenziali (stepper, timeline, wizard).
-- **Law of Prägnanz & Occam's Razor**: Elimina decorazioni, gradienti o divisori superflui. Riduci ogni elemento alla sua forma più semplice e leggibile.
+## 2. Layout, Raggruppamento Visivo & Card (Gestalt)
+- **Proximity & Common Region**: raggruppa elementi correlati ravvicinandoli e racchiudendoli in card o confini espliciti (max 1 livello di contenimento perimetrale).
+- **Similarity & Connectedness**: mantieni stile identico per funzioni uguali e usa connettori visivi per flussi sequenziali.
+- **Prägnanz & Occam's Razor**: rimuovi decorazioni, gradienti o controlli ridondanti.
 
 ---
 
 ## 3. Pulsanti, CTA & Target di Puntamento (Ergonomia)
-- **Fitts's Law (Target Size & Spacing)**: I touch target devono misurare almeno **48×48 px** su dispositivi touch (con padding trasparente se l'icona è minore) e almeno **32×32 px** su desktop. Spaziatura minima di **8 px** tra target adiacenti per evitare click accidentali.
-- **Reachability (Thumb Zone)**: Su mobile, posiziona le azioni principali nell'area raggiungibile dal pollice (parte inferiore dello schermo o bottom bar).
-- **Von Restorff Effect (Isolamento dell'Azione Primaria)**: In ogni vista deve esistere **un solo pulsante primario prominente** ad alto contrasto. Le azioni secondarie devono essere outline o ghost button.
+- **Fitts's Law**: touch target minimo **$\ge 48 \times 48\text{ px}$** su mobile/touch ($\ge 32 \times 32\text{ px}$ desktop) con gap $\ge 8\text{px}$.
+- **Thumb Zone & Von Restorff Effect**: colloca le azioni primarie nella zona del pollice e mostra **un solo pulsante primario ad alto contrasto** per vista.
 
 ---
 
 ## 4. Reattività, Feedback & Latenza (Timing Hierarchy)
-- **Doherty Threshold (< 400ms)**: Ogni interazione utente (tap, toggle, submit) deve mostrare un feedback visivo immediato entro 400 ms (stato active/pressed, micro-animazione, disabilitazione per prevenire doppi click).
-- **Timing Hierarchy dei Caricamenti**:
-  - **< 1 secondo**: feedback immediato, nessun loader visibile (evita flicker ingiustificato).
-  - **1 - 3 secondi**: mostra uno spinner contestuale o skeleton element.
-  - **3 - 10 secondi**: mostra una barra di avanzamento percentuale deterministica con indicatore di progresso.
-  - **> 10 secondi**: fornisci una stima temporale esplicita e consenti l'esecuzione asincrona in background.
-- **Skeleton Screens & Perceived Performance**: Per viste e feed asincroni, usa skeleton boxes pulsanti che anticipano la struttura del layout, azzerando il Cumulative Layout Shift (CLS).
-- **User Control & Grace Period (Undo Pattern)**: Per operazioni critiche o invii (messaggi, eliminazioni), offri una finestra di grazia (5-10s) con pulsante "Annulla" (*Undo*) prima del commit definitivo (NN/G Euristica #3).
-- **Peak-End Rule**: Cura attentamente la schermata di conferma finale (epilogo del flusso) per lasciare un'esperienza soddisfacente ed eliminare l'ansia post-invio o post-acquisto.
+- **Doherty Threshold ($< 400\text{ms}$)**: fornisci feedback visivo immediato a ogni interazione (`:active`, disabilitazione anti-doppio tap).
+- **Gerarchia Caricamenti**: $< 1\text{s}$ nessun loader; $1\text{–}3\text{s}$ skeleton/spinner senza CLS; $3\text{–}10\text{s}$ barra di progresso; $> 10\text{s}$ stima temporale ed esecuzione asincrona.
+- **Undo & Peak-End Rule**: offri una finestra di annullamento ($5\text{–}10\text{s}$) sulle azioni distruttive e cura gli stati di conferma finale.
 
 ---
 
 ## 5. Navigazione, Tabelle & Riduzione delle Scelte
-- **Hick's Law & Choice Overload**: Limita le opzioni visibili a 3-5 scelte essenziali. Nei menu lunghi, raggruppa le voci per categoria o implementa una ricerca rapida.
-- **Recognition over Recall (NN/G Euristica #6)**: Nelle barre di ricerca, fornisci cronologia delle ricerche recenti, suggerimenti visuali e autocompletamento tollerante a typo/sinonimi.
-- **Faceted Filtering (Benchmark Baymard)**: Nei cataloghi e tabelle dati complesse, implementa sempre le 5 categorie essenziali di filtro (categoria, specifiche/attributi, prezzo/valore, rating, stato/disponibilità).
-- **Miller's Law (7 ± 2)**: Non presentare più di 5-7 informazioni non organizzate contemporaneamente.
-- **Serial Position Effect**: Colloca i punti di navigazione più importanti all'inizio (Home/Dashboard) e alla fine (Profilo/Impostazioni) delle barre di navigazione.
-- **Jakob's Law**: Rispetta le convenzioni web/mobile note (icona carrello o notifiche in alto a destra, logo cliccabile per tornare alla home, pattern di swipe standard).
+- **Hick's & Miller's Law**: limita le scelte di primo livello a $3\text{–}5$ opzioni e i gruppi informativi a $5\text{–}7$ elementi.
+- **Serial Position & Jakob's Law**: posiziona le destinazioni chiave all'inizio e alla fine della barra di navigazione rispettando i pattern standard web/mobile.
 
 ---
 
-## 6. Interfacce Autonome, Generative & AI (Nuovo Standard 2026)
-- **Explainability (Show the Reasoning)**: Quando l'interfaccia o un agente genera un risultato autonomo, propone un suggerimento o precompila dati, mostra chiaramente il segnale di confidenza e la fonte/motivazione verificabile inline senza dover lasciare la schermata.
-- **Cheap Takeover (Override a Basso Costo)**: Modificare, correggere o rifiutare un output generato deve costare meno sforzo e meno click rispetto a dover fare l'operazione manualmente da zero. Non costringere mai l'utente a resettare o ripartire daccapo per una singola modifica.
-- **Safe Autonomy & Reversibility**: Nessuna azione distruttiva o transazione irreversibile deve essere eseguita dall'agente o dall'automazione senza esplicita conferma o possibilità immediata di ripristino.
+## 6. Interfacce Autonome, Generative & Accessibilità (WCAG POUR)
+- **Explainability, Cheap Takeover & Safe Autonomy**: esponi sempre la motivazione/fonte dei suggerimenti automatici, consenti l'override con 1 tap e richiedi conferma per azioni irreversibili.
+- **WCAG 2.1 AA/AAA**: contrasto minimo `4.5:1` per testo normale (`3:1` grande, `7:1` per indicatori critici outdoor), navigabilità completa da tastiera con `:focus-visible` e semantica HTML nativa.
 
 ---
 
-## 7. Accessibilità Universale (WCAG POUR & Curb-Cut Effect)
-- **Perceivable**: Contrasto testo minimo 4.5:1 (3:1 per testo grande), supporto modalità chiara/scura, zoom fino al 200% senza perdite di informazione.
-- **Operable**: Interfaccia interamente navigabile via tastiera con focus state ben visibile (`outline: 2px solid ...`); nessun keyboard trap.
-- **Understandable**: Gerarchia di intestazioni logica (`h1` -> `h2` -> `h3`), messaggi di errore chiari con istruzioni correttive dirette (NN/G Euristica #9).
-- **Robust**: Compatibilità con screen reader, semantica HTML nativa prima di ricorrere ad attributi ARIA.
+## 7. Standard Outdoor, Field & High-Glare (Uso con Guanti / Sole Diretto)
+- **Touch Floor $\ge 48\text{px}$**: estendi i controlli compatti tramite padding trasparente o `::before`.
+- **Caroselli Monoriga (`touch-action: pan-x`)**: vieta il `flex-wrap` multi-riga per barre di filtri/date; usa scorrimento orizzontale con scroll-snap.
+- **Cooperative Gestures & `100dvh`**: usa `touch-action: pan-y` sui canvas/mappe per non bloccare lo scroll verticale e adotta `100dvh` anziché `100vh`.
+- **Dual High-Contrast Theme & Feedback Tri-Modale**: supporta tema chiaro/scuro ad alto contrasto e combina sempre **Colore + Testo Esplicito + Simbolo Funzionale** per ogni stato di sicurezza.
 
 ---
 
-## 8. Standard Ergonomici per Interfacce Outdoor, Field & Wearable (High-Glare / Guanti)
-- **Target di Tocco Maggiorati ($\ge 48 \times 48\text{ px}$)**: Per dispositivi usati all'aperto, su supporti mobili, con dita fredde o guanti, il pavimento tattile minimo è $\ge 48\text{px}$. In caso di elementi visivi compatti (badge, frecce), estendere l'area interattiva tramite padding trasparente o pseudo-elemento `::before`.
-- **Caroselli Orizzontali a Riga Singola (`touch-action: pan-x`)**: Per elenchi di filtri, date o chip frequenti, vietare il `flex-wrap: wrap` con decine di elementi che creano barriere verticali. Utilizzare scorrimento orizzontale a riga singola con scroll-snap nativo.
-- **Prevenzione Conflitti di Gesto su Mappe e Canvas**: I canvas interattivi (grafici con scrubber) e le cartografie WebGL/Leaflet/MapLibre devono dichiarare `touch-action: pan-y` (o gesti cooperativi a due dita) per evitare che lo scorrimento verticale della pagina resti intrappolato.
-- **Dynamic Viewport (`100dvh`)**: Utilizzare sempre unità `100dvh` anziché `100vh` per prevenire il troncamento dei contenuti e delle barre inferiori causato dalle toolbar a scomparsa dei browser mobili.
-- **Dual High-Contrast Theme (Sunlight Resilient)**: Garantire il supporto per tema ad alta luminosità e contrasto elevato (WCAG 2.1 AA $\ge 4.5:1$ per testo normale, $\ge 7:1$ per testo critico) per resistere al riverbero e alla luce solare diretta.
-- **Feedback Tri-Modale di Sicurezza**: Gli indicatori di stato critico o di sicurezza non devono mai basarsi solo sul colore: combinare sempre **Colore + Testo Esplicito + Icona Funzionale**.
-
----
-
-## 9. Ergonomia Cognitiva dell'Output in Chat dell'Agente (Colonna ~600px)
-- **Progressive Disclosure a 1-Click (`<details>`)**: Nella colonna stretta della chat di Antigravity (`~600px`), esponi in chiaro (*0-click*) solo la sintesi decisionale (`800–1.200` caratteri max, 3–5 bullet di 1 riga) e racchiudi tabelle, blocchi di codice, log e approfondimenti in cassetti `<details><summary><strong>Titolo (Contatore)</strong></summary>` apribili con 1 click.
-- **Miller's Law & Chunking nei Messaggi**: Non presentare mai più di 5 punti elenco consecutivi in chiaro e non annidare sotto-elenchi oltre il 1° livello fuori da `<details>`.
-- **Von Restorff Effect Tipografico**: Usa il grassetto (`**...**`) solo sulla parola chiave d'apertura del punto elenco (max 15% del testo) e isola su un'unica riga finale la domanda o l'azione richiesta all'utente.
-- **Hick's Law nelle Proposte**: Quando sottoponi una decisione all'utente, limita le opzioni a 2–3 scelte ben distinte indicando sempre l'opzione raccomandata.
-
-
+## 8. Ergonomia Cognitiva dell'Output in Chat (`~600px`)
+- **Progressive Disclosure (0-Click + 1-Click `<details>`)**: esponi in chiaro solo la sintesi decisionale (`800–1.200` char, $3\text{–}5$ bullet di 1 riga) e racchiudi tabelle, codice e dettagli in blocchi `<details>` chiusi di default.
+- **Von Restorff Tipografico**: usa il grassetto solo sull'etichetta iniziale del bullet ($\le 15\%$ del testo) e isola a fine messaggio l'unica domanda o conferma per l'utente.

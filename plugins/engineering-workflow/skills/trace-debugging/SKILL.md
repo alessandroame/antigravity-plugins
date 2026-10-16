@@ -1,8 +1,7 @@
 ---
 name: trace-debugging
 description: >-
-  Protocollo deterministico di localizzazione dei guasti tramite breadcrumb tracing e bisection debugging.
-  Utilizza quando si verificano bug di interazione UI, discrepanze di stato, fallimenti di test o errori silenti.
+  Utilizza questa skill quando si verificano bug di interazione UI, discrepanze di stato, fallimenti di test o errori silenti per localizzare il guasto tramite breadcrumb tracing deterministico.
 ---
 
 # Trace-Based Fault Localization Runbook

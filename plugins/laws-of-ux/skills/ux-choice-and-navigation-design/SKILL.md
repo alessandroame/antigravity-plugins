@@ -1,9 +1,7 @@
 ---
 name: ux-choice-and-navigation-design
 description: >-
-  Use this skill when designing, simplifying, or auditing navigation bars, dropdown menus,
-  filter sidebars, pricing tables, and complex decision-making screens. Applies Hick's Law,
-  Choice Overload, Occam's Razor, and Serial Position Effect to prevent decision paralysis.
+  Use this skill when designing or auditing navigation bars, dropdowns, filter sidebars, and decision screens using Hick Law, Occam Razor, and Serial Position Effect to prevent choice overload.
 ---
 
 # Choice Architecture & Navigation Skill

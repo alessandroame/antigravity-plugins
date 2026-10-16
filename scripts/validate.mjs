@@ -41,14 +41,36 @@ function parseFrontmatter(markdown) {
   const match = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
   if (!match) return null;
   const yamlBlock = match[1];
-  const result = {};
-  for (const line of yamlBlock.split('\n')) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx > 0) {
+  const lines = yamlBlock.split(/\r?\n/);
+  const result = { _unquotedColonError: false };
+  let currentKey = null;
+  let blockLines = [];
+
+  for (const line of lines) {
+    if (/^[a-zA-Z0-9_-]+:/.test(line)) {
+      if (currentKey && blockLines.length > 0) {
+        result[currentKey] = blockLines.join(' ').trim();
+        blockLines = [];
+      }
+      const colonIdx = line.indexOf(':');
       const key = line.slice(0, colonIdx).trim();
-      const val = line.slice(colonIdx + 1).trim().replace(/^['"]|['"]$/g, '');
-      result[key] = val;
+      const rawVal = line.slice(colonIdx + 1).trim();
+      if (rawVal === '>-' || rawVal === '>' || rawVal === '|') {
+        currentKey = key;
+      } else {
+        currentKey = null;
+        const isQuoted = (rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"));
+        if (!isQuoted && rawVal.includes(': ')) {
+          result._unquotedColonError = true;
+        }
+        result[key] = rawVal.replace(/^['"]|['"]$/g, '');
+      }
+    } else if (currentKey && /^\s+/.test(line)) {
+      blockLines.push(line.trim());
     }
+  }
+  if (currentKey && blockLines.length > 0) {
+    result[currentKey] = blockLines.join(' ').trim();
   }
   return result;
 }
@@ -152,14 +174,19 @@ function validatePlugin(pluginDir, existingNames) {
 
   // 3. rules/
   const rulesDir = join(pluginDir, 'rules');
+  let agentsRuleBytes = 0;
   if (existsSync(rulesDir)) {
     const agentsRule = join(rulesDir, 'AGENTS.md');
     if (!existsSync(agentsRule)) {
       warnings.push('rules/: cartella presente ma senza file "rules/AGENTS.md".');
     } else {
       const ruleContent = readFileSync(agentsRule, 'utf-8');
+      agentsRuleBytes = Buffer.byteLength(ruleContent, 'utf-8');
       if (ruleContent.startsWith('---')) {
         warnings.push('rules/AGENTS.md: contiene frontmatter YAML. Le regole dei plugin devono essere markdown puro senza frontmatter.');
+      }
+      if (agentsRuleBytes > 6500) {
+        errors.push(`rules/AGENTS.md: peso eccessivo (${agentsRuleBytes} byte > 6500 byte max). Compattare per preservare il token budget inline.`);
       }
     }
   }
@@ -175,12 +202,29 @@ function validatePlugin(pluginDir, existingNames) {
           errors.push(`skills/${ent.name}: manca il file SKILL.md`);
         } else {
           const content = readFileSync(skillFile, 'utf-8');
+          const lineCount = content.split(/\r?\n/).length;
+          if (lineCount > 200) {
+            errors.push(`skills/${ent.name}/SKILL.md: supera il tetto di 200 righe (${lineCount} righe)`);
+          }
           const fm = parseFrontmatter(content);
           if (!fm) {
             errors.push(`skills/${ent.name}/SKILL.md: frontmatter YAML mancante o malformato`);
           } else {
+            if (fm._unquotedColonError) {
+              errors.push(`skills/${ent.name}/SKILL.md: frontmatter contiene ': ' non quotato su riga inline (invalida il parser YAML strict di Antigravity)`);
+            }
             if (!fm.name) errors.push(`skills/${ent.name}/SKILL.md: "name" mancante nel frontmatter`);
-            if (!fm.description) errors.push(`skills/${ent.name}/SKILL.md: "description" mancante nel frontmatter`);
+            if (!fm.description) {
+              errors.push(`skills/${ent.name}/SKILL.md: "description" mancante nel frontmatter`);
+            } else {
+              const dLen = fm.description.length;
+              if (dLen < 80 || dLen > 250) {
+                errors.push(`skills/${ent.name}/SKILL.md: lunghezza description (${dLen} char) fuori dal range [80, 250]`);
+              }
+              if (!/(Use this skill when|Use this skill to|Utilizza questa skill quando)/i.test(fm.description)) {
+                errors.push(`skills/${ent.name}/SKILL.md: description priva di trigger direttivo ('Use this skill when...' / 'Utilizza questa skill quando...')`);
+              }
+            }
           }
         }
       }

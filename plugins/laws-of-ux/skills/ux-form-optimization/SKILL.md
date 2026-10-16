@@ -1,9 +1,7 @@
 ---
 name: ux-form-optimization
 description: >-
-  Use this skill when designing, reviewing, or refactoring forms, data input fields,
-  registration/checkout wizards, and validation logic. Applies Postel's Law, Parkinson's Law,
-  Law of Proximity, Tesler's Law, and Chunking to eliminate input friction and error rates.
+  Use this skill when designing or refactoring forms, input fields, wizards, and validation logic using Postel Law, Parkinson Law, Proximity, Tesler Law, and Chunking.
 ---
 
 # Form & Data Input Optimization Skill

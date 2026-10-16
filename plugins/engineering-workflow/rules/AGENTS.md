@@ -1,105 +1,58 @@
-# Standard di Ingegneria: Version Control Governance e Deterministic Trace Debugging
+# Standard di Ingegneria: Version Control, Trace Debugging & Shift-Left Governance
 
-Questo documento definisce gli standard operativi per la gestione del codice sorgente, l'isolamento dei task e il protocollo di risoluzione dei difetti.
+Questo documento definisce gli standard per il controllo di versione, la localizzazione deterministica dei guasti e l'architettura headless.
 
 ---
 
 ## 1. Version Control Governance (Git Pro)
 
-1. **Staging Chirurgico Obbligatorio (Divieto di `git add .` o `git add -A`)**:
-   - È tassativamente vietato eseguire comandi di aggiunta massiva non controllata (`git add .`, `git add -A`, `git commit -a`).
-   - I file devono essere aggiunti singolarmente e selettivamente per percorso relativo:
-     ```bash
-     git add src/core/engine.js tests/engine.test.js
-     ```
-   - Eseguire sempre `git status --porcelain` e `git diff --cached` prima di impegnare qualsiasi commit per verificare l'assenza di file temporanei, dump o file di scratch.
+1. **Staging Chirurgico Obbligatorio (Divieto di `git add .` / `git add -A` / `git commit -a`)**:
+   - Aggiungere i file singolarmente per percorso esplicito (`git add src/core/engine.js tests/engine.test.js`).
+   - Verificare sempre `git status --porcelain` e `git diff --cached` prima del commit per escludere file temporanei o di scratch.
 2. **Conventional Commits in Lingua Inglese**:
-   - I messaggi di commit devono seguire rigorosamente la specifica Conventional Commits in lingua inglese:
-     - `feat(scope): concise description of new feature`
-     - `fix(scope): concise description of bug fix`
-     - `refactor(scope): internal architectural refactor without behavior changes`
-     - `test(scope): addition or update of automated test suites`
-     - `docs(scope): documentation, ADRs, or rule updates`
-     - `chore(scope): build, dependencies, or tooling adjustments`
-3. **Divieto di Commit, Merge o Push Autonomo su `main`**:
-   - L'agente non deve **MAI** eseguire commit o merge sul branch principale senza l'esplicita conferma dell'utente.
-   - Il ciclo di vita prevede:
-     1. Sviluppo e verifica completa nel branch/worktree isolato.
-     2. Presentazione all'utente del resoconto delle modifiche e delle istruzioni di test.
-     3. Attesa del riscontro positivo dell'utente.
-     4. Solo su conferma esplicita, esecuzione di staging, commit e merge.
-4. **Isolamento Concorrente tramite Git Worktrees**:
-   - Quando si opera su task complessi o in ambienti multi-sessione, non cambiare branch nel workspace primario.
-   - Creare e utilizzare un Git Worktree dedicato (`git worktree add ../<repo>-<topic> -b feature/<topic>`).
+   - Formato obbligatorio: `feat(scope): ...`, `fix(scope): ...`, `refactor(scope): ...`, `test(scope): ...`, `docs(scope): ...`, `chore(scope): ...`.
+3. **Controllo Esplicito su Commit, Merge e Worktrees**:
+   - Non eseguire commit o merge sul branch principale senza conferma dell'utente. Per task concorrenti, isolare il lavoro tramite Git Worktrees (`git worktree add ../<repo>-<topic> -b feature/<topic>`).
 
 ---
 
 ## 2. Deterministic Trace-Based Fault Localization
 
-Quando si riscontra un'anomalia di comportamento, un fallimento di test o un errore silente:
-
-1. **Divieto di Debugging a Tentativi**:
-   - È vietato modificare codice procedendo a congetture non dimostrate o applicando workaround superficiali.
-2. **Iniezione Log Strutturati (`[DEBUG-TRACE #X]`)**:
-   - Iniettare checkpoint numerati lungo la catena di esecuzione (Punto di ingresso evento $\to$ Precondizioni $\to$ Calcolo $\to$ Mutazione di stato $\to$ Render/Output).
-3. **Isolamento della Finestra di Guasto**:
-   - Eseguire il test per catturare la sequenza dei log.
-   - Identificare l'ultimo checkpoint valido (*Last Known Good Checkpoint*). La causa radice si trova tassativamente tra l'ultimo checkpoint corretto e il primo assente o corrotto.
-4. **Pulizia Obbligatoria (Trace Cleanup)**:
-   - Prima di completare il task o proporre il commit, rimuovere completamente tutti i log temporanei `[DEBUG-TRACE]`. Il codice consegnato deve risultare pulito da tracce diagnostiche.
+1. **Divieto di Debugging a Tentativi**: vietato modificare il codice procedendo a congetture non verificate.
+2. **Iniezione Log Strutturati (`[DEBUG-TRACE #X]`)**: iniettare checkpoint numerati lungo la catena (Ingresso $\to$ Guardia $\to$ Calcolo $\to$ Stato $\to$ Render) per isolare il *Last Known Good Checkpoint*.
+3. **Pulizia Obbligatoria (Trace Cleanup)**: rimuovere tutti i log `[DEBUG-TRACE]` prima della consegna o del commit.
 
 ---
 
-## 3. Standard di Codifica: Lingua Inglese Esclusiva nel Codice Sorgente
+## 3. Lingua Inglese Esclusiva nel Codice Sorgente
 
-1. **Inglese Esclusivo nel Codice**:
-   - Qualsiasi artefatto di codice sorgente deve essere redatto esclusivamente in lingua inglese:
-     - **Identificatori**: nomi di variabili, costanti, funzioni, classi, metodi, proprietà, tipi, interfacce, file sorgente e directory di codice.
-     - **Commenti e Annotazioni**: commenti inline (`//`), blocchi di commento (`/* */`), annotazioni TODO/FIXME, docstring e documentazione API (JSDoc, TSDoc, Docblocks).
-     - **Test Automatizzati**: denominazioni e descrizioni delle suite (`describe`), dei casi di test (`it`, `test`), messaggi di asserzione, fixture e mock.
-     - **Log Interni ed Eccezioni**: messaggi delle eccezioni (`throw new Error(...)`), log diagnostici (`console.error`, `console.warn`, `console.info`) e codici/chiavi di stato interni.
-2. **Distinzione con Testi Utente (UI Copy & Localizzazione)**:
-   - Le stringhe visibili all'utente finale nell'interfaccia (etichette pulsanti, messaggi UI, file di localizzazione/dizionari i18n) seguono la lingua target richiesta dalle specifiche di prodotto (es. italiano per GlideMind).
-   - I commenti a corredo e le chiavi del dizionario i18n rimangono in lingua inglese (es. `t('flightSummary.title')`).
-3. **Conversazione Agente-Utente**:
-   - L'agente risponde nella lingua utilizzata dall'utente nella chat (es. italiano per dialoghi e spiegazioni), ma il codice prodotto o modificato durante il turno deve rispettare rigidamente la regola dell'inglese esclusivo.
+1. **Inglese Esclusivo nel Codice**: identificatori, file, commenti, JSDoc, descrizioni dei test (`describe`/`it`), asserzioni, eccezioni e log interni devono essere redatti esclusivamente in inglese.
+2. **Distinzione UI Copy vs Conversazione**: le stringhe utente nell'interfaccia seguono la lingua di prodotto (es. italiano con chiavi i18n in inglese); la chat con l'utente segue la lingua dell'utente.
 
 ---
 
 ## 4. Architettura Headless Core e Disaccoppiamento DOM/Storage
 
-1. **Purezza del Dominio Computazionale (Headless Core)**:
-   - I moduli che implementano logica di business, algoritmi matematici, parsing dati, validatori e wrapper API (`core/` o `src/core/`) devono essere rigorosamente **headless**:
-     - Vietato qualsiasi riferimento diretto a oggetti del browser: `window`, `document`, `HTMLElement`, `navigator` o selettori CSS.
-     - Devono risultare eseguibili e testabili al 100% in Node.js puro senza ricorrere a JSDOM o ambienti simulati.
-2. **Injectable Storage Adapter Pattern**:
-   - I moduli di stato o persistenza non devono accedere direttamente a `localStorage`, `sessionStorage` o `IndexedDB`.
-   - Utilizzare il pattern dell'adapter iniettabile (`storageAdapter`), fornendo:
-     - Un adapter predefinito in memoria (`createInMemoryStorageAdapter`) per esecuzione e test Node.js.
-     - Un adapter browser (`createLocalStorageAdapter` o `createIndexedDBAdapter`) montato esclusivamente nella shell UI.
+1. **Headless Core (`core/` o `src/core/`)**: zero riferimenti a `window`, `document`, `HTMLElement`, `navigator` o selettori CSS. Tutti i moduli core devono essere eseguibili al 100% in Node.js puro senza JSDOM.
+2. **Injectable Storage Adapter Pattern**: vietato accedere direttamente a `localStorage` o `IndexedDB` nel core; iniettare `storageAdapter` (`createInMemoryStorageAdapter` per Node.js/test, `createLocalStorageAdapter` nella shell UI).
 
 ---
 
-## 5. Protocollo di Qualità Shift-Left & Pre-Delivery Gates
+## 5. I 5 Gate di Qualità Shift-Left
 
-1. **Principio Generativo Ex-Ante**:
-   - I vincoli di qualità, ergonomia, accessibilità e conformità architetturale non devono essere rimandati ad audit tardivi o verifiche ex-post, ma fungere da **pre-condizioni vincolanti prima e durante la stesura del codice**.
-2. **I 5 Gate di Qualità Shift-Left**:
-   - **Gate 1 (Pre-Design UX & Dominio)**: validare preventivamente l'assenza di controlli ridondanti (Occam's razor), dimensioni minime dei touch target ($\ge 48\text{px}$), progressive disclosure (niente numeri isolati privi di unità/contesto) e palette ad alto contrasto.
-   - **Gate 2 (Rigore di Implementazione In-Flight)**: verificare l'isolamento headless del core, l'unicità della sorgente di verità reattiva (SSOT) e la lingua inglese esclusiva nel codice.
-   - **Gate 3 (Test Suite di Governance Automatizzata)**: incorporare test statici automatici (`npm test`) che scansionano i file sorgente verificando l'assenza di DOM nel core, l'assenza di token vietati, la conformità delle variabili CSS e l'integrità dei fallback.
-   - **Gate 4 (Ispezione Geometrica & Visiva)**: verificare su viewport mobile ristretti (360px–390px) l'assenza di overflow orizzontale e troncamento flexbox (`min-width: 0`, `flex-shrink: 0`).
-   - **Gate 5 (Briefing di Consegna Compatto a 1-Click)**: certificare il superamento dei gate senza inondare la chat:
-     - **In chiaro (0-Click)**: esporre solo il sommario dell'intervento (max 3–5 bullet di 1 riga) e l'esito sintetico dei test (es. `Test: PASS`).
-     - **A 1-Click (`<details>`)**: inserire la tabella dettagliata dei file modificati, le verifiche dei Gate 1–4 e i comandi di test eseguiti dentro `<details><summary><strong>Dettaglio File Modificati & Evidenza Pre-Flight (Gate 1–5)</strong></summary>`.
+1. **Gate 1 (Pre-Design UX & Dominio)**: zero controlli ridondanti, touch target $\ge 48\text{px}$, zero numeri isolati privi di unità e contrasto WCAG AA/AAA.
+2. **Gate 2 (Rigore In-Flight)**: isolamento headless del core, store reattivo unico (SSOT) e inglese esclusivo nel codice.
+3. **Gate 3 (Test Suite di Governance)**: eseguire test statici automatici (`npm test`) per validare assenza di DOM nel core, assenza di token vietati e integrità CSS.
+4. **Gate 4 (Ispezione Geometrica)**: verificare su viewport mobile (`360px–390px`) l'assenza di overflow orizzontale e troncamenti flexbox.
+5. **Gate 5 (Briefing di Consegna a 1-Click)**: in chiaro (*0-Click*) max 3–5 bullet di 1 riga ed esito sintetico dei test; in `<details>` (*1-Click*) la tabella dei file modificati e le evidenze dei Gate 1–4.
 
 ---
 
-## 6. Tabella di Anti-Razionalizzazione (Ingegneria, Test & Git)
+## 6. Tabella di Anti-Razionalizzazione
 
-| Razionalizzazione Interna dell'Agente (Vietata) | Vincolo Inaggirabile (Rebuttal) |
+| Razionalizzazione Vietata | Vincolo Inaggirabile (Rebuttal) |
 | :--- | :--- |
-| *"La modifica riguarda poche righe, non serve rieseguire la suite di test."* | Anche modifiche di 1 riga generano regressioni: eseguire sempre `npm test` e riportare l'esito reale prima di chiudere il task. |
-| *"Conosco già la causa probabile del bug, applico subito un fix senza trace."* | Vietato il debugging a tentativi: se la causa non è isolata con certezza statica, iniettare `[DEBUG-TRACE #X]` e identificare il *Last Known Good Checkpoint*. |
-| *"Faccio `git add .` per comodità, tanto non ci sono file estranei."* | Lo staging massivo è tassativamente vietato: verificare `git status --porcelain` e aggiungere i file singolarmente per percorso esplicito. |
-| *"È una piccola funzione di calcolo, posso lasciarla nel componente UI."* | La logica di dominio appartiene al core headless ed è testabile in Node.js puro senza dipendenze da `window` o `document`. |
+| *"La modifica è di poche righe, non rieseguo i test."* | Eseguire sempre la test suite e riportare l'esito reale prima di chiudere il task. |
+| *"Applico subito un fix probabile senza trace."* | Se la causa non è certa staticamente, usare `[DEBUG-TRACE #X]` per isolare il guasto. |
+| *"Uso `git add .` per comodità."* | Vietato lo staging massivo: usare `git status --porcelain` e aggiungere file per percorso. |
+| *"Lascio questo calcolo matematico nella vista UI."* | La logica di dominio appartiene al core headless testabile in Node.js puro. |

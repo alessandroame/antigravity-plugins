@@ -1,9 +1,7 @@
 ---
 name: ux-feedback-and-perceived-performance
 description: >-
-  Use this skill when handling asynchronous actions, API data loading, submit states,
-  progress indicators, and system latencies. Applies the Doherty Threshold, Peak-End Rule,
-  and Goal-Gradient Effect to keep users engaged and eliminate the perception of waiting.
+  Use this skill when handling async actions, API loading, submit states, and system latencies using Doherty Threshold, Peak-End Rule, and skeleton screens to optimize perceived performance.
 ---
 
 # Feedback & Perceived Performance Skill

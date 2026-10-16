@@ -1,9 +1,7 @@
 ---
 name: prompt-refactor
 description: >-
-  Metodologia operativa per analizzare e rifattorizzare prompt ambigui o sub-ottimali.
-  Utilizza quando un requisito utente richiede maggiore determinismo, quando si identificano rischi di allucinazione
-  o quando si vuole ottimizzare l'economia dei token tramite iniezioni mirate di file e test.
+  Utilizza questa skill quando un prompt utente presenta ambiguità o rischi di iterazioni a vuoto, rifattorizzandolo con iniezioni mirate di file, test e vincoli deterministici.
 ---
 
 # Prompt Refactoring & Quality Runbook

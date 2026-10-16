@@ -1,9 +1,7 @@
 ---
 name: ux-layout-and-visual-hierarchy
 description: >-
-  Use this skill when designing, structuring, or refactoring page layouts, content grids,
-  dashboards, cards, and component grouping. Applies Gestalt Principles (Proximity, Common Region,
-  Similarity, Uniform Connectedness, and Prägnanz) to make visual structure immediately intuitive.
+  Use this skill when designing or refactoring page layouts, grids, dashboards, and cards using Gestalt Principles (Proximity, Common Region, Similarity, Connectedness, Pragnanz).
 ---
 
 # Visual Layout & Gestalt Architecture Skill

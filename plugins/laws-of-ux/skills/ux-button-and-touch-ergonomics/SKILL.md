@@ -1,9 +1,7 @@
 ---
 name: ux-button-and-touch-ergonomics
 description: >-
-  Use this skill when designing, sizing, positioning, and styling buttons, call-to-actions (CTAs),
-  interactive icons, action bars, and touch targets. Applies Fitts's Law, Von Restorff Effect,
-  and Doherty Threshold to maximize click accuracy and eliminate accidental taps.
+  Use this skill when designing, sizing, and styling buttons, CTAs, action bars, and touch targets using Fitts Law, Von Restorff Effect, and Doherty Threshold to prevent accidental taps.
 ---
 
 # Button & Touch Ergonomics Skill

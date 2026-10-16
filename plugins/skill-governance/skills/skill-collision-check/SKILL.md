@@ -1,6 +1,7 @@
 ---
 name: skill-collision-check
-description: Rileva collisioni di nome, shadowing prioritario e duplicati semantici tra skill in workspace, plugin, configurazione globale e builtin.
+description: >-
+  Utilizza questa skill quando devi rilevare collisioni di nome, shadowing prioritario e duplicati semantici tra skill in workspace, plugin, configurazione globale e builtin.
 ---
 
 # Procedura di Rilevamento Collisioni e Duplicati tra Skill

@@ -1,6 +1,7 @@
 ---
 name: skill-token-optimizer
-description: Ottimizza il consumo di token di una skill: condensa la description per il system prompt e scompone file monolitici in references, examples e scripts.
+description: >-
+  Utilizza questa skill quando devi ottimizzare il consumo di token di una skill condensando la description per il system prompt e scomponendo file monolitici in references, examples e scripts.
 ---
 
 # Procedura di Ottimizzazione del Budget Token delle Skill

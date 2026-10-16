@@ -1,6 +1,7 @@
 ---
 name: skill-audit
-description: Conduce un audit analitico di una o più skill: verifica chiarezza dei trigger, conformità del frontmatter, budget token, determinismo e accoppiamento con i tool.
+description: >-
+  Utilizza questa skill quando devi eseguire un audit analitico di una o più skill per verificare chiarezza dei trigger, conformità del frontmatter YAML, budget token, determinismo e accoppiamento con i tool.
 ---
 
 # Procedura di Audit Euristico e Strutturale delle Skill

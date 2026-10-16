@@ -1,8 +1,7 @@
 ---
 name: worktree-lifecycle
 description: >-
-  Gestione completa del ciclo di vita dei Git Worktrees. Utilizza per inizializzare rami di lavoro isolati,
-  evitare collisioni tra sessioni concorrenti, verificare lo stato del repository e procedere al teardown pulito.
+  Utilizza questa skill quando devi inizializzare Git Worktrees isolati, evitare collisioni tra sessioni concorrenti, verificare lo stato del repository e procedere al teardown pulito.
 ---
 
 # Git Worktree Lifecycle Runbook
