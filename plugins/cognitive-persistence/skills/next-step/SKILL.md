@@ -46,10 +46,11 @@ Quando questa skill viene invocata (tramite comando slash `/next-step` o richies
 1. Leggi il file `DESIDERATA.md` situato alla radice del workspace (e controlla se esiste `NOTES.md`).
    - Se `DESIDERATA.md` non esiste, guida l'utente nella creazione della matrice o richiedi dove reperire l'elenco dei requisiti.
    - Se in `NOTES.md` sono presenti annotazioni in stato `📥 Da Analizzare`, includi una nota informativa non bloccante nel briefing: *"Promemoria: sono presenti N note aperte in `NOTES.md` (invoca `/review-notes` quando desideri analizzarle)."*
+   - **Check Anti-Bloat `DESIDERATA.md` (`> 150 righe` / celle `> 160 char`) e `NOTES.md` (`> 120 righe`)**: Se `DESIDERATA.md` supera le **150 righe** (o presenta celle prolisse $> 160\text{ char}$) o `NOTES.md` supera le **120 righe** (o mantiene schede risolte multi-riga anziché la tabella compatta a 1 riga), segnala nel briefing la compattazione da eseguire durante il successivo `/memory-sync`.
 2. Applica la seguente **regola gerarchica di risoluzione**:
    - **Priorità 1 (Ripresa Task Aperto)**: Cerca righe con stato `🟡 In Lavorazione`.
      - *Azione*: Se è presente un task in corso, selezionalo prioritariamente. Segnala all'utente: *"Rilevato task non concluso da una sessione precedente: [Nome Feature]. È prioritario completare questo intervento prima di avviare nuovi task."*
-   - **Priorità 2 (Nuovo Task Prioritario o Pianificato)**: Se nessun task è in corso, seleziona la **prima** riga con stato `🔴 Prioritario` o `🔴 Pianificato` (o `⚪ Pianificato` se non vi sono `🔴`) procedendo dall'alto verso il basso della tabella.
+   - **Priorità 2 (Nuovo Task Prioritario o Pianificato)**: Se nessun task è in corso, seleziona la **prima** riga con stato `🔴 Prioritario` o `🔴 Pianificato` (o `⚪ Pianificato` se non vi sono `🔴`) nella sezione `## 1. Backlog Attivo` procedendo dall'alto verso il basso della tabella.
    - **Priorità 3 (Backlog Esaurito)**: Se tutti gli elementi sono `🟢 Completato`:
      - *Azione*: Notifica all'utente che tutti i desiderata pianificati sono stati completati con successo (suggerendo `/review-notes` se vi sono note aperte in `NOTES.md`).
 

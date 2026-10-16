@@ -22,19 +22,19 @@ Il plugin governa quattro file standard posizionati alla radice del repository d
 
 ```
 <radice-progetto>/
-├── NOTES.md                  # Buffer di cattura rapida In-Flight (/take-note) e triage differito (/review-notes)
+├── NOTES.md                  # Buffer In-Flight (/take-note) + contatore Ultimo ID e max 10 risolte a 1 riga (<= 120 righe)
 ├── MEMORY.md                 # Registro distillato per dominio dei vincoli stabili (tetto max 200 righe)
 ├── WORKLOG.md                # Giornale a finestra mobile (Pointer Index: max 15 interventi / <= 300 righe)
-├── DESIDERATA.md             # Matrice dello stato di avanzamento delle funzionalità validate
+├── DESIDERATA.md             # Matrice funzionalità: split Attivi/Completati, celle <= 160 char (<= 150 righe)
 └── .agents/
     ├── worklog.d/            # Schede ADR granulari estese (YYYY-MM-DD_<argomento>.md)
-    └── archive/              # Snapshot storici ruotati (MEMORY_v<N>_archive.md, WORKLOG_v<N>_archive.md)
+    └── archive/              # Snapshot storici ruotati (MEMORY, WORKLOG, DESIDERATA, NOTES)
 ```
 
-### 0. `NOTES.md` (Buffer di Cattura In-Flight & Staging Pre-Desiderata)
+### 0. `NOTES.md` (Buffer di Cattura In-Flight & Staging Pre-Desiderata — Max 120 Righe)
 Raccoglie osservazioni grezze, dubbi di UX o anomalie notate dall'utente mentre usa l'app o durante un task aperto:
-- **Cattura passiva (`/take-note`)**: salva la nota con ID progressivo (`NOTE-XXX`), data/ora e riferimento all'eventuale task `🟡 In Lavorazione` in `DESIDERATA.md`, con **divieto tassativo** per l'agente di ispezionare il codice o interrompere il task attivo.
-- **Mostra ed esegui analisi (`/review-notes`)**: a lavorazione conclusa, mostra la tabella delle note aperte (`📥 Da Analizzare`), permette di selezionare quale approfondire ed esegue l'ispezione sul codice aggiornato per promuoverla in `DESIDERATA.md` o implementarla.
+- **Cattura passiva (`/take-note`) e Contatore Header**: salva la nota incrementando `> **Ultimo ID Assegnato**: NOTE-XXX` nell'intestazione, data/ora e riferimento all'eventuale task `🟡 In Lavorazione` in `DESIDERATA.md`, con **divieto tassativo** per l'agente di ispezionare il codice o interrompere il task attivo.
+- **Mostra ed esegui analisi (`/review-notes`) e Tabella 1-Riga Risolte**: a lavorazione conclusa, mostra la tabella delle note aperte (`📥 Da Analizzare`), esegue l'ispezione sul codice aggiornato per promuoverle in `DESIDERATA.md` e riduce le note chiuse a **1 riga di tabella** nella sezione `✅ Analizzate & Consolidate` (max 10 voci, ruotando le precedenti in `.agents/archive/NOTES_archive.md`).
 
 ### 1. `MEMORY.md` (Vincoli Stabili & Governance Anti-Bloat — Max 200 Righe)
 Registra esclusivamente gli invarianti architetturali e la conoscenza empirica non ovvia acquisita durante lo sviluppo (la cronologia degli interventi appartiene a `WORKLOG.md`). Per prevenire l'inflazione del contesto (*context bloat*):
@@ -48,11 +48,10 @@ Per prevenire la duplicazione del testo e la crescita illimitata del diario cron
 - **Pointer Record in `WORKLOG.md` (Zero Copia Integrale)**: in `WORKLOG.md` viene inserito esclusivamente un indice puntatore di 4–5 righe (`Tipo`, link cliccabile al file in `.agents/worklog.d/` e 1–2 bullet di sintesi).
 - **Finestra Mobile (`Max 15 Interventi` / $\le 300\text{ righe}$) e Log Rotation**: `WORKLOG.md` espone in testa l'*Indice Sintetico delle Fasi Consolidate* seguito dagli ultimi 10–15 interventi; le voci più vecchie vengono ruotate in `.agents/archive/WORKLOG_v<N>_archive.md`.
 
-### 3. `DESIDERATA.md` (Matrice di Stato Funzionale)
-Mappa l'intero ciclo di vita delle funzionalità tramite uno schema tabellare con indicatori di stato espliciti:
-- `🔴 Prioritario` / `🔴 Pianificato`: requisito architetturale o funzionale validato e pronto per l'avvio.
-- `🟡 In Lavorazione`: modulo con implementazione parziale o in fase di test.
-- `🟢 Completato`: funzionalità implementata, verificata da test e documentata.
+### 3. `DESIDERATA.md` (Matrice di Stato Funzionale — Max 150 Righe & Celle $\le 160\text{ char}$)
+Mappa il ciclo di vita delle funzionalità prevenendo l'accumulo di mini-ADR nelle celle tabellari:
+- **Partizionamento in 2 Tabelle**: `## 1. Backlog Attivo & Funzionalità Pianificate` in alto (`🟡 In Lavorazione`, `🔴 Prioritario`, `⚪ Pianificato`) e `## 2. Funzionalità Completate & Consolidate` in basso (`🟢 Completato`).
+- **Tetto Cella (`160 caratteri`) e Consolidamento (`150 righe`)**: ogni cella `Note` riassume in $\le 160\text{ caratteri}$ i moduli chiave; oltre le 150 righe complessive, i sotto-step passati vengono consolidati per macro-fase con archiviazione in `.agents/archive/DESIDERATA_v<N>_archive.md`.
 
 ---
 
@@ -60,11 +59,11 @@ Mappa l'intero ciclo di vita delle funzionalità tramite uno schema tabellare co
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Governa l'isolamento cognitivo durante `/take-note`, il triage differito con `/review-notes`, l'avvio `/next-step`, la chiusura `/memory-sync` e le guardie anti-bloat di `MEMORY.md` ($\le 200$ righe) e `WORKLOG.md` ($\le 300$ righe). |
-| **`take-note`** | Skill / Comando Slash | [`skills/take-note/SKILL.md`](./skills/take-note/SKILL.md) | Cattura pensieri singoli o multipli in `NOTES.md` a zero cambio di contesto (nessuna lettura codice sorgente, conferma in 1 riga, ripresa immediata del task attivo). |
-| **`review-notes`** | Skill / Comando Slash | [`skills/review-notes/SKILL.md`](./skills/review-notes/SKILL.md) | Mostra il cruscotto delle note aperte in `NOTES.md`, consente di selezionare quali esaminare ed esegue il task di analisi approfondita sul codice per promuoverle in `DESIDERATA.md`. |
-| **`next-step`** | Skill / Comando Slash | [`skills/next-step/SKILL.md`](./skills/next-step/SKILL.md) | Runbook di accoglienza requisiti invocabile con `/next-step`: scansiona `DESIDERATA.md`, recupera vincoli da `MEMORY.md`, commuta lo stato in `🟡 In Lavorazione` e produce il briefing operativo. |
-| **`memory-sync`** | Skill / Comando Slash | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook operativo di fine task: redige il frammento esteso in `worklog.d/`, aggiunge il *Pointer Record* in `WORKLOG.md` (con rotazione oltre 15 voci), aggiorna `MEMORY.md` *in-place* per dominio e allinea `DESIDERATA.md` e `NOTES.md`. |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Governa `/take-note`, `/review-notes`, `/next-step`, `/memory-sync` e i tetti anti-bloat di `NOTES.md` ($\le 120$), `MEMORY.md` ($\le 200$), `WORKLOG.md` ($\le 300$) e `DESIDERATA.md` ($\le 150$, celle $\le 160\text{ char}$). |
+| **`take-note`** | Skill / Comando Slash | [`skills/take-note/SKILL.md`](./skills/take-note/SKILL.md) | Cattura pensieri singoli o multipli in `NOTES.md` aggiornando `Ultimo ID Assegnato` nell'header a zero cambio di contesto. |
+| **`review-notes`** | Skill / Comando Slash | [`skills/review-notes/SKILL.md`](./skills/review-notes/SKILL.md) | Mostra il cruscotto delle note aperte in `NOTES.md`, esegue l'analisi sul codice, le promuove in `DESIDERATA.md` e compatta le risolte in 1 riga di tabella (max 10 voci). |
+| **`next-step`** | Skill / Comando Slash | [`skills/next-step/SKILL.md`](./skills/next-step/SKILL.md) | Runbook di accoglienza requisiti invocabile con `/next-step`: scansiona il *Backlog Attivo* di `DESIDERATA.md`, verifica le guardie anti-bloat dei 4 file e produce il briefing operativo. |
+| **`memory-sync`** | Skill / Comando Slash | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook di fine task: redige l'ADR in `worklog.d/`, aggiunge il *Pointer Record* in `WORKLOG.md`, aggiorna `MEMORY.md` *in-place* e compatta `DESIDERATA.md` e `NOTES.md`. |
 | **`set-chat-title`** | Script di utilità | [`scripts/set-chat-title.mjs`](./scripts/set-chat-title.mjs) | Script Node.js che comunica via Connect-RPC con Antigravity Language Server per aggiornare istantaneamente il titolo della conversazione nella sidebar e nel database. |
 
 ---

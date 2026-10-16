@@ -25,8 +25,8 @@ Garantire che l'esperienza acquisita, i refactoring complessi e le decisioni arc
 [3. Sync MEMORY.md]      ──► Aggiornamento in-place per dominio (vietato append numerato)
                │             + Compattazione in .agents/archive/ se > 200 righe
                ▼
-[4. Sync DESIDERATA.md]  ──► Aggiornamento stato feature (🟡 -> 🟢) e chiusura eventuale NOTE-XXX in NOTES.md
-               │
+[4. Sync DESIDERATA/NOTES]──► Sposta feature in Completate (DESIDERATA <= 150 righe, cella <= 160 char)
+               │             + Chiude eventuale NOTE-XXX in tabella 1 riga (NOTES <= 120 righe, max 10 risolte)
                ▼
 [5. Resoconto all'Utente] ──► Presentazione delle modifiche e guida al collaudo
 ```
@@ -92,6 +92,10 @@ Per evitare di duplicare centinaia di righe tra `.agents/worklog.d/` e `WORKLOG.
         > **Governance anti-bloat**: tetto massimo **200 righe**. Vietato l'append cronologico numerato: aggiornare le sezioni *in-place* sostituendo le regole superate. Storico pre-distillazione archiviato in [`.agents/archive/MEMORY_v1_archive.md`](file:///...).
         ```
 
-### C. Matrice in `DESIDERATA.md` e Allineamento `NOTES.md`
-- Aggiornare lo stato della riga corrispondente in `DESIDERATA.md` (`🟡 In Lavorazione` $\to$ `🟢 Completato`) aggiungendo una nota concisa con il riferimento all'implementazione.
-- Se l'intervento completato risolve una nota aperta in `NOTES.md`, spostare la relativa scheda `[NOTE-XXX]` sotto `## ✅ Analizzate & Consolidate (Resolved)` con stato `✅ Completata (<Data>)`.
+### C. Governance Anti-Bloat di `DESIDERATA.md` ($\le 150\text{ righe}$) e `NOTES.md` ($\le 120\text{ righe}$)
+1. **Partizionamento e Limite Cella in `DESIDERATA.md` ($\le 150\text{ righe}$, cella `Note` $\le 160\text{ char}$)**:
+   - Strutturare `DESIDERATA.md` in due sezioni: `## 1. Backlog Attivo & Funzionalità Pianificate` (in alto, `🟡 In Lavorazione` / `🔴 Prioritario` / `⚪ Pianificato`) e `## 2. Funzionalità Completate & Consolidate` (in basso, `🟢 Completato`).
+   - Spostare la funzionalità appena conclusa dalla tabella *Backlog Attivo* alla tabella *Completate* con stato `🟢 Completato` e una nota sintetica **$\le 160\text{ caratteri}$** (i dettagli risiedono in `WORKLOG.md`).
+   - Se `DESIDERATA.md` supera le **150 righe** (o 40 righe completate), archiviare lo storico dettagliato in `.agents/archive/DESIDERATA_v<N>_archive.md` e consolidare i sotto-step passati in righe di macro-fase.
+2. **Tabella Risolte a 1 Riga e Rotazione in `NOTES.md` ($\le 120\text{ righe}$, max 10 risolte)**:
+   - Se l'intervento completato risolve una nota aperta `[NOTE-XXX]` in `NOTES.md`, rimuovere il blocco multi-riga da `## 📥 Da Analizzare (Open)` e aggiungere una **singola riga** in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Completata in <File/Modulo> |`, esito $\le 120\text{ char}$), preservando nell'header `> **Ultimo ID Assegnato**: NOTE-XXX` e ruotando in `.agents/archive/NOTES_archive.md` le righe risolte oltre le 10 unità.

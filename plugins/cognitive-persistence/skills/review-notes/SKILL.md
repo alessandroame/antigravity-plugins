@@ -57,12 +57,15 @@ Per ciascuna nota selezionata, esegui un'ispezione rigorosa articolata in 4 punt
    - **Stato Attuale nel Codice & Delta**: link cliccabili ai file (`[File.js](file:///...#L10-L25)`) e impatto delle ultime lavorazioni.
    - **Proposta Ingegneristica & UX**: soluzione raccomandata, file da toccare e casi limite gestiti.
 
-### Step 4: Decisione Operativa e Consolidamento (`NOTES.md` $\to$ `DESIDERATA.md`)
+### Step 4: Decisione Operativa e Consolidamento Anti-Bloat (`NOTES.md` $\to$ `DESIDERATA.md`)
 Al termine dell'analisi, chiedi all'utente tramite `ask_question` come consolidare la nota analizzata:
-1. **Promuovi in `DESIDERATA.md` (`🔴 Prioritario` o `🔴 Pianificato`)**:
-   - Aggiungi la nuova riga formale in `DESIDERATA.md` con le specifiche tecniche emerse dall'analisi (pronta per essere eseguita con `/next-step`).
-   - Sposta la nota in `NOTES.md` dalla sezione `## 📥 Da Analizzare (Open)` alla sezione `## ✅ Analizzate & Consolidate (Resolved)`, cambiando lo stato in `✅ Promossa in DESIDERATA (<Data>)` e annotando la sintesi della decisione.
+1. **Promuovi in `DESIDERATA.md` (`🔴 Prioritario`, `🔴 Pianificato` o `⚪ Pianificato`)**:
+   - Aggiungi la nuova riga formale nella sezione `## 1. Backlog Attivo & Funzionalità Pianificate` di `DESIDERATA.md` mantenendo la cella `Note / Specifica` **$\le 160\text{ caratteri}$** (pronta per essere eseguita con `/next-step`).
+   - Rimuovi il blocco multi-riga della nota da `## 📥 Da Analizzare (Open)` in `NOTES.md` e inserisci in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` una **singola riga compatta** (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Promossa in DESIDERATA (<Sezione/Modulo>) |`, cella esito $\le 120\text{ char}$).
 2. **Implementa Subito nella Sessione Corrente**:
-   - Promuovi la voce in `DESIDERATA.md` direttamente come `🟡 In Lavorazione`, avvia lo sviluppo e i test, e a fine task (`/memory-sync`) consolida sia `DESIDERATA.md` (`🟢 Completato`) sia `NOTES.md` (`✅ Implementata`).
+   - Promuovi la voce nella sezione `## 1. Backlog Attivo` di `DESIDERATA.md` direttamente come `🟡 In Lavorazione`, avvia lo sviluppo e i test, e a fine task (`/memory-sync`) sposta la voce nella sezione `## 2. Funzionalità Completate` di `DESIDERATA.md` (`🟢 Completato`, cella $\le 160\text{ char}$) e consolida `NOTE-XXX` come singola riga nella tabella `✅ Analizzate & Consolidate` di `NOTES.md`.
 3. **Archivia / Scarta (Già Risolta o Non Necessaria)**:
-   - Sposta la nota nella sezione `## ✅ Analizzate & Consolidate (Resolved)` di `NOTES.md` con stato `⚪ Archiviata (<Motivazione>)`.
+   - Rimuovi il blocco da `## 📥 Da Analizzare (Open)` e inserisci una singola riga nella tabella `## ✅ Analizzate & Consolidate` di `NOTES.md` con esito `⚪ Archiviata (<Motivazione <= 120 char>)`.
+4. **Rotazione Storica di `NOTES.md` (`> 10 risolte` o `> 120 righe`)**:
+   - Preserva sempre nell'header la riga `> **Ultimo ID Assegnato**: NOTE-XXX`.
+   - Se la tabella `## ✅ Analizzate & Consolidate` supera le **10 righe** (o se `NOTES.md` supera le **120 righe** o contiene ancora vecchie schede risolte multi-riga), sposta le note risolte meno recenti in `.agents/archive/NOTES_archive.md`.

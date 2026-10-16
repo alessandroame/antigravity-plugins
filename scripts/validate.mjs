@@ -281,6 +281,22 @@ function main() {
         console.log(`\n[✖ FALLITO] WORKLOG.md: ${wlLines.length} righe (tetto massimo rolling window: 300 righe)`);
       }
     }
+    const desiderataPath = join(root, 'DESIDERATA.md');
+    if (existsSync(desiderataPath)) {
+      const desLines = readFileSync(desiderataPath, 'utf-8').split(/\r?\n/);
+      if (desLines.length > 150) {
+        totalErrors++;
+        console.log(`\n[✖ FALLITO] DESIDERATA.md: ${desLines.length} righe (tetto massimo: 150 righe)`);
+      }
+    }
+    const notesPath = join(root, 'NOTES.md');
+    if (existsSync(notesPath)) {
+      const notesLines = readFileSync(notesPath, 'utf-8').split(/\r?\n/);
+      if (notesLines.length > 120) {
+        totalErrors++;
+        console.log(`\n[✖ FALLITO] NOTES.md: ${notesLines.length} righe (tetto massimo: 120 righe)`);
+      }
+    }
   }
 
   console.log('\n' + '='.repeat(50));

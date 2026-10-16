@@ -21,6 +21,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-16 — Governance Anti-Bloat per `DESIDERATA.md`, `NOTES.md` e Storage Telemetria (`events.ndjson` / `.cursor_*`)
+- **Tipo**: Context Engineering & Storage Hygiene (`cognitive-persistence` v1.4.0, `telemetry-analytics` v1.5.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_desiderata-notes-and-telemetry-anti-bloat.md`](file:///.agents/worklog.d/2026-10-16_desiderata-notes-and-telemetry-anti-bloat.md)
+- **Sintesi**:
+  - Codificato in `cognitive-persistence` il tetto di **150 righe** e **160 caratteri** per cella su `DESIDERATA.md` (split *Backlog Attivo* / *Completate*) e il tetto di **120 righe** su `NOTES.md` (contatore `Ultimo ID Assegnato` nell'header e tabella a 1 riga per le ultime 10 note chiuse, allineando `c:\github\glidemind\NOTES.md`).
+  - Introdotto in `collector.mjs` il TTL Garbage Collection (`7 giorni`) per i file `.cursor_*.json`/`.eta_*.json` e la rotazione di `events.ndjson` oltre **5 MB**, estendendo `scripts/validate.mjs --all`.
+
+---
+
 ## 2026-10-16 — Governance Anti-Bloat per `MEMORY.md` (In-Place per Dominio) e `WORKLOG.md` (Rolling Window & Pointer Index)
 - **Tipo**: Context Engineering / Governance Memoria (`cognitive-persistence` v1.3.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md`](file:///.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md)

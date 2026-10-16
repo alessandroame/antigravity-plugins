@@ -1,7 +1,7 @@
 {
   "name": "telemetry-analytics",
   "displayName": "Telemetry, Usage Analytics & Live ETA",
-  "description": "Cattura telemetria di esecuzione, governa la stima ETA ad alto contrasto (【🟢/🟡/🔴 ETA tot ~Ns】 persistente in toolAction e toolSummary sui soli checkpoint entro il 2° turno) e auto-calibra le stime.",
+  "description": "Cattura telemetria di esecuzione, governa la stima ETA sull'intera lavorazione (ETA tot ~Ns sui soli checkpoint entro il 2° turno), auto-calibra le stime e applica rotazione log (5 MB) e TTL cursori (7gg).",
   "version": "1.5.0",
   "suggestedPrompts": [
     "Mostra il report di utilizzo dei plugin e l'accuratezza delle stime ETA per questo workspace",

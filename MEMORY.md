@@ -52,9 +52,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Silenzio `PreInvocation` (`eta-injector.mjs`) e Timestamp Nativi**:
   - *Insidia*: Restituire `ephemeralMessage` in `PreInvocation` stampa log ripetitivi nella UI; calcolare `Elapsed` da `lastUserInputMs` include le pause utente su `ask_question`.
   - *Regola*: `eta-injector.mjs` deve emettere `{}\n` su `stdout`, sottraendo le pause `ask_question` in `.eta_<id>.json`.
-- **Visibilità Persistente dell'ETA con Badge + Semaforo (`【🟢/🟡/🔴 ETA tot ~Ns】`) e Finalizzazione `Stop`**:
-  - *Insidia*: `toolAction` e `toolSummary` sono nodi `textContent` puri (HTML/CSS/ANSI vengono stampati letteralmente), `toolAction` dura $< 1\text{s}$ e i `view_file` collassano in `Explored N files >`; inoltre su `Stop` (`--finalize`) `newSteps.length` è `0` perché `PostInvocation` ha già avanzato `lastIndex`.
-  - *Regola*: Emettere la prima stima entro il 2° turno usando parentesi lenticolari + semaforo semantico di fascia (`【🟢 ETA tot ~15s】` $\le 20\text{s}$, `【🟡 ETA tot ~40s】` $21\text{–}60\text{s}$, `【🔴 ETA tot ~90s】` $> 60\text{s}$) sia in `toolAction` sia in `toolSummary` dell'ultimo `view_file` del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`). In `collector.mjs`, processare `etaOutcome` su `isFinalize` anche a `newSteps` vuoti e preservare `lastIndex` in `.cursor_<id>.json`.
+- **Visibilità Persistente dell'ETA (`【🟢/🟡/🔴 ETA tot ~Ns】`), Finalizzazione `Stop` e Rotazione Storage**:
+  - *Insidia*: `toolAction` dura $< 1\text{s}$ a schermo, i `view_file` collassano in `Explored N files >`, `· ETA` si confonde nel plain-text (`textContent`), su `Stop` (`--finalize`) `newSteps.length` è `0` e in `analytics/` si accumulano `.cursor_<id>.json` e `events.ndjson` senza limiti.
+  - *Regola*: Emettere il badge ad alto contrasto `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` $\le 20\text{s}$, `🟡` $21\text{–}60\text{s}$, `🔴` $> 60\text{s}$) entro il 2° turno (in `toolAction` + `toolSummary` dell'ultimo `view_file` e del primo tool operativo top-level). In `collector.mjs`, su `isFinalize` processare `etaOutcome` anche a `newSteps` vuoti, eliminare `.cursor_*`/`.eta_*` con `mtime > 7gg` e ruotare `events.ndjson` oltre `5 MB`.
 
 ---
 
@@ -63,7 +63,6 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Isolamento In-Flight (`/take-note`) vs Analisi Differita (`/review-notes`)**:
   - *Insidia*: Ispezionare il codice durante `/take-note` inquina il contesto del task attivo e analizza file in mutazione.
   - *Regola*: Durante `/take-note` toccare solo `NOTES.md` (e leggere `DESIDERATA.md`), rimandando l'ispezione del codice a `/review-notes`.
-- **Tetto Max 200 Righe (`MEMORY.md`) e Rolling Window Pointer Index (`WORKLOG.md` $\le 300$ Righe)**:
-  - *Insidia*: Accodare sezioni numerate (`## N. ...`) in `MEMORY.md` o copiare per intero i frammenti di `.agents/worklog.d/` dentro `WORKLOG.md` gonfia entrambi i file oltre 1.000 righe, degradando l'attenzione del modello e duplicando informazioni.
-  - *Regola*: `MEMORY.md` deve restare $\le 200\text{ righe}$ diviso in 5–8 sezioni di dominio aggiornate *in-place* (`Insidia`/`Regola`); `WORKLOG.md` deve restare $\le 300\text{ righe}$ (max 15 *Pointer Record* da 4–5 righe con link a `.agents/worklog.d/`), ruotando gli storici eccedenti in `.agents/archive/`.
-
+- **Tetti Massimi e Rotazione dei 4 File Canonici (`MEMORY` $\le 200$, `WORKLOG` $\le 300$, `DESIDERATA` $\le 150$, `NOTES` $\le 120$)**:
+  - *Insidia*: Append numerati in `MEMORY.md`, copie integrali di ADR in `WORKLOG.md`, mini-ADR nelle celle di `DESIDERATA.md` o schede risolte multi-riga perpetue in `NOTES.md` gonfiano il contesto letto ad ogni sessione.
+  - *Regola*: `MEMORY.md` $\le 200\text{ righe}$ (*in-place* per dominio); `WORKLOG.md` $\le 300\text{ righe}$ (max 15 *Pointer Record* da 4–5 righe); `DESIDERATA.md` $\le 150\text{ righe}$ (split *Backlog Attivo*/*Completate*, celle `Note` $\le 160\text{ char}$); `NOTES.md` $\le 120\text{ righe}$ (header `Ultimo ID Assegnato` + tabella 1 riga max 10 risolte), con archiviazione eccedenze in `.agents/archive/` (verificato da `scripts/validate.mjs --all`).
