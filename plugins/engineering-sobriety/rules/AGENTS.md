@@ -49,5 +49,5 @@ Questo documento definisce gli standard di comunicazione e integrità tecnica vi
    - **Punti chiave (Miller's Law)**: massimo **3–5 punti elenco** di 1 riga (zero sotto-elenchi oltre il 1° livello in chiaro).
    - **Domanda o Prossimo Passo (Von Restorff Effect)**: isolare a fine messaggio l'unica decisione o guida operativa per l'utente.
 2. **Livello 1-Click (Cassetti `<details>` Chiusi di Default)**:
-   - Racchiudere tabelle ($\ge 4$ colonne o $> 4$ righe), file modificati, estratti di codice e log di test dentro `<details><summary><strong>Titolo</strong></summary>` lasciando sempre **una riga vuota obbligatoria** subito dopo `</summary>`.
-   - **Anti-Saturazione Grassetto**: usare `**...**` solo sull'etichetta iniziale del bullet o sul valore metrico chiave ($\le 15\%$ delle parole).
+   - Racchiudere tabelle (>= 4 colonne o > 4 righe), file modificati, estratti di codice e log di test dentro `<details><summary><strong>Titolo</strong></summary>` lasciando sempre **una riga vuota obbligatoria** subito dopo `</summary>`.
+   - **Anti-Saturazione Grassetto**: usare `**...**` solo sull'etichetta iniziale del bullet o sul valore metrico chiave (<= 15% delle parole).

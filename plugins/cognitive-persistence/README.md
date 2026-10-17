@@ -39,19 +39,19 @@ Raccoglie osservazioni grezze, dubbi di UX o anomalie notate dall'utente mentre 
 ### 1. `MEMORY.md` (Vincoli Stabili & Governance Anti-Bloat — Max 200 Righe)
 Registra esclusivamente gli invarianti architetturali e la conoscenza empirica non ovvia acquisita durante lo sviluppo (la cronologia degli interventi appartiene a `WORKLOG.md`). Per prevenire l'inflazione del contesto (*context bloat*):
 - **Tetto Massimo Rigido (`200 righe`) e Partizionamento per Dominio**: il file è suddiviso in **5–8 sezioni stabili di dominio**; è **vietato l'append cronologico numerato** (`## 175. ...`).
-- **Aggiornamento In-Place e Formato a 2 Punti**: le nuove regole vengono fuse *in-place* nella sezione di dominio pertinente (sostituendo i vincoli superati) con il formato compatto `- **<Invariante>**:` $\to$ `- *Insidia*: <sintomo e causa radice in 1 riga>` / `- *Regola*: <pattern vincolante in 1-2 righe>`.
+- **Aggiornamento In-Place e Formato a 2 Punti**: le nuove regole vengono fuse *in-place* nella sezione di dominio pertinente (sostituendo i vincoli superati) con il formato compatto `- **<Invariante>**:` -> `- *Insidia*: <sintomo e causa radice in 1 riga>` / `- *Regola*: <pattern vincolante in 1-2 righe>`.
 - **Graduazione nei Test & Compattazione in `.agents/archive/`**: i vincoli verificabili via codice vengono codificati nei test statici (`shiftLeftGovernance.test.mjs`, `validate.mjs`); quando `MEMORY.md` supera le 200 righe, lo snapshot integrale viene archiviato in `.agents/archive/MEMORY_v<N>_archive.md` e il file attivo viene distillato sotto le 120–150 righe.
 
 ### 2. `WORKLOG.md` (Rolling Window & Pointer Index — Max 300 Righe) & `.agents/worklog.d/`
 Per prevenire la duplicazione del testo e la crescita illimitata del diario cronologico:
 - **Frammento Esteso in `.agents/worklog.d/YYYY-MM-DD_<argomento>.md`**: contiene l'ADR completo (*Contesto & Motivazione*, *Decisioni Architetturali*, *Impatto e Conseguenze*).
 - **Pointer Record in `WORKLOG.md` (Zero Copia Integrale)**: in `WORKLOG.md` viene inserito esclusivamente un indice puntatore di 4–5 righe (`Tipo`, link cliccabile al file in `.agents/worklog.d/` e 1–2 bullet di sintesi).
-- **Finestra Mobile (`Max 15 Interventi` / $\le 300\text{ righe}$) e Log Rotation**: `WORKLOG.md` espone in testa l'*Indice Sintetico delle Fasi Consolidate* seguito dagli ultimi 10–15 interventi; le voci più vecchie vengono ruotate in `.agents/archive/WORKLOG_v<N>_archive.md`.
+- **Finestra Mobile (`Max 15 Interventi` / <= 300 righe) e Log Rotation**: `WORKLOG.md` espone in testa l'*Indice Sintetico delle Fasi Consolidate* seguito dagli ultimi 10–15 interventi; le voci più vecchie vengono ruotate in `.agents/archive/WORKLOG_v<N>_archive.md`.
 
-### 3. `DESIDERATA.md` (Matrice di Stato Funzionale — Max 150 Righe & Celle $\le 160\text{ char}$)
+### 3. `DESIDERATA.md` (Matrice di Stato Funzionale — Max 150 Righe & Celle <= 160 char)
 Mappa il ciclo di vita delle funzionalità prevenendo l'accumulo di mini-ADR nelle celle tabellari:
 - **Partizionamento in 2 Tabelle**: `## 1. Backlog Attivo & Funzionalità Pianificate` in alto (`🟡 In Lavorazione`, `🔴 Prioritario`, `⚪ Pianificato`) e `## 2. Funzionalità Completate & Consolidate` in basso (`🟢 Completato`).
-- **Tetto Cella (`160 caratteri`) e Consolidamento (`150 righe`)**: ogni cella `Note` riassume in $\le 160\text{ caratteri}$ i moduli chiave; oltre le 150 righe complessive, i sotto-step passati vengono consolidati per macro-fase con archiviazione in `.agents/archive/DESIDERATA_v<N>_archive.md`.
+- **Tetto Cella (`160 caratteri`) e Consolidamento (`150 righe`)**: ogni cella `Note` riassume in <= 160 caratteri i moduli chiave; oltre le 150 righe complessive, i sotto-step passati vengono consolidati per macro-fase con archiviazione in `.agents/archive/DESIDERATA_v<N>_archive.md`.
 
 ---
 
@@ -59,7 +59,7 @@ Mappa il ciclo di vita delle funzionalità prevenendo l'accumulo di mini-ADR nel
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Governa `/take-note`, `/review-notes`, `/next-step`, `/memory-sync` e i tetti anti-bloat di `NOTES.md` ($\le 120$), `MEMORY.md` ($\le 200$), `WORKLOG.md` ($\le 300$) e `DESIDERATA.md` ($\le 150$, celle $\le 160\text{ char}$). |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Governa `/take-note`, `/review-notes`, `/next-step`, `/memory-sync` e i tetti anti-bloat di `NOTES.md` (<= 120), `MEMORY.md` (<= 200), `WORKLOG.md` (<= 300) e `DESIDERATA.md` (<= 150, celle <= 160 char). |
 | **`take-note`** | Skill / Comando Slash | [`skills/take-note/SKILL.md`](./skills/take-note/SKILL.md) | Cattura pensieri singoli o multipli in `NOTES.md` aggiornando `Ultimo ID Assegnato` nell'header a zero cambio di contesto. |
 | **`review-notes`** | Skill / Comando Slash | [`skills/review-notes/SKILL.md`](./skills/review-notes/SKILL.md) | Mostra il cruscotto delle note aperte in `NOTES.md`, esegue l'analisi sul codice, le promuove in `DESIDERATA.md` e compatta le risolte in 1 riga di tabella (max 10 voci). |
 | **`next-step`** | Skill / Comando Slash | [`skills/next-step/SKILL.md`](./skills/next-step/SKILL.md) | Runbook di accoglienza requisiti invocabile con `/next-step`: scansiona il *Backlog Attivo* di `DESIDERATA.md`, verifica le guardie anti-bloat dei 4 file e produce il briefing operativo. |

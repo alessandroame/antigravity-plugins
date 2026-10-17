@@ -29,7 +29,7 @@ Registrare istantaneamente nel file `NOTES.md` (alla radice del workspace) pensi
 
 ### Step 3: Persistenza Strutturata in `NOTES.md` e Contatore ID nell'Header
 1. Leggi `NOTES.md` alla radice del workspace (se non esiste, crealo con l'intestazione standard riportata nella sezione 3).
-2. Calcola il prossimo identificativo univoco `NOTE-XXX` (es. `NOTE-001`, `NOTE-002`) leggendo il metadato di testa `> **Ultimo ID Assegnato**: NOTE-XXX` (e verificando per sicurezza che sia $\ge$ al numero più alto presente nel file) e **aggiorna immediatamente il contatore nell'header** con il nuovo ID assegnato.
+2. Calcola il prossimo identificativo univoco `NOTE-XXX` (es. `NOTE-001`, `NOTE-002`) leggendo il metadato di testa `> **Ultimo ID Assegnato**: NOTE-XXX` (e verificando per sicurezza che sia >= al numero più alto presente nel file) e **aggiorna immediatamente il contatore nell'header** con il nuovo ID assegnato.
 3. Appendi la nuova scheda (o le nuove schede) in fondo alla sezione `## 📥 Da Analizzare (Open)`.
 
 ### Step 4: Conferma Ultra-Compatta e Ripresa Lavorazione
@@ -64,6 +64,6 @@ Buffer di cattura rapida a zero cambio di contesto (`/take-note`). Le osservazio
 
 ## ✅ Analizzate & Consolidate (Ultime 10 Risolte)
 
-| ID | Titolo Sintetico | Data | Esito & Destinazione ($\le 120\text{ char}$) |
+| ID | Titolo Sintetico | Data | Esito & Destinazione (<= 120 char) |
 | :--- | :--- | :---: | :--- |
 ```

@@ -61,7 +61,7 @@ Restituisci un blocco JSON con `scoresX: [0|1, 0|1, 0|1, 0|1, 0|1]`, `scoresY: [
 
 ## 5. Step 4: Calcolo Verdetto, Salvataggio Storico e Output (`~600px`)
 
-Esegui `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --evaluate` passando i punteggi del giudice e le metriche per salvare la sfida in `~/.gemini/antigravity/analytics/ab-bench-history.ndjson` e stampare il verdetto nel formato a divulgazione progressiva (`0-Click` $\le 12\text{ righe}$ + `<details>` con riga vuota dopo `</summary>`):
+Esegui `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --evaluate` passando i punteggi del giudice e le metriche per salvare la sfida in `~/.gemini/antigravity/analytics/ab-bench-history.ndjson` e stampare il verdetto nel formato a divulgazione progressiva (`0-Click` <= 12 righe + `<details>` con riga vuota dopo `</summary>`):
 
 ```markdown
 > [!IMPORTANT]

@@ -24,7 +24,7 @@ Questa skill esegue una diagnosi euristica a 360° su una schermata, un componen
 
 ### Fase 2: Layout & Percezione Gestalt (Proximity, Common Region, Similarity, Connectedness, Prägnanz)
 - **Raggruppamento Visivo**: I dati correlati sono raggruppati in card o confini visivi espliciti (Common Region)?
-- **Distanze di Prossimità**: Le etichette e gli hint sono a $\le 8\text{ px}$ dal relativo campo e i gruppi distinti a $\ge 16-24\text{ px}$?
+- **Distanze di Prossimità**: Le etichette e gli hint sono a <= 8 px dal relativo campo e i gruppi distinti a >= 16-24 px?
 - **Rapporto Segnale/Rumore**: Sono stati eliminati elementi decorativi e divisori superflui (Prägnanz, Occam's Razor, NN/G #8)?
 
 ### Fase 3: Carico Cognitivo & Memoria (Miller, Chunking, Recognition over Recall, Serial Position, Von Restorff)
@@ -33,8 +33,8 @@ Questa skill esegue una diagnosi euristica a 360° su una schermata, un componen
 - **Gerarchia delle Azioni**: Esiste una sola CTA primaria prominente ad alto contrasto per vista (Von Restorff Effect)?
 
 ### Fase 4: Ergonomia, Form & Prevenzione Errori (Fitts, Postel, Parkinson, Baymard, NN/G #5)
-- **Touch Target & Spaziatura (Fitts)**: I target touch misurano almeno $48\times 48\text{ px}$ su mobile e $32\times 32\text{ px}$ su desktop, distanziati di almeno $8\text{ px}$? Le azioni primarie sono nella Thumb Zone?
-- **Potatura Campi & Colonna Singola (Baymard)**: Il form è strutturato a colonna singola? Il numero totale di campi per step è contenuto a $\le 6-8$ campi?
+- **Touch Target & Spaziatura (Fitts)**: I target touch misurano almeno 48x 48 px su mobile e 32x 32 px su desktop, distanziati di almeno 8 px? Le azioni primarie sono nella Thumb Zone?
+- **Potatura Campi & Colonna Singola (Baymard)**: Il form è strutturato a colonna singola? Il numero totale di campi per step è contenuto a <= 6-8 campi?
 - **Tolleranza Input (Postel)**: Il sistema accetta formati elastici (spazi nei telefoni, formati data alternativi) e li normalizza?
 - **Prevenzione Attiva (NN/G #5)**: Il sistema impedisce date non valide o selezioni incoerenti prima ancora del submit?
 

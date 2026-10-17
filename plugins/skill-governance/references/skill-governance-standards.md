@@ -31,11 +31,11 @@ flowchart TD
 
 | Parametro | Valore Ottimale | Soglia di Allarme | Motivo Tecnico |
 | :--- | :--- | :--- | :--- |
-| **Lunghezza `name`** | 10–25 caratteri | $> 35$ caratteri | Rischio troncamento e verbosità. |
+| **Lunghezza `name`** | 10–25 caratteri | > 35 caratteri | Rischio troncamento e verbosità. |
 | **Formato `name`** | `kebab-case` minuscolo | Spazi, Maiuscole, Underscore | Scarto sintattico o incoerenza con convenzioni. |
-| **Caratteri `description`** | 100–220 caratteri | $> 280$ caratteri | Inflazione ingiustificata del system prompt. |
+| **Caratteri `description`** | 100–220 caratteri | > 280 caratteri | Inflazione ingiustificata del system prompt. |
 | **Formulazione Trigger** | Clausola esplicita ("*Use this skill when...*") | Assente o generica | Attivazioni mancate o conflitti con altre skill. |
-| **Righe in `SKILL.md`** | 80–160 righe | $> 250$ righe | Consumo eccessivo della finestra di contesto attiva. |
+| **Righe in `SKILL.md`** | 80–160 righe | > 250 righe | Consumo eccessivo della finestra di contesto attiva. |
 | **Rapporto Codice/Istruzioni** | Prevalenza di comandi deterministici | Spiegazioni narrative estese | Minore precisione esecutiva dell'agente. |
 | **Expected Output** | Almeno 1 blocco di verifica per fase critica | Assente | Esecuzione cieca senza controllo errori. |
 
@@ -45,6 +45,6 @@ flowchart TD
 
 Quando due skill condividono lo stesso identico `name`, Antigravity applica la seguente scala gerarchica:
 
-$$\text{Workspace } (.agents/skills) > \text{Plugins del Progetto} > \text{Global Config } (~/.gemini/config) > \text{Built-in}$$
+$Workspace (.agents/skills) > Plugins del Progetto > Global Config (~/.gemini/config) > Built-in$
 
 La risorsa a priorità inferiore subisce **shadowing completo e silente**: non riceverà alcun turno di esecuzione finché il conflitto non viene risolto tramite rinominazione o deprecazione.

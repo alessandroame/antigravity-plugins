@@ -36,8 +36,8 @@ Questa skill guida l'agente nell'ottimizzazione dell'esperienza d'uso per form, 
    - *Validazione Inline*: Valida il dato quando l'utente lascia il campo (`onBlur`), mai mentre sta ancora digitando. I messaggi d'errore devono essere costruttivi, spiegando chiaramente *cosa è andato storto* e *come risolverlo* (es. "Inserisci un CAP di 5 cifre, es. 20121").
 
 5. **Law of Proximity (Gestalt)**:
-   - *Regola*: L'etichetta (`<label>`) e il messaggio di aiuto (`hint-text`) devono trovarsi a distanza ravvicinata ($\le 8\text{ px}$) dal campo input relativo.
-   - *Esempio*: La distanza tra form group adiacenti deve essere di almeno $16-24\text{ px}$ per non confondere l'appartenenza.
+   - *Regola*: L'etichetta (`<label>`) e il messaggio di aiuto (`hint-text`) devono trovarsi a distanza ravvicinata (<= 8 px) dal campo input relativo.
+   - *Esempio*: La distanza tra form group adiacenti deve essere di almeno 16-24 px per non confondere l'appartenenza.
 
 6. **Tesler's Law (Assorbimento della Complessità)**:
    - *Regola*: Non far fare all'utente calcoli o deduzioni che il software può eseguire automaticamente.
@@ -50,7 +50,7 @@ Questa skill guida l'agente nell'ottimizzazione dell'esperienza d'uso per form, 
 ---
 
 ## Procedura Operativa per l'Agente
-1. **Analisi e Potatura Campi (Audit Baymard)**: Conta il numero totale di input. Elimina campi superflui portando il totale a $\le 6-8$ campi per schermata. Converti layout multi-colonna in una colonna singola verticale.
+1. **Analisi e Potatura Campi (Audit Baymard)**: Conta il numero totale di input. Elimina campi superflui portando il totale a <= 6-8 campi per schermata. Converti layout multi-colonna in una colonna singola verticale.
 2. **Accessibilità & Semantic HTML**: Assicurati che ogni input possieda una `<label>` visibile con `for="field-id"` e attributo `id` corrispondente. Non usare mai il solo `placeholder` come etichetta.
 3. **Controllo Autocomplete & Inputmode**: Inserisci attributi `autocomplete` conformi e `inputmode` specifico per dispositivi touch.
 4. **Validazione Non Distruttiva (Postel & NN/G #5)**: Implementa parsing tollerante a spazi e formattazioni; imposta validazione inline su evento `blur`.

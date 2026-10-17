@@ -7,7 +7,7 @@ description: Ricostruisce e verifica il flusso di una funzionalità (Ingresso ->
 
 ## 1. Obiettivo e Pre-requisiti
 
-Ricostruire in modo deterministico il funzionamento di una funzionalità software, fornendo allo sviluppatore una mappa strutturata **Punto di Ingresso $\to$ Guardie $\to$ Processo $\to$ Punto di Uscita**, il tracciamento del payload, lo stato dei test e i selettori espandibili `<details>` con il codice sorgente reale.
+Ricostruire in modo deterministico il funzionamento di una funzionalità software, fornendo allo sviluppatore una mappa strutturata **Punto di Ingresso -> Guardie -> Processo -> Punto di Uscita**, il tracciamento del payload, lo stato dei test e i selettori espandibili `<details>` con il codice sorgente reale.
 
 - **Tool richiesti**: strumenti di ricerca e lettura file (`grep_search`, `find_by_name`, `view_file`).
 - **Vincolo primario**: zero congetture. Ogni simbolo, percorso e intervallo di righe (`#Lstart-Lend`) deve essere verificato leggendo il file sorgente prima di produrre la risposta.
@@ -57,11 +57,11 @@ Ricostruire in modo deterministico il funzionamento di una funzionalità softwar
    - Compila la **Vista 2 (`Grafico a Blocchi`)** con i blocchi verticali per Ingresso, Bivi a 2 colonne (`Ramo [NO]` vs `Ramo [SÌ]`), Step di Processo (`[PURE]`, `[STATE]`, `[I/O]`) e Uscita.
    - Incorpora il widget nella risposta in chat tramite:
      `<agent-embed src="file:///<artifact_dir>/flow-inspector-<slug>.html"></agent-embed>`
-3. Compila sotto il widget la tabella riassuntiva **Punto di Ingresso $\to$ Processo $\to$ Punto di Uscita** con link cliccabili `file://` ad ogni funzione.
+3. Compila sotto il widget la tabella riassuntiva **Punto di Ingresso -> Processo -> Punto di Uscita** con link cliccabili `file://` ad ogni funzione.
 
 ### Step 3: Guardie (Early Returns) e Tracciamento del Payload
 1. **Guardie e Uscite Anticipate**: elenca le condizioni che interrompono il flusso prima del completamento (condizione, linea di codice, effetto/valore restituito).
-2. **Evoluzione del Payload**: mostra in un blocco compatto o tabella come cambia la forma dei dati da `Input Grezzo` $\to$ `Stato Intermedio Normalizzato` $\to$ `Output Emesso`.
+2. **Evoluzione del Payload**: mostra in un blocco compatto o tabella come cambia la forma dei dati da `Input Grezzo` -> `Stato Intermedio Normalizzato` -> `Output Emesso`.
 
 ### Step 4: Selettori a Espansione del Codice Coinvolto (`<details>`)
 1. Per ciascun nodo della catena (Ingresso, Step di Processo, Uscita), genera un blocco espandibile `<details>` seguendo il template in [`references/inspection-template.md`](./references/inspection-template.md).

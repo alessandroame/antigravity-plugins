@@ -1,6 +1,6 @@
 # Antigravity Plugin: Code Inspector & Execution Flow Verification
 
-Plugin per Google Antigravity progettato per assistere lo sviluppatore nella **comprensione rapida, nel recupero del contesto mentale e nella verifica a livello di codice** di funzionalità software esistenti tramite il modello **IPO Esteso (Punto di Ingresso $\to$ Guardie $\to$ Processo $\to$ Punto di Uscita)** e selettori espandibili `<details>` con il codice sorgente reale.
+Plugin per Google Antigravity progettato per assistere lo sviluppatore nella **comprensione rapida, nel recupero del contesto mentale e nella verifica a livello di codice** di funzionalità software esistenti tramite il modello **IPO Esteso (Punto di Ingresso -> Guardie -> Processo -> Punto di Uscita)** e selettori espandibili `<details>` con il codice sorgente reale.
 
 ---
 
@@ -68,4 +68,4 @@ Per installare e attivare il plugin nella configurazione globale di Antigravity 
 npm run sync
 ```
 
-Dopo la prima sincronizzazione, ricaricare la finestra dell'IDE (`Ctrl+Shift+P` $\to$ `Developer: Reload Window`) per rendere immediatamente disponibile il comando slash `/how-its-made` nell'autocompletamento della chat.
+Dopo la prima sincronizzazione, ricaricare la finestra dell'IDE (`Ctrl+Shift+P` -> `Developer: Reload Window`) per rendere immediatamente disponibile il comando slash `/how-its-made` nell'autocompletamento della chat.

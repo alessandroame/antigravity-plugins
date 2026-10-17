@@ -22,9 +22,9 @@ Prima di dichiarare completato qualsiasi task o proporre modifiche per il commit
 ### Gate 1: Conformità Pre-Design (Ex-Ante)
 Verificare preliminarmente all'apertura del codice o markup:
 1. **Occam's Razor**: nessun controllo o rotta duplicata rispetto alla barra di navigazione globale.
-2. **Touch Ergonomics**: target $\ge 48 \times 48\text{ px}$ per elementi interattivi touch.
+2. **Touch Ergonomics**: target >= 48 x 48 px per elementi interattivi touch.
 3. **Anti-Naked Numbers**: nessuna grandezza numerica isolata priva di unità di misura, etichetta o contesto semantico.
-4. **Theme & Contrast**: supporto preventivo per contrasti elevati (WCAG 2.1 AA $\ge 4.5:1$).
+4. **Theme & Contrast**: supporto preventivo per contrasti elevati (WCAG 2.1 AA >= 4.5:1).
 
 ### Gate 2: Rigore di Implementazione In-Flight
 Durante la scrittura del codice:

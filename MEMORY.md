@@ -21,7 +21,7 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
   - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
 - **Plugin On-Demand, Auto-Routing Skill, Silenzio Intermedio e Output Human-First (`skizzo`)**:
   - *Insidia*: Disabilitare un plugin in `config.json` nasconde `/skizzo`; quando un subagent finisce prima dell'altro l'Orchestratore rischia di stampare messaggi intermedi in chat; usare backtick escapati/LaTeX o gergo interno (`Contratto Esterno`, `Tesler/Postel`, `Oracolo Alpha`) rende l'output incomprensibile all'utente.
-  - *Regola*: Mantenere `rules/AGENTS.md` $\le 6.500\text{ B}$ con *Clausola di Dormienza*; assegnare 1–2 skill foglia (mai `skizzo`), attendere in silenzio (`0 byte`) finché entrambi i subagent non hanno concluso, ed esporre a 0-Click i 4 punti *Human-First* (*Cosa cambia per te*, *Comodità Beta*, *Problema evitato da Alpha*, *Disaccordo risolto*), confinando metriche e oracoli in `<details>`.
+  - *Regola*: Mantenere `rules/AGENTS.md` <= 6.500 B con *Clausola di Dormienza*; assegnare 1–2 skill foglia (mai `skizzo`), attendere in silenzio (`0 byte`) finché entrambi i subagent non hanno concluso, ed esporre a 0-Click i 4 punti *Human-First* (*Cosa cambia per te*, *Comodità Beta*, *Problema evitato da Alpha*, *Disaccordo risolto*), confinando metriche e oracoli in `<details>`.
 
 ---
 
@@ -41,12 +41,12 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 
 ## 3. Ergonomia Chat (~600px), Markdown GFM & Visualizzazione Flussi
 
-- **Riga Vuota Obbligatoria dopo `</summary>` in GFM**:
-  - *Insidia*: Incollare codice recintato (` ``` `) o link Markdown subito dopo `</summary>` in `<details>` disattiva il parser Markdown di Antigravity.
-  - *Regola*: Lasciare tassativamente **una riga vuota** subito dopo `</summary>` e prima di `</details>`.
+- **Riga Vuota Obbligatoria dopo `</summary>` e Igiene Code Span / LaTeX in GFM**:
+  - *Insidia*: Incollare codice subito dopo `</summary>` disattiva il parser Markdown; annidare backtick escapati (`` `(Skill: \`...\`)` ``), asterischi dentro code span singoli (`` `**...**` ``) o formule LaTeX (`$\le ...$`) rompe il rendering e il font in chat.
+  - *Regola*: Lasciare sempre una riga vuota dopo `</summary>`, usare un backtick singolo per ogni token separato e testo Unicode/ASCII normale (`<=`, `>=`, `->`, `x`), verificato da `validateMarkdownHygiene` in `scripts/validate.mjs`.
 - **Divieto di `flowchart LR` e Selettore Dual-Tab (`code-inspector`)**:
-  - *Insidia*: Nella colonna di chat (~600px), i grafi `flowchart LR` con $\ge 4$ nodi scalano il testo a dimensioni illeggibili.
-  - *Regola*: Usare il widget `<agent-embed>` dual-tab (`Albero Testuale` a spina verticale max 65 char + `Grafico a Blocchi`) o `flowchart TD` con etichette $\le 28$ char.
+  - *Insidia*: Nella colonna di chat (~600px), i grafi `flowchart LR` con >= 4 nodi scalano il testo a dimensioni illeggibili.
+  - *Regola*: Usare il widget `<agent-embed>` dual-tab (`Albero Testuale` a spina verticale max 65 char + `Grafico a Blocchi`) o `flowchart TD` con etichette <= 28 char.
 
 ---
 
@@ -56,8 +56,8 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
   - *Insidia*: Restituire `ephemeralMessage` in `PreInvocation` stampa log ripetitivi nella UI; calcolare `Elapsed` da `lastUserInputMs` include le pause utente su `ask_question`.
   - *Regola*: `eta-injector.mjs` deve emettere `{}\n` su `stdout`, sottraendo le pause `ask_question` in `.eta_<id>.json`.
 - **Visibilità Persistente dell'ETA (`【🟢/🟡/🔴 ETA tot ~Ns】`), Finalizzazione `Stop` e Rotazione Storage**:
-  - *Insidia*: `toolAction` dura $< 1\text{s}$ a schermo, i `view_file` collassano in `Explored N files >`, `· ETA` si confonde nel plain-text (`textContent`), su `Stop` (`--finalize`) `newSteps.length` è `0` e in `analytics/` si accumulano `.cursor_<id>.json` e `events.ndjson` senza limiti.
-  - *Regola*: Emettere il badge ad alto contrasto `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` $\le 20\text{s}$, `🟡` $21\text{–}60\text{s}$, `🔴` $> 60\text{s}$) entro il 2° turno (in `toolAction` + `toolSummary` dell'ultimo `view_file` e del primo tool operativo top-level). In `collector.mjs`, su `isFinalize` processare `etaOutcome` anche a `newSteps` vuoti, eliminare `.cursor_*`/`.eta_*` con `mtime > 7gg` e ruotare `events.ndjson` oltre `5 MB`.
+  - *Insidia*: `toolAction` dura < 1s a schermo, i `view_file` collassano in `Explored N files >`, `· ETA` si confonde nel plain-text (`textContent`), su `Stop` (`--finalize`) `newSteps.length` è `0` e in `analytics/` si accumulano `.cursor_<id>.json` e `events.ndjson` senza limiti.
+  - *Regola*: Emettere il badge ad alto contrasto `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` <= 20s, `🟡` 21–60s, `🔴` > 60s) entro il 2° turno (in `toolAction` + `toolSummary` dell'ultimo `view_file` e del primo tool operativo top-level). In `collector.mjs`, su `isFinalize` processare `etaOutcome` anche a `newSteps` vuoti, eliminare `.cursor_*`/`.eta_*` con `mtime > 7gg` e ruotare `events.ndjson` oltre `5 MB`.
 
 ---
 
@@ -66,6 +66,6 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Isolamento In-Flight (`/take-note`) vs Analisi Differita (`/review-notes`)**:
   - *Insidia*: Ispezionare il codice durante `/take-note` inquina il contesto del task attivo e analizza file in mutazione.
   - *Regola*: Durante `/take-note` toccare solo `NOTES.md` (e leggere `DESIDERATA.md`), rimandando l'ispezione del codice a `/review-notes`.
-- **Tetti Massimi e Rotazione dei 4 File Canonici (`MEMORY` $\le 200$, `WORKLOG` $\le 300$, `DESIDERATA` $\le 150$, `NOTES` $\le 120$)**:
+- **Tetti Massimi e Rotazione dei 4 File Canonici (`MEMORY` <= 200, `WORKLOG` <= 300, `DESIDERATA` <= 150, `NOTES` <= 120)**:
   - *Insidia*: Append numerati in `MEMORY.md`, copie integrali di ADR in `WORKLOG.md`, mini-ADR nelle celle di `DESIDERATA.md` o schede risolte multi-riga perpetue in `NOTES.md` gonfiano il contesto letto ad ogni sessione.
-  - *Regola*: `MEMORY.md` $\le 200\text{ righe}$ (*in-place* per dominio); `WORKLOG.md` $\le 300\text{ righe}$ (max 15 *Pointer Record* da 4–5 righe); `DESIDERATA.md` $\le 150\text{ righe}$ (split *Backlog Attivo*/*Completate*, celle `Note` $\le 160\text{ char}$); `NOTES.md` $\le 120\text{ righe}$ (header `Ultimo ID Assegnato` + tabella 1 riga max 10 risolte), con archiviazione eccedenze in `.agents/archive/` (verificato da `scripts/validate.mjs --all`).
+  - *Regola*: `MEMORY.md` <= 200 righe (*in-place* per dominio); `WORKLOG.md` <= 300 righe (max 15 *Pointer Record* da 4–5 righe); `DESIDERATA.md` <= 150 righe (split *Backlog Attivo*/*Completate*, celle `Note` <= 160 char); `NOTES.md` <= 120 righe (header `Ultimo ID Assegnato` + tabella 1 riga max 10 risolte), con archiviazione eccedenze in `.agents/archive/` (verificato da `scripts/validate.mjs --all`).

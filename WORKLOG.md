@@ -13,11 +13,11 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
-## 2026-10-17 — Evoluzione Plugin `skizzo` v1.2.0 $\to$ v1.3.0 (Auto-Routing Skill Foglia, Silenzio Intermedio e Output "Human-First")
-- **Tipo**: Evoluzione Protocollo Multi-Agente & UX Output (`plugins/skizzo/` v1.1.0 $\to$ v1.3.0)
+## 2026-10-17 — Evoluzione Plugin `skizzo` v1.3.0 (Output "Human-First") e Guardia `validateMarkdownHygiene` (`scripts/validate.mjs`)
+- **Tipo**: Evoluzione Protocollo Multi-Agente & Validatore Statico (`plugins/skizzo/` v1.3.0, `scripts/validate.mjs`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md)
 - **Sintesi**:
-  - Introdotto l'auto-routing di 1–2 skill verticali (escludendo `skizzo`), la barriera di silenzio sui wakeup parziali dei subagent e il formato di consegna **Human-First** a 4 punti in italiano quotidiano (*Cosa cambia per te*, *Comodità Beta*, *Problema evitato da Alpha*, *Disaccordo risolto*), confinando gergo e metriche in `<details>`.
+  - Introdotto in `skizzo` v1.3.0 l'auto-routing di 1–2 skill foglia, la barriera di silenzio sui wakeup parziali e il formato **Human-First** a 4 punti in italiano quotidiano, aggiungendo in `scripts/validate.mjs` la guardia `validateMarkdownHygiene` (zero backtick rotti, grassetto in code span o LaTeX inline nei plugin).
 
 ---
 
@@ -30,7 +30,7 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 ---
 
 ## 2026-10-16 — Creazione ed Evoluzione Plugin `skizzo` v1.1.0 (Dual-Track Tecnico vs Dominio, Mediatore Interattivo `--mediator` e Banner `conversation://`)
-- **Tipo**: Nuovo Plugin & Orchestrazione Multi-Agente Avversariale (`plugins/skizzo/` v1.0.0 $\to$ v1.1.0)
+- **Tipo**: Nuovo Plugin & Orchestrazione Multi-Agente Avversariale (`plugins/skizzo/` v1.0.0 -> v1.1.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-16_skizzo-dual-track-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-16_skizzo-dual-track-plugin.md)
 - **Sintesi**:
   - Implementato il plugin `skizzo` (dormiente di default, toggle `/skizzo` con titolo `[SKIZZO]` / `[SKIZZO+MED]`) che delega ogni task in parallelo a 2 subagent isolati (`Subagent Alpha` Tecnico vs `Subagent Beta` Dominio), con opzione `--mediator` (`Subagent Gamma` che negozia via `send_message` max 1 round sui disaccordi) e banner `[!IMPORTANT]` obbligatorio al rigo 1 con link cliccabili `conversation://<id>`.
@@ -41,7 +41,7 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Tipo**: Telemetria & Ergonomia Visiva In-Flight (`telemetry-analytics` v1.5.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md`](file:///.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md)
 - **Sintesi**:
-  - Introdotto in [`plugins/telemetry-analytics/rules/AGENTS.md`](file:///plugins/telemetry-analytics/rules/AGENTS.md) il formato `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` $\le 20\text{s}$, `🟡` $21\text{–}60\text{s}$, `🔴` $> 60\text{s}$) per dare risalto cromatico e geometrico nei campi plain-text (`textContent`) dei tool, estendendo il parser in `collector.mjs` ed `eta-injector.mjs`.
+  - Introdotto in [`plugins/telemetry-analytics/rules/AGENTS.md`](file:///plugins/telemetry-analytics/rules/AGENTS.md) il formato `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` <= 20s, `🟡` 21–60s, `🔴` > 60s) per dare risalto cromatico e geometrico nei campi plain-text (`textContent`) dei tool, estendendo il parser in `collector.mjs` ed `eta-injector.mjs`.
 
 ---
 
@@ -59,7 +59,7 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Dettagli**: [`.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md`](file:///.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md)
 - **Sintesi**:
   - Formalizzato in [`plugins/cognitive-persistence/rules/AGENTS.md`](file:///plugins/cognitive-persistence/rules/AGENTS.md) e [`skills/memory-sync/SKILL.md`](file:///plugins/cognitive-persistence/skills/memory-sync/SKILL.md) il tetto di **200 righe** per `MEMORY.md` (5–8 sezioni di dominio aggiornate *in-place*, formato `Insidia`/`Regola`, archiviazione in `.agents/archive/MEMORY_v<N>_archive.md`).
-  - Formalizzato per `WORKLOG.md` il modello **Rolling Window + Pointer Index** ($\le 300\text{ righe}$ / max 15 voci da 4–5 righe con link a `.agents/worklog.d/`, divieto di copia integrale del frammento e rotazione in `.agents/archive/WORKLOG_v<N>_archive.md`) e reso `scripts/sync-to-global.mjs` resiliente a lock `EBUSY` su Windows.
+  - Formalizzato per `WORKLOG.md` il modello **Rolling Window + Pointer Index** (<= 300 righe / max 15 voci da 4–5 righe con link a `.agents/worklog.d/`, divieto di copia integrale del frammento e rotazione in `.agents/archive/WORKLOG_v<N>_archive.md`) e reso `scripts/sync-to-global.mjs` resiliente a lock `EBUSY` su Windows.
 
 ---
 
@@ -100,7 +100,7 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Tipo**: Nuovo Plugin / Ispezione Flussi Esecutivi (`plugins/code-inspector/`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-15_code-inspector-plugin.md`](file:///.agents/worklog.d/2026-10-15_code-inspector-plugin.md)
 - **Sintesi**:
-  - Implementato il protocollo IPO Esteso a 5 livelli (*Ingresso $\to$ Guardie $\to$ Processo `[PURE]/[STATE]/[I/O]` $\to$ Payload $\to$ Uscita & Test*) con selettore interattivo `<agent-embed>` dual-tab (`Albero Testuale` + `Grafico a Blocchi`) e cassetti `<details>` con estratti chirurgici verificati.
+  - Implementato il protocollo IPO Esteso a 5 livelli (*Ingresso -> Guardie -> Processo `[PURE]/[STATE]/[I/O]` -> Payload -> Uscita & Test*) con selettore interattivo `<agent-embed>` dual-tab (`Albero Testuale` + `Grafico a Blocchi`) e cassetti `<details>` con estratti chirurgici verificati.
 
 ---
 

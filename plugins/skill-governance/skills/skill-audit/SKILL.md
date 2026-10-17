@@ -29,7 +29,7 @@ Analizzare la skill su 5 dimensioni critiche:
 - [ ] **Presenza Frontmatter**: I delimitatori `---` racchiudono sia `name` che `description`.
 - [ ] **Formato `name`**: Stringa in `kebab-case` minuscolo senza spazi o caratteri speciali.
 - [ ] **Budget Caratteri**: La `description` misura tra 80 e 250 caratteri.
-  - *Allarme*: Se $> 300$ caratteri, consuma token non necessari in ogni turno della sessione.
+  - *Allarme*: Se > 300 caratteri, consuma token non necessari in ogni turno della sessione.
 - [ ] **Clausola Condizionale**: Contiene formule esplicite ("*Use this skill when...*", "*Attiva questa skill quando...*").
 - [ ] **Rischio Over-triggering**: La descrizione evita termini eccessivamente generici che causano attivazioni accidentali.
 

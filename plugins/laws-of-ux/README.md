@@ -9,9 +9,9 @@ Il plugin agisce come un sistema intelligente di **Regole contestuali** e **Skil
 ## Obiettivo del Plugin (Goal)
 
 Garantire che ogni vista, componente o flusso generato da Antigravity rispetti standard quantitativi e scientifici rigorosi:
-1. **Form snelli & validazione non distruttiva**: riduzione del 20-60% dei campi rispetto al default ($\le 6-8$ campi per step, benchmark Baymard), layout a colonna singola, tolleranza dei formati prima dell'invio (Legge di Postel) e autocompletamento semantico obbligatorio.
-2. **Layout Gestalt & Gerarchia**: rispetto dei confini visivi espliciti (Common Region), spaziatura correlata tra label e input ($\le 8\text{ px}$) ed eliminazione di elementi ridondanti (Prägnanz e Rasoio di Occam).
-3. **Ergonomia motoria & Touch Target**: touch target $\ge 48\times 48\text{ px}$ su mobile e $\ge 32\times 32\text{ px}$ su desktop, distanziati di almeno $8\text{ px}$ (Legge di Fitts) e allineati alla Thumb Zone.
+1. **Form snelli & validazione non distruttiva**: riduzione del 20-60% dei campi rispetto al default (<= 6-8 campi per step, benchmark Baymard), layout a colonna singola, tolleranza dei formati prima dell'invio (Legge di Postel) e autocompletamento semantico obbligatorio.
+2. **Layout Gestalt & Gerarchia**: rispetto dei confini visivi espliciti (Common Region), spaziatura correlata tra label e input (<= 8 px) ed eliminazione di elementi ridondanti (Prägnanz e Rasoio di Occam).
+3. **Ergonomia motoria & Touch Target**: touch target >= 48x 48 px su mobile e >= 32x 32 px su desktop, distanziati di almeno 8 px (Legge di Fitts) e allineati alla Thumb Zone.
 4. **Timing Hierarchy & Controllo**: feedback visivo istantaneo entro 400ms (Doherty Threshold), skeleton screens per attese oltre 1 secondo, progress bar determinate tra 3-10s, finestra di annullamento *Undo Grace Period* (5-10s) prima del commit definitivo (NN/G Euristica #3).
 5. **Ricerca con Recognition over Recall & Filtri Faccettati**: autocompletamento predittivo, tolleranza a typo/sinonimi e 5 categorie chiave di filtro (categoria, specifiche, prezzo, rating, disponibilità).
 6. **Interfacce Autonome & AI (Standard 2026)**: trasparenza e motivazione verificabile inline (*Show the Reasoning*), con possibilità di correzione o override manuale con sforzo minimo (*Cheap Takeover*).
@@ -24,13 +24,13 @@ Il plugin espone **7 Skill tematiche** e **5 Regole contestuali**:
 
 | Problema da Risolvere | Skill Attivata | Regola Automatica | Leggi & Standard di Riferimento |
 | :--- | :--- | :--- | :--- |
-| **Form, checkout, validazione e input complessi** | `ux-form-optimization` | `ux-forms-and-inputs.md` | *Postel, Parkinson, Proximity, Tesler, Chunking, Benchmark Baymard ($\le 6-8$ campi, colonna singola)* |
+| **Form, checkout, validazione e input complessi** | `ux-form-optimization` | `ux-forms-and-inputs.md` | *Postel, Parkinson, Proximity, Tesler, Chunking, Benchmark Baymard (<= 6-8 campi, colonna singola)* |
 | **Layout disordinato, card, dashboard e griglie** | `ux-layout-and-visual-hierarchy` | `ux-layout-and-gestalt.md` | *Principi Gestalt (Proximity, Common Region, Similarity, Connectedness, Prägnanz), NN/G #8* |
-| **Pulsanti, CTA, touch target ed ergonomia** | `ux-button-and-touch-ergonomics` | `ux-buttons-and-touch-targets.md` | *Fitts's Law ($\ge 48\times 48\text{ px}$), Von Restorff, Thumb Zone, WCAG AA* |
+| **Pulsanti, CTA, touch target ed ergonomia** | `ux-button-and-touch-ergonomics` | `ux-buttons-and-touch-targets.md` | *Fitts's Law (>= 48x 48 px), Von Restorff, Thumb Zone, WCAG AA* |
 | **Latenza, caricamenti lenti e feedback mancante** | `ux-feedback-and-perceived-performance` | `ux-performance-and-feedback.md` | *Doherty Threshold (<400ms), Timing Hierarchy (<1s, 1-3s, 3-10s, >10s), Undo Pattern (NN/G #3)* |
 | **Scelte complesse, menu, search e cataloghi** | `ux-choice-and-navigation-design` | `ux-navigation-and-choice.md` | *Hick's Law, Choice Overload, Recognition over Recall (NN/G #6), 5 Filtri Baymard, Serial Position* |
 | **Abbandono dell'onboarding e setup profili** | `ux-onboarding-and-retention` | `AGENTS.md` | *Jakob's Law, Active User Paradox, Goal-Gradient, Zeigarnik, Flow* |
-| **Uso all'aperto, luce solare diretta e guanti** | `ux-outdoor-and-field-ergonomics` | `AGENTS.md` | *Fitts Target $\ge 48\text{px}$, Pan-X Carousels, 100dvh, Dual High-Contrast, Feedback Tri-Modale* |
+| **Uso all'aperto, luce solare diretta e guanti** | `ux-outdoor-and-field-ergonomics` | `AGENTS.md` | *Fitts Target >= 48px, Pan-X Carousels, 100dvh, Dual High-Contrast, Feedback Tri-Modale* |
 | **Audit euristico completo e interfaccia AI** | `laws-of-ux-audit` | Tutte le regole | *30 Laws of UX + 10 Euristiche NN/G + Benchmark Baymard + Explainability & Cheap Takeover (Windmill 2026)* |
 
 

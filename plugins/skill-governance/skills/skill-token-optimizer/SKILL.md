@@ -73,7 +73,7 @@ skills/<nome-skill>/
 Il file `SKILL.md` risultante deve contenere solo:
 1. **Scopo Sintetico** (1 paragrafo).
 2. **Pre-requisiti e Dipendenze** (elenco puntato).
-3. **Flusso Operativo Numerato** (Step 1 $\to$ Step 2 $\to$ Step 3 con comandi diretti).
+3. **Flusso Operativo Numerato** (Step 1 -> Step 2 -> Step 3 con comandi diretti).
 4. **Criteri di Validazione ed Expected Output**.
 5. **Riferimenti ai file ausiliari**.
 

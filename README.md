@@ -78,7 +78,7 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 
 ### 9. `code-inspector`
 - **Goal**: Consentire allo sviluppatore di ricordare, comprendere e verificare rapidamente a livello di codice come funziona una funzionalità software.
-- **Cosa fa**: Espone la regola di ispezione e il comando slash `/how-its-made`, che ricostruisce il flusso secondo il modello **Punto di Ingresso $\to$ Guardie $\to$ Processo $\to$ Punto di Uscita**, classificando ciascun passaggio (`[PURE]`, `[STATE]`, `[I/O]`), tracciando l'evoluzione del payload, collegando i test esistenti e fornendo selettori a espansione `<details>` con gli estratti chirurgici del codice sorgente coinvolto.
+- **Cosa fa**: Espone la regola di ispezione e il comando slash `/how-its-made`, che ricostruisce il flusso secondo il modello **Punto di Ingresso -> Guardie -> Processo -> Punto di Uscita**, classificando ciascun passaggio (`[PURE]`, `[STATE]`, `[I/O]`), tracciando l'evoluzione del payload, collegando i test esistenti e fornendo selettori a espansione `<details>` con gli estratti chirurgici del codice sorgente coinvolto.
 - **Guida completa**: [`plugins/code-inspector/README.md`](./plugins/code-inspector/README.md)
 
 ### 10. `skizzo`
@@ -158,7 +158,7 @@ cp -r plugins/cognitive-persistence ~/.gemini/config/plugins/
 
 ### 3. Rilevamento nell'Interfaccia Chat (Comandi Slash)
 - Il Language Server di Antigravity scansiona `~/.gemini/config/plugins/` per estrarre le skill registrate.
-- L'interfaccia client (Electron) carica la cache dei comandi slash (es. `/next-step`, `/memory-sync`, `/tone-audit`) all'avvio: dopo la prima sincronizzazione di un nuovo plugin, ricarica la finestra con `Ctrl+Shift+P` $\to$ `Developer: Reload Window` (oppure riavvia Antigravity).
+- L'interfaccia client (Electron) carica la cache dei comandi slash (es. `/next-step`, `/memory-sync`, `/tone-audit`) all'avvio: dopo la prima sincronizzazione di un nuovo plugin, ricarica la finestra con `Ctrl+Shift+P` -> `Developer: Reload Window` (oppure riavvia Antigravity).
 
 ---
 

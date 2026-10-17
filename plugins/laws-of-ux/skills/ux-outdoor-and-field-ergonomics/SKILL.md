@@ -16,7 +16,7 @@ Questa skill guida l'ottimizzazione di interfacce web e mobile destinate all'uso
 1. **Luce Solare Diretta e Riverbero**:
    - I riflessi riducono drasticamente il contrasto percepito e rendono invisibili i grigi chiari o le sottili ombreggiature.
 2. **Uso con Guanti o Mani Fredde**:
-   - Impossibilità di puntamento micrometrico (precisione $< 5\text{mm}$).
+   - Impossibilità di puntamento micrometrico (precisione < 5mm).
 3. **Finestra Decisionale Rapida (< 3s)**:
    - L'operatore non può leggere testi lunghi; lo stato primario deve essere percepibile a colpo d'occhio (*glanceability*).
 4. **Schermi Ristretti (360px–390px) e Vibrazioni**:
@@ -26,8 +26,8 @@ Questa skill guida l'ottimizzazione di interfacce web e mobile destinate all'uso
 
 ## 2. Pattern Implementativi di Riferimento
 
-### A. Target Tattili Estesi ($\ge 48\text{px}$) con Hit-Area Trasparente
-Quando un elemento visivo ha dimensioni compatte (es. icona $16\text{px}$ o badge), estendere l'area di tocco con uno pseudo-elemento senza alterare il layout:
+### A. Target Tattili Estesi (>= 48px) con Hit-Area Trasparente
+Quando un elemento visivo ha dimensioni compatte (es. icona 16px o badge), estendere l'area di tocco con uno pseudo-elemento senza alterare il layout:
 
 ```css
 .field-touch-target {
@@ -107,8 +107,8 @@ Non affidare la comunicazione dello stato critico unicamente alla tonalità crom
 
 | Criterio | Soglia Minima | Verifica |
 | :--- | :---: | :--- |
-| **Touch Target** | $\ge 48 \times 48\text{ px}$ | Ispezione DOM box-model |
-| **Contrasto Luce Solare** | $\ge 4.5:1$ (AA) / $\ge 7:1$ (AAA) | Lighthouse / a11y color contrast |
+| **Touch Target** | >= 48 x 48 px | Ispezione DOM box-model |
+| **Contrasto Luce Solare** | >= 4.5:1 (AA) / >= 7:1 (AAA) | Lighthouse / a11y color contrast |
 | **Overflow Orizzontale** | 0 pixel su 360px viewport | Test headless browser |
-| **Feedback Interazione** | $< 100\text{ms}$ (stato `:active`) | Test manuale o reattività CSS |
+| **Feedback Interazione** | < 100ms (stato `:active`) | Test manuale o reattività CSS |
 | **Icon Clutter** | 0 emoji decorative nei titoli | Scansione codice |

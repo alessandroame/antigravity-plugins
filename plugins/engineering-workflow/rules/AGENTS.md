@@ -19,7 +19,7 @@ Questo documento definisce gli standard per il controllo di versione, la localiz
 ## 2. Deterministic Trace-Based Fault Localization
 
 1. **Divieto di Debugging a Tentativi**: vietato modificare il codice procedendo a congetture non verificate.
-2. **Iniezione Log Strutturati (`[DEBUG-TRACE #X]`)**: iniettare checkpoint numerati lungo la catena (Ingresso $\to$ Guardia $\to$ Calcolo $\to$ Stato $\to$ Render) per isolare il *Last Known Good Checkpoint*.
+2. **Iniezione Log Strutturati (`[DEBUG-TRACE #X]`)**: iniettare checkpoint numerati lungo la catena (Ingresso -> Guardia -> Calcolo -> Stato -> Render) per isolare il *Last Known Good Checkpoint*.
 3. **Pulizia Obbligatoria (Trace Cleanup)**: rimuovere tutti i log `[DEBUG-TRACE]` prima della consegna o del commit.
 
 ---
@@ -40,7 +40,7 @@ Questo documento definisce gli standard per il controllo di versione, la localiz
 
 ## 5. I 5 Gate di Qualità Shift-Left
 
-1. **Gate 1 (Pre-Design UX & Dominio)**: zero controlli ridondanti, touch target $\ge 48\text{px}$, zero numeri isolati privi di unità e contrasto WCAG AA/AAA.
+1. **Gate 1 (Pre-Design UX & Dominio)**: zero controlli ridondanti, touch target >= 48px, zero numeri isolati privi di unità e contrasto WCAG AA/AAA.
 2. **Gate 2 (Rigore In-Flight)**: isolamento headless del core, store reattivo unico (SSOT) e inglese esclusivo nel codice.
 3. **Gate 3 (Test Suite di Governance)**: eseguire test statici automatici (`npm test`) per validare assenza di DOM nel core, assenza di token vietati e integrità CSS.
 4. **Gate 4 (Ispezione Geometrica)**: verificare su viewport mobile (`360px–390px`) l'assenza di overflow orizzontale e troncamenti flexbox.

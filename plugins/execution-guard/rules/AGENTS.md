@@ -35,7 +35,7 @@ Rispettare i seguenti massimali rigidi di iterazione durante la correzione di bu
    - Negli script standalone impostare `setTimeout(() => { console.error('[FATAL TIMEOUT]'); process.exit(1); }, 45000).unref()` e chiudere browser/server in un blocco `finally`.
 2. **Divieto di Chiamate Live nei Test Automatici**:
    - I test automatizzati e i crawler headless non devono **mai** effettuare chiamate HTTP reali verso API esterne soggette a rate limit (HTTP 429) o tariffazione (meteo, tile mappe, geocoding, LLM).
-   - Usare sempre mock/fixture deterministiche offline (`?mock=1`, `NODE_ENV=test`), garantendo esecuzione offline $< 1\text{s}$.
+   - Usare sempre mock/fixture deterministiche offline (`?mock=1`, `NODE_ENV=test`), garantendo esecuzione offline < 1s.
 
 ---
 

@@ -6,7 +6,7 @@ Questo documento definisce gli standard per la ricostruzione, spiegazione e veri
 
 ## 1. Architettura a Divulgazione Progressiva (Modello IPO Esteso a 5 Livelli)
 
-Quando lo sviluppatore richiede di verificare o comprendere il funzionamento di una funzionalità, strutturare l'analisi secondo il modello **Ingresso $\to$ Guardie $\to$ Processo $\to$ Payload $\to$ Uscita**:
+Quando lo sviluppatore richiede di verificare o comprendere il funzionamento di una funzionalità, strutturare l'analisi secondo il modello **Ingresso -> Guardie -> Processo -> Payload -> Uscita**:
 
 1. **Punto di Ingresso (Entry Point & Trigger)**:
    - Identificare il trigger esatto (evento UI, route HTTP, CLI o funzione pubblica) con link cliccabile `[simbolo](file:///percorso/assoluto/file.ext#L10-L25)` e contratto di ingresso (parametri, tipi, precondizioni).
@@ -18,7 +18,7 @@ Quando lo sviluppatore richiede di verificare o comprendere il funzionamento di 
      - `[STATE]`: mutazione di stato in memoria, store reattivi o cache applicativa.
      - `[I/O]`: interazione esterna (rete, DB, disco, `localStorage`, DOM).
 4. **Tracciamento del Payload (Data Shape Evolution)**:
-   - Mostrare la trasformazione dati lungo la pipeline: `Input Grezzo` $\to$ `Dato Validato` $\to$ `Output / Effetto Finale`.
+   - Mostrare la trasformazione dati lungo la pipeline: `Input Grezzo` -> `Dato Validato` -> `Output / Effetto Finale`.
 5. **Punto di Uscita e Stato di Verifica (Exit Point & Test Coverage)**:
    - Dichiarare valore restituito, effetti collaterali e file di test che coprono la funzionalità (`[nome.test.js](file:///...)`), segnalando eventuali rami scoperti.
 
@@ -29,7 +29,7 @@ Quando lo sviluppatore richiede di verificare o comprendere il funzionamento di 
 Per garantire leggibilità al 100% nella colonna di chat (`~600px`):
 1. **Artefatto HTML a Tab**: generare `<artifact_dir>/flow-inspector-<slug>.html` (`UserFacing: true`) basato su `references/flow-widget-template.html` e incorporarlo tramite `<agent-embed src="file:///<artifact_dir>/flow-inspector-<slug>.html"></agent-embed>`.
 2. **Due Viste Mutuamente Esclusive (`role="tablist"`)**:
-   - **Tab 1 — `Albero Testuale` (default)**: albero monospace verticale ($\le 65\text{ char}$/riga) con `◇ BIVIO` e rami `├── [NO] ──►` / `└── [SÌ] ──►`.
+   - **Tab 1 — `Albero Testuale` (default)**: albero monospace verticale (<= 65 char/riga) con `◇ BIVIO` e rami `├── [NO] ──►` / `└── [SÌ] ──►`.
    - **Tab 2 — `Grafico a Blocchi`**: card verticali con variabili del tema (`--card`, `--background`, `--foreground`, `--border`, `--primary`), bivi a 2 colonne (`grid-cols-2`) e badge `[PURE]`/`[STATE]`/`[I/O]`.
 3. **Vincoli Tecnici**: usare `tailwindcss.min.js`, `<body class="bg-transparent ...">`, font minimo `12px` (`text-xs`) e **mai** `100vh`/`h-screen`/`min-h-screen` sul contenitore radice.
 

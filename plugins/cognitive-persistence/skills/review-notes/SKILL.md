@@ -49,7 +49,7 @@ Per ciascuna nota selezionata, esegui un'ispezione rigorosa articolata in 4 punt
    - Usa `grep_search` e `view_file` per individuare i moduli, le funzioni e i selettori CSS esatti coinvolti dalla nota.
    - Verifica i vincoli architetturali in `MEMORY.md` (es. Headless Core, disaccoppiamento DOM, zero regressioni).
 3. **Scrutinio UX & Architetturale (`laws-of-ux` & `proactive-mentorship`)**:
-   - Valuta l'idea dell'utente rispetto a ergonomia touch ($\ge 48\text{px}$), carico cognitivo (Hick's Law, Progressive Disclosure) e pulizia visiva.
+   - Valuta l'idea dell'utente rispetto a ergonomia touch (>= 48px), carico cognitivo (Hick's Law, Progressive Disclosure) e pulizia visiva.
    - Se la soluzione ipotizzata a caldo nella nota (es. una specifica combo o posizionamento) presenta controindicazioni su mobile/outdoor, proponi l'alternativa tecnica superiore.
 4. **Output della Scheda di Analisi**:
    Presenta per la nota una scheda strutturata:
@@ -57,13 +57,13 @@ Per ciascuna nota selezionata, esegui un'ispezione rigorosa articolata in 4 punt
    - **Stato Attuale nel Codice & Delta**: link cliccabili ai file (`[File.js](file:///...#L10-L25)`) e impatto delle ultime lavorazioni.
    - **Proposta Ingegneristica & UX**: soluzione raccomandata, file da toccare e casi limite gestiti.
 
-### Step 4: Decisione Operativa e Consolidamento Anti-Bloat (`NOTES.md` $\to$ `DESIDERATA.md`)
+### Step 4: Decisione Operativa e Consolidamento Anti-Bloat (`NOTES.md` -> `DESIDERATA.md`)
 Al termine dell'analisi, chiedi all'utente tramite `ask_question` come consolidare la nota analizzata:
 1. **Promuovi in `DESIDERATA.md` (`🔴 Prioritario`, `🔴 Pianificato` o `⚪ Pianificato`)**:
-   - Aggiungi la nuova riga formale nella sezione `## 1. Backlog Attivo & Funzionalità Pianificate` di `DESIDERATA.md` mantenendo la cella `Note / Specifica` **$\le 160\text{ caratteri}$** (pronta per essere eseguita con `/next-step`).
-   - Rimuovi il blocco multi-riga della nota da `## 📥 Da Analizzare (Open)` in `NOTES.md` e inserisci in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` una **singola riga compatta** (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Promossa in DESIDERATA (<Sezione/Modulo>) |`, cella esito $\le 120\text{ char}$).
+   - Aggiungi la nuova riga formale nella sezione `## 1. Backlog Attivo & Funzionalità Pianificate` di `DESIDERATA.md` mantenendo la cella `Note / Specifica` **<= 160 caratteri** (pronta per essere eseguita con `/next-step`).
+   - Rimuovi il blocco multi-riga della nota da `## 📥 Da Analizzare (Open)` in `NOTES.md` e inserisci in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` una **singola riga compatta** (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Promossa in DESIDERATA (<Sezione/Modulo>) |`, cella esito <= 120 char).
 2. **Implementa Subito nella Sessione Corrente**:
-   - Promuovi la voce nella sezione `## 1. Backlog Attivo` di `DESIDERATA.md` direttamente come `🟡 In Lavorazione`, avvia lo sviluppo e i test, e a fine task (`/memory-sync`) sposta la voce nella sezione `## 2. Funzionalità Completate` di `DESIDERATA.md` (`🟢 Completato`, cella $\le 160\text{ char}$) e consolida `NOTE-XXX` come singola riga nella tabella `✅ Analizzate & Consolidate` di `NOTES.md`.
+   - Promuovi la voce nella sezione `## 1. Backlog Attivo` di `DESIDERATA.md` direttamente come `🟡 In Lavorazione`, avvia lo sviluppo e i test, e a fine task (`/memory-sync`) sposta la voce nella sezione `## 2. Funzionalità Completate` di `DESIDERATA.md` (`🟢 Completato`, cella <= 160 char) e consolida `NOTE-XXX` come singola riga nella tabella `✅ Analizzate & Consolidate` di `NOTES.md`.
 3. **Archivia / Scarta (Già Risolta o Non Necessaria)**:
    - Rimuovi il blocco da `## 📥 Da Analizzare (Open)` e inserisci una singola riga nella tabella `## ✅ Analizzate & Consolidate` di `NOTES.md` con esito `⚪ Archiviata (<Motivazione <= 120 char>)`.
 4. **Rotazione Storica di `NOTES.md` (`> 10 risolte` o `> 120 righe`)**:

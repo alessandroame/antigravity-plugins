@@ -75,6 +75,90 @@ function parseFrontmatter(markdown) {
   return result;
 }
 
+const MULTI_TICK_SPAN = /(`{2,})([^\r\n]+?)\1/g;
+const SINGLE_TICK_SPAN = /`((?:\\`|[^`\r\n])+)`/g;
+const ESCAPED_BACKTICK_IN_SPAN = /\\`/;
+const BOLD_INSIDE_SINGLE_SPAN = /\*\*[^*\r\n]+\*\*/;
+const INLINE_LATEX_FORMULA = /(?<!\\)\$(?!\s)([^$\r\n]*?(?:\\(?:le|ge|neq|times|to|rightarrow|approx|text|sim|pm|cdot)\b|[_^]|\b(?:<=|>=)\b)[^$\r\n]*?)(?<!\s)\$/;
+
+function validateMarkdownHygiene(content, relPath) {
+  const hygieneErrors = [];
+  const lines = content.split(/\r?\n/);
+  let inFence = false;
+  let fenceChar = '';
+  let fenceLen = 0;
+  let inspectFence = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNum = i + 1;
+
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      const info = fenceMatch[2].trim().toLowerCase();
+      if (!inFence) {
+        inFence = true;
+        fenceChar = marker[0];
+        fenceLen = marker.length;
+        inspectFence = info === 'markdown' || info === 'md';
+        continue;
+      } else if (marker[0] === fenceChar && marker.length >= fenceLen && info === '') {
+        inFence = false;
+        fenceChar = '';
+        fenceLen = 0;
+        inspectFence = false;
+        continue;
+      }
+    }
+
+    if (inFence && !inspectFence) continue;
+
+    const lineWithoutMultiTicks = line.replace(MULTI_TICK_SPAN, '');
+
+    for (const match of lineWithoutMultiTicks.matchAll(SINGLE_TICK_SPAN)) {
+      const [fullSpan, inner] = match;
+      if (ESCAPED_BACKTICK_IN_SPAN.test(inner)) {
+        const cleanInner = inner.replace(/\\`/g, '');
+        hygieneErrors.push(
+          `${relPath}:${lineNum}: backtick annidato/escapato rotto in ${fullSpan}. Rimuovi i backtick interni o usa testo normale (es. ${cleanInner})`
+        );
+      }
+      if (
+        BOLD_INSIDE_SINGLE_SPAN.test(inner) &&
+        inner.trim() !== '**...**' &&
+        !/^[>-]\s+/.test(inner.trim())
+      ) {
+        const cleanBold = inner.replace(/\*\*/g, '');
+        hygieneErrors.push(
+          `${relPath}:${lineNum}: asterischi di grassetto dentro code span in ${fullSpan}. Sposta i backtick fuori o rimuovili (es. **${cleanBold}**)`
+        );
+      }
+    }
+
+    const lineWithoutCode = lineWithoutMultiTicks.replace(SINGLE_TICK_SPAN, '');
+    const latexMatch = lineWithoutCode.match(INLINE_LATEX_FORMULA);
+    if (latexMatch) {
+      const rawFormula = latexMatch[0];
+      const suggestedPlain = latexMatch[1]
+        .replace(/\\text\{([^}]*)\}/g, '$1')
+        .replace(/\\le\b\s*/g, '<= ')
+        .replace(/\\ge\b\s*/g, '>= ')
+        .replace(/\\neq\b\s*/g, '!= ')
+        .replace(/\\times\b\s*/g, 'x ')
+        .replace(/\\(to|rightarrow)\b\s*/g, '-> ')
+        .replace(/\\(approx|sim)\b\s*/g, '~')
+        .replace(/\s+/g, ' ')
+        .trim();
+      hygieneErrors.push(
+        `${relPath}:${lineNum}: formula matematica LaTeX inline '${rawFormula}' (irregolare in chat). Usa simboli di testo normale: '${suggestedPlain}'`
+      );
+    }
+  }
+
+  return hygieneErrors;
+}
+
 function validatePlugin(pluginDir, existingNames) {
   const errors = [];
   const warnings = [];
@@ -189,6 +273,13 @@ function validatePlugin(pluginDir, existingNames) {
         errors.push(`rules/AGENTS.md: peso eccessivo (${agentsRuleBytes} byte > 6500 byte max). Compattare per preservare il token budget inline.`);
       }
     }
+    const ruleEntries = readdirSync(rulesDir, { withFileTypes: true });
+    for (const rEnt of ruleEntries) {
+      if (rEnt.isFile() && rEnt.name.endsWith('.md')) {
+        const rContent = readFileSync(join(rulesDir, rEnt.name), 'utf-8');
+        errors.push(...validateMarkdownHygiene(rContent, `rules/${rEnt.name}`));
+      }
+    }
   }
 
   // 4. skills/
@@ -206,6 +297,7 @@ function validatePlugin(pluginDir, existingNames) {
           if (lineCount > 200) {
             errors.push(`skills/${ent.name}/SKILL.md: supera il tetto di 200 righe (${lineCount} righe)`);
           }
+          errors.push(...validateMarkdownHygiene(content, `skills/${ent.name}/SKILL.md`));
           const fm = parseFrontmatter(content);
           if (!fm) {
             errors.push(`skills/${ent.name}/SKILL.md: frontmatter YAML mancante o malformato`);
