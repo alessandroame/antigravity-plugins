@@ -30,6 +30,7 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 | **`telemetry-analytics`** | Osservabilità, telemetria locale e stima ETA in-flight: iniezione orologio real-time (`PreInvocation`), output ETA su variazione significativa, calibrazione scostamento e report CSV/JSON. | Regola attiva (`rules/AGENTS.md`), 2 Skill (`plugin-analytics`, `telemetry-export`), Hooks (`eta-injector`, `collector`) | [Leggi README](./plugins/telemetry-analytics/README.md) |
 | **`code-inspector`** | Verifica a livello di codice delle funzionalità software tramite il modello IPO Esteso (Ingresso -> Guardie -> Processo -> Uscita), tracciamento payload, stato test e selettori `<details>` con il codice sorgente coinvolto. | Regola attiva (`rules/AGENTS.md`), Skill (`/how-its-made`), Template, Esempio | [Leggi README](./plugins/code-inspector/README.md) |
 | **`skizzo`** | Competizione e collaborazione dialettica parallela tra due subagent isolati (Subagent Alpha orientato al tecnicismo/purezza headless vs Subagent Beta orientato al dominio/utente) con Mediatore interattivo opzionale (`Subagent Gamma` via `/skizzo --mediator`) e banner esplicito in output (`/skizzo`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/skizzo`), Template dialettico | [Leggi README](./plugins/skizzo/README.md) |
+| **`ab-bench`** | Confronto empirico alla cieca A/B tra un prompt base e una variante potenziata con plugin o skill (es. `/skizzo`) tramite il Test delle 5 Dita ("Uomo della Pietra"), sanitizer anti-bias, Rasoio di Occam sul tempo e storico locale (`/ab-bench --stats`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/ab-bench`), Engine CLI (`scripts/bench.mjs`), Test (`tests/bench.test.mjs`) | [Leggi README](./plugins/ab-bench/README.md) |
 
 ---
 
@@ -85,6 +86,11 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 - **Cosa fa**: Rimane dormiente di default (`OFF`) e si attiva come toggle di sessione tramite `/skizzo` (marcando il titolo chat con `[SKIZZO]` o `[SKIZZO+MED]`). Quando è attivo, per ogni task lancia in parallelo 2 subagent isolati tramite `invoke_subagent`: **Subagent Alpha** (*Systems & Technical Purity*) e **Subagent Beta** (*Domain & User Advocate*). Con l'opzione `/skizzo --mediator` (o `-m`), avvia nella Fase 2 un terzo **Subagent Gamma** (*Dialectical Mediator*) che contro-interroga `Alpha` e `Beta` via `send_message` (max 1 round) sui punti di disaccordo ed emette il lodo arbitrale vincolante. Ogni risposta prodotta con modalità attiva si apre al rigo 1 con il banner `[!IMPORTANT] MODALITÀ SKIZZO ATTIVA` e i link cliccabili `conversation://<id>` ai subagent.
 - **Guida completa**: [`plugins/skizzo/README.md`](./plugins/skizzo/README.md)
 
+### 11. `ab-bench`
+- **Goal**: Misurare empiricamente alla cieca se una skill, un plugin (es. `/skizzo`) o una riformulazione di prompt produca un valore reale superiore rispetto al prompt base sullo stesso compito.
+- **Cosa fa**: Rimane dormiente di default e si attiva tramite `/ab-bench` (zero-config default `Senza /skizzo` vs `Con /skizzo`, oppure `--skill <nome>` e `"Prompt A" vs "Prompt B"`). Lancia i due sfidanti in parallelo, estrae i tempi e gli step reali da `transcript.jsonl`, rimuove ogni firma identificativa del plugin (`sanitizeForBlindJudge`), assegna le etichette cieche `Soluzione X` e `Soluzione Y` in SHA-256 e fa votare un **Subagent Giudice Cieco** sulle **5 Dita** (`0` o `1` per dito, scala `0..5`). Applica il Rasoio di Occam premiando la soluzione più semplice/veloce a parità di punteggio e conserva lo storico in `ab-bench-history.ndjson` (`/ab-bench --stats`).
+- **Guida completa**: [`plugins/ab-bench/README.md`](./plugins/ab-bench/README.md)
+
 ---
 
 ## Struttura del Repository
@@ -96,6 +102,7 @@ antigravity-plugins/
 │       ├── install-plugin/            # Meta-skill per installare/collegare plugin in altri repo
 │       └── validate-plugins/          # Meta-skill per eseguire la suite di test interna
 ├── plugins/
+│   ├── ab-bench/                      # Sfida cieca A/B su 5 Dita (/ab-bench) e Giudice Cieco
 │   ├── code-inspector/                # Verifica flusso IPO (/how-its-made) e selettori codice
 │   ├── cognitive-persistence/         # Triade cognitiva e persistenza memoria
 │   ├── engineering-sobriety/          # Sobrietà, bonifica lessicale e integrità test

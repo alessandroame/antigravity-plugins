@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-17 — Creazione Plugin `ab-bench` v1.0.0 (Sfida Cieca A/B su 5 Dita, Sanitizer Anti-Bias e Rasoio di Occam)
+- **Tipo**: Nuovo Plugin di Benchmarking Empirico (`plugins/ab-bench/` v1.0.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-17_ab-bench-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_ab-bench-plugin.md)
+- **Sintesi**:
+  - Implementato in modalità `/skizzo` il plugin `ab-bench` (`/ab-bench`, `--skill`, `--stats`) con motore headless [`bench.mjs`](file:///c:/github/antigravity-plugins/plugins/ab-bench/scripts/bench.mjs) (SHA-256 blind X/Y, sanitizer anti-bias, Test delle 5 Dita `0..5`, Rasoio di Occam sul tempo e rotazione storico a `5 MB`) verificato su 12/12 test (`Oracolo Alpha` + `Oracolo Beta`).
+
+---
+
 ## 2026-10-16 — Creazione ed Evoluzione Plugin `skizzo` v1.1.0 (Dual-Track Tecnico vs Dominio, Mediatore Interattivo `--mediator` e Banner `conversation://`)
 - **Tipo**: Nuovo Plugin & Orchestrazione Multi-Agente Avversariale (`plugins/skizzo/` v1.0.0 $\to$ v1.1.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-16_skizzo-dual-track-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-16_skizzo-dual-track-plugin.md)

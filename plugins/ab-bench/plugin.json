@@ -1,0 +1,11 @@
+{
+  "name": "ab-bench",
+  "displayName": "A/B Bench — Valutazione Cieca Prompt, Skill e Plugin",
+  "description": "Esegue sfide cieche A/B in parallelo tra un prompt base di controllo e una variante potenziata con plugin o skill (es. /skizzo), valutando il risultato sul Test delle 5 Dita e sul rapporto tempo/beneficio tramite un Giudice Cieco.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Esegui /ab-bench su questo requisito per verificare alla cieca se /skizzo produce un risultato migliore rispetto al prompt normale",
+    "Esegui /ab-bench --skill laws-of-ux per confrontare il componente UI con e senza le regole di ergonomia",
+    "Mostra /ab-bench --stats per vedere il bilancio storico di vittorie, pareggi e tempi medi dei plugin testati"
+  ]
+}

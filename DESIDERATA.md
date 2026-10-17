@@ -27,6 +27,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `telemetry-analytics` (v1.5.0) | Plugin | `🟢 Completato` | ETA sui checkpoint entro 2° turno, calibrazione errore, TTL cursori 7gg e rotazione `events.ndjson` 5 MB ([README](./plugins/telemetry-analytics/README.md)). |
 | `code-inspector` | Plugin | `🟢 Completato` | Modello IPO Esteso, `/how-its-made`, widget `<agent-embed>` dual-tab e cassetti `<details>` ([README](./plugins/code-inspector/README.md)). |
 | `skizzo` (v1.1.0) | Plugin | `🟢 Completato` | Toggle `/skizzo`, `--mediator` (Gamma `send_message`), banner `[!IMPORTANT]` con link `conversation://` e `--proto` ([README](./plugins/skizzo/README.md)). |
+| `ab-bench` (v1.0.0) | Plugin | `🟢 Completato` | Sfida cieca A/B su 5 Dita (`/ab-bench`, `--skill`, `--stats`), sanitizer anti-bias, Rasoio di Occam e storico 5 MB ([README](./plugins/ab-bench/README.md)). |
 | `starter-plugin` | Template | `🟢 Completato` | Blueprint standard per nuovi plugin con manifest SemVer valido ([README](./templates/starter-plugin/README.md)). |
 | Validatore statico (`scripts/validate.mjs`) | Tooling | `🟢 Completato` | Verifica manifest, SemVer, regole, frontmatter skill e tetti righe dei 4 file cognitivi. |
 | Sync fisico globale (`scripts/sync-to-global.mjs`) | Tooling | `🟢 Completato` | Clona i plugin in `~/.gemini/config/plugins/` (resiliente a `EBUSY`) e aggiorna `config.json`. |
