@@ -24,12 +24,18 @@ function resolveConversationId(explicitId) {
     return explicitId.trim();
   }
 
+  const envId = process.env.ANTIGRAVITY_CONVERSATION_ID;
+  if (envId && envId.trim().length > 0) {
+    return envId.trim();
+  }
+
   // Risoluzione automatica: scansione della cartella brain con transcript più recente
   const home = getHomeDir();
   const brainCandidates = [
     join(home, '.gemini', 'antigravity', 'brain'),
     join(home, '.gemini', 'antigravity-ide', 'brain')
   ];
+  const normalizedCwd = process.cwd().replace(/\\/g, '/').toLowerCase();
 
   for (const brainDir of brainCandidates) {
     if (existsSync(brainDir)) {
@@ -39,13 +45,31 @@ function resolveConversationId(explicitId) {
           .map((d) => {
             const fullPath = join(brainDir, d);
             const transcriptPath = join(fullPath, '.system_generated', 'logs', 'transcript.jsonl');
-            const mtime = existsSync(transcriptPath)
+            const hasTranscript = existsSync(transcriptPath);
+            const mtime = hasTranscript
               ? statSync(transcriptPath).mtimeMs
               : statSync(fullPath).mtimeMs;
-            return { id: d, mtime };
-          })
-          .sort((a, b) => b.mtime - a.mtime);
+            let matchesCwd = false;
+            if (hasTranscript && normalizedCwd) {
+              try {
+                const raw = readFileSync(transcriptPath, 'utf-8')
+                  .replace(/\\\\/g, '/')
+                  .replace(/\\/g, '/')
+                  .toLowerCase();
+                matchesCwd = raw.includes(normalizedCwd);
+              } catch {
+                matchesCwd = false;
+              }
+            }
+            return { id: d, mtime, matchesCwd };
+          });
 
+        const cwdMatched = entries.filter((e) => e.matchesCwd).sort((a, b) => b.mtime - a.mtime);
+        if (cwdMatched.length > 0) {
+          return cwdMatched[0].id;
+        }
+
+        entries.sort((a, b) => b.mtime - a.mtime);
         if (entries.length > 0) {
           return entries[0].id;
         }

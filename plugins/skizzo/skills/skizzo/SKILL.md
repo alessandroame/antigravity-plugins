@@ -28,7 +28,10 @@ Quando l'utente invoca `/skizzo` (da solo, con `on`/`off`, `--mediator`/`-m`, `-
    - `/skizzo off`: imposta `SKIZZO = OFF` e `MEDIATOR = OFF`.
    - `/skizzo on` o `/skizzo <task>`: imposta `SKIZZO = ON`.
    - `/skizzo --mediator` (o `-m`): imposta `SKIZZO = ON` e `MEDIATOR = ON`; `/skizzo --no-mediator` imposta `MEDIATOR = OFF`.
-2. **Aggiornamento Visivo del Titolo Chat (`set-chat-title.mjs`)**:
+2. **Aggiornamento Visivo del Titolo Chat (`set-chat-title.mjs` con `--conversation-id` Obbligatorio)**:
+   - Leggi `<Conversation ID>` dal blocco `<user_information>` della sessione corrente ed esegui:
+     `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --conversation-id "<Conversation ID>" --title "[SKIZZO] <Titolo>"`
+   - **Divieto Esplicito**: è **vietato** invocare `set-chat-title.mjs` senza `--conversation-id "<Conversation ID>"`, per evitare race condition con sessioni concorrenti.
    - **Se `SKIZZO = ON` e `MEDIATOR = OFF`**: `--title "[SKIZZO] <Titolo o Tema>"`
    - **Se `SKIZZO = ON` e `MEDIATOR = ON`**: `--title "[SKIZZO+MED] <Titolo o Tema>"`
    - **Se `SKIZZO = OFF`**: `--title "<Titolo senza prefisso [SKIZZO] o [SKIZZO+MED]>"`

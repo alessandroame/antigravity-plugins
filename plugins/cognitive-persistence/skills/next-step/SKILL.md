@@ -83,12 +83,12 @@ Presenta all'utente una sintesi strutturata contenente:
 
 ### Step 5: Ridenominazione Automatica del Titolo della Chat
 
-1. Recupera il titolo sintetico dello step identificato (es. `[1.3] Telemetria ed Event Tracking` o il nome della feature).
-2. Esegui il comando di aggiornamento titolo richiamando lo script dedicato del plugin:
+1. Recupera il titolo sintetico dello step identificato (es. `[1.3] Telemetria ed Event Tracking` o il nome della feature) e il `<Conversation ID>` dal blocco `<user_information>` della sessione corrente.
+2. Esegui il comando di aggiornamento titolo richiamando lo script dedicato del plugin e includendo obbligatoriamente `--conversation-id "<Conversation ID>"` (vietato invocare `set-chat-title.mjs` senza `--conversation-id`):
    ```bash
-   node plugins/cognitive-persistence/scripts/set-chat-title.mjs --title "<Codice/Titolo Step>"
+   node plugins/cognitive-persistence/scripts/set-chat-title.mjs --conversation-id "<Conversation ID>" --title "<Codice/Titolo Step>"
    ```
-   *(Nota: se il plugin è installato globalmente nella configurazione utente, utilizzare `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --title "..."`)*.
+   *(Nota: se il plugin è installato globalmente nella configurazione utente, utilizzare `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --conversation-id "<Conversation ID>" --title "..."`)*.
 3. Lo script contatta l'endpoint Connect-RPC locale di Antigravity Language Server (`UpdateConversationAnnotations`), aggiornando istantaneamente il titolo sia nella visualizzazione a pannello laterale (sidebar) sia nello storage persistente di Antigravity.
 4. Segnala all'utente nel briefing operativo l'avvenuta ridenominazione della sessione.
 
