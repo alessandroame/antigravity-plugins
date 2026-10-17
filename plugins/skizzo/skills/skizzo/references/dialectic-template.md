@@ -11,8 +11,8 @@ Questo documento fornisce i template estesi di riferimento per il **Banner Espli
 > [!IMPORTANT]
 > **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = OFF` | Titolo: `[SKIZZO]`
 
-- **Subagent Alpha (Systems & Technical Purity)**: presidia isolamento headless, complessità $O(\cdot)$, immutabilità e test di invarianti.
-- **Subagent Beta (Domain & User Advocate)**: presidia ergonomia d'uso, Legge di Tesler/Postel e test di scenario utente.
+- **Subagent Alpha (Systems & Technical Purity)**: presidia isolamento headless, complessità $O(\cdot)$ e test di invarianti (auto-routing skill tecniche: `shift-left-governance`, `trace-debugging`, `circuit-breaker`).
+- **Subagent Beta (Domain & User Advocate)**: presidia ergonomia d'uso, Legge di Tesler/Postel e test di scenario (auto-routing skill UX/dominio: `laws-of-ux-audit`, `ux-form-optimization`, `ux-button-and-touch-ergonomics`).
 - **Opzioni di Sessione**: usa `/skizzo --mediator` (o `-m`) per abilitare il terzo subagent Mediatore (`Subagent Gamma`), `/skizzo --proto` per 2 prototipi in Git Worktree, `/skizzo off` per disattivare.
 
 Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track?
@@ -23,7 +23,7 @@ Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track?
 > [!IMPORTANT]
 > **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = ON` | Titolo: `[SKIZZO+MED]`
 
-- **Biforcazione Parallela (`Alpha` vs `Beta`)**: `Subagent Alpha` (Tecnico) e `Subagent Beta` (Dominio) progettano in cecità reciproca nella Fase 1.
+- **Biforcazione Parallela & Auto-Routing Skill (`Alpha` vs `Beta`)**: `Subagent Alpha` (Tecnico) e `Subagent Beta` (Dominio) progettano in cecità reciproca nella Fase 1 dichiarando alla partenza le rispettive 1–3 skill attivate.
 - **Mediatore Interattivo (`Subagent Gamma`)**: nella Fase 2 un terzo subagent isolato esamina i disaccordi, contro-interroga `Alpha` e `Beta` via `send_message` (max 1 round) ed emette il lodo arbitrale vincolante.
 
 Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track con Mediatore?
@@ -40,7 +40,7 @@ Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track con Mediato
 
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) (Skill: `shift-left-governance`, `trace-debugging`) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) (Skill: `laws-of-ux-audit`, `ux-form-optimization`) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
 
 Implementato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` tramite sintesi dialettica tra architettura headless (`Alpha`), flusso utente a zero attrito (`Beta`) e lodo arbitrale del Mediatore (`Gamma`).
 
@@ -54,6 +54,7 @@ Implementato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` tramite sintes
 
 | Dimensione | Subagent Alpha (Systems & Purity) | Subagent Beta (Domain & User) | Verdetto Arbitrale (Mediatore Gamma) |
 | :--- | :--- | :--- | :--- |
+| **Skill Attive** | `shift-left-governance`, `trace-debugging` | `laws-of-ux-audit`, `ux-form-optimization` | **Copertura Ortogonale**: rigore headless interno + ergonomia Postel/Tesler esterna |
 | **API / Interazione** | Input tipizzato rigido con parametri espliciti obbligatori | Input permissivo (Postel) con inferenza automatica dei default | **Vince Beta**: parser permissivo in ingresso che normalizza verso la struttura tipizzata di Alpha |
 | **Core & Stato** | Funzioni pure `[PURE]` in `src/core/` con storage adapter iniettabile | Aggiornamento immediato della vista senza attese o ricaricamenti | **Vince Alpha**: store reattivo disaccoppiato dal DOM con optimistic update governato dal core |
 | **Errori & Limiti** | Fallimento deterministico su payload corrotti o race condition | Messaggi azionabili in linguaggio di dominio con recupero stato (Undo) | **Convergenza**: result type tipizzato nel core mappato in azioni di ripristino non distruttive nella UI |

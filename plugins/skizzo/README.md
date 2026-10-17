@@ -1,6 +1,6 @@
-# Antigravity Plugin: Skizzo — Dual-Track Technical vs Domain Dialectics (`v1.1.0`)
+# Antigravity Plugin: Skizzo — Dual-Track Technical vs Domain Dialectics (`v1.2.0`)
 
-Plugin sperimentale di **Adversarial & Collaborative Dual-Track Engineering** per Google Antigravity. Mette in competizione e collaborazione parallela due subagent isolati con mandati ortogonali — **Subagent Alpha (`Systems & Technical Purity Architect`)** e **Subagent Beta (`Domain & User Experience Advocate`)** — con l'opzione di abilitare un terzo **Mediatore Interattivo** (**Subagent Gamma (`Dialectical Mediator & Conflict Resolver`)** tramite `/skizzo --mediator`) incaricato di contro-interrogare i due agenti sui punti di disaccordo ed emettere un lodo arbitrale vincolante.
+Plugin sperimentale di **Adversarial & Collaborative Dual-Track Engineering** per Google Antigravity. Mette in competizione e collaborazione parallela due subagent isolati con mandati ortogonali — **Subagent Alpha (`Systems & Technical Purity Architect`)** e **Subagent Beta (`Domain & User Experience Advocate`)** — con auto-routing e dichiarazione sintetica delle skill attivate alla partenza, e con l'opzione di abilitare un terzo **Mediatore Interattivo** (**Subagent Gamma (`Dialectical Mediator & Conflict Resolver`)** tramite `/skizzo --mediator`) incaricato di contro-interrogare i due agenti sui punti di disaccordo ed emettere un lodo arbitrale vincolante.
 
 ---
 
@@ -13,9 +13,9 @@ Quando un singolo agente sviluppa una funzionalità, tende inevitabilmente a un 
 Il plugin `skizzo` risolve questo limite strutturale tramite una **scissione controllata a 4 fasi** attivabile on-demand:
 - **Dormiente di Default (`OFF`)**: non consuma risorse e non altera il comportamento dell'agente finché non viene attivato.
 - **Toggle di Sessione (`/skizzo`)**: una volta attivato (`ON`), applica il protocollo Dual-Track a tutti i task successivi della conversazione (marcando il titolo chat con `[SKIZZO]` o `[SKIZZO+MED]`) finché non viene disattivato.
-- **Biforcazione Cieca Parallela (`invoke_subagent`)**: delega sempre in parallelo a 2 subagent indipendenti (`Alpha` e `Beta`) che non vedono il lavoro l'uno dell'altro durante la Fase 1.
+- **Biforcazione Cieca Parallela & Auto-Routing Skill (`invoke_subagent`)**: seleziona automaticamente 1–3 skill pertinenti per ciascun binario (tecniche per `Alpha`, di dominio/UX per `Beta`), le inietta nei prompt di avvio e delega in parallelo a 2 subagent indipendenti che aprono il proprio report dichiarando al rigo 1 `**Skill Attive (Alpha/Beta)**: \`...\``.
 - **Mediatore Interattivo Opzionale (`/skizzo --mediator` o `-m`)**: avvia nella Fase 2 un terzo subagent isolato (`Subagent Gamma`) che analizza i conflitti, contro-interroga `Alpha` e `Beta` tramite `send_message` (con circuit breaker di max 1 round di replica) e pronuncia il verdetto arbitrale.
-- **Visibilità Esplicita in Output**: ogni risposta generata a modalità attiva si apre al rigo 1 con il banner `> [!IMPORTANT] MODALITÀ SKIZZO ATTIVA` corredato dai link cliccabili `conversation://<id>` per ispezionare il ragionamento interno di ciascun subagent (`Alpha`, `Beta`, `Gamma`).
+- **Visibilità Esplicita di Subagent e Skill in Output**: ogni risposta generata a modalità attiva si apre al rigo 1 con il banner `> [!IMPORTANT] MODALITÀ SKIZZO ATTIVA` corredato dai link cliccabili `conversation://<id>` e dai tag inline `(Skill: \`...\`)` dichiarati alla partenza da `Alpha` e `Beta`.
 
 ---
 
@@ -23,9 +23,9 @@ Il plugin `skizzo` risolve questo limite strutturale tramite una **scissione con
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Protocollo Dual-Track, Mediatore & Dormienza** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Definisce la Clausola di Dormienza Predefinita (`OFF`), il toggle `/skizzo` (`--mediator`, `--proto`), la delega parallela, la negoziazione peer-to-peer via `send_message`, il banner `[!IMPORTANT]` obbligatorio e la tabella di anti-razionalizzazione. |
-| **`skizzo`** | Skill on-demand (`/skizzo`) | [`skills/skizzo/SKILL.md`](./skills/skizzo/SKILL.md) | Runbook autosufficiente con i prompt completi per `Subagent Alpha`, `Subagent Beta` e `Subagent Gamma (Mediatore)` e il template di consegna. |
-| **Template Dialettico** | Reference ausiliario | [`skills/skizzo/references/dialectic-template.md`](./skills/skizzo/references/dialectic-template.md) | Modelli per il banner `[!IMPORTANT]`, la matrice comparativa `<details>` 1-Click, il log di negoziazione del Mediatore e la modalità `/skizzo --proto`. |
+| **Protocollo Dual-Track, Mediatore & Dormienza** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Definisce la Clausola di Dormienza Predefinita (`OFF`), il toggle `/skizzo` (`--mediator`, `--proto`), l'auto-routing e dichiarazione sintetica delle skill, la delega parallela, la negoziazione peer-to-peer via `send_message`, il banner `[!IMPORTANT]` obbligatorio e la tabella di anti-razionalizzazione. |
+| **`skizzo`** | Skill on-demand (`/skizzo`) | [`skills/skizzo/SKILL.md`](./skills/skizzo/SKILL.md) | Runbook autosufficiente con auto-routing delle skill, i prompt completi per `Subagent Alpha`, `Subagent Beta` e `Subagent Gamma (Mediatore)` e il template di consegna. |
+| **Template Dialettico** | Reference ausiliario | [`skills/skizzo/references/dialectic-template.md`](./skills/skizzo/references/dialectic-template.md) | Modelli per il banner `[!IMPORTANT]` con tag skill, la matrice comparativa `<details>` 1-Click, il log di negoziazione del Mediatore e la modalità `/skizzo --proto`. |
 
 ---
 
@@ -37,9 +37,9 @@ flowchart TD
     TOGGLE -- "OFF -> ON" --> ON["Stato SKIZZO = ON<br/>Titolo: [SKIZZO] o [SKIZZO+MED]"]
     TOGGLE -- "ON -> OFF" --> OFF["Stato SKIZZO = OFF<br/>Ripristino titolo e flusso standard"]
     ON --> TASK["Ogni Task della Sessione"]
-    TASK --> F1["Fase 1: invoke_subagent Parallelo<br/>(Cecità Reciproca)"]
-    F1 --> ALPHA["Subagent Alpha (id-alpha)<br/>Systems & Technical Purity"]
-    F1 --> BETA["Subagent Beta (id-beta)<br/>Domain & User Advocate"]
+    TASK --> F1["Fase 1: Auto-Routing Skill +<br/>invoke_subagent Parallelo"]
+    F1 --> ALPHA["Subagent Alpha (id-alpha)<br/>Rigo 1: Skill Attive (Alpha)"]
+    F1 --> BETA["Subagent Beta (id-beta)<br/>Rigo 1: Skill Attive (Beta)"]
     ALPHA --> MED{"Flag --mediator<br/>Attivo?"}
     BETA --> MED
     MED -- "No (Default)" --> F2A["Fase 2: Cross-Critique Diretta<br/>dell'Orchestratore"]
@@ -51,22 +51,22 @@ flowchart TD
     F3 --> PROTO{"Flag --proto?"}
     PROTO -- "No (Default)" --> UNIFIED["Codice Unificato<br/>(Contratto Beta + Core Alpha)"]
     PROTO -- "Sì (--proto)" --> WORKTREE["2 Prototipi Completi<br/>in Git Worktrees Isolati"]
-    UNIFIED --> F4["Fase 4: Banner [!IMPORTANT] + Link conversation://<br/>+ Sintesi 0-Click + Matrice details 1-Click"]
+    UNIFIED --> F4["Fase 4: Banner [!IMPORTANT] + Link conversation://<br/>+ Tag (Skill: ...) + Matrice details 1-Click"]
     WORKTREE --> F4
 ```
 
 ### Le 5 Regole Cardine del Protocollo
 
-1. **Cecità Reciproca in Fase 1 (`invoke_subagent` Parallelo)**:
-   `Subagent Alpha` e `Subagent Beta` vengono invocati simultaneamente in una singola chiamata tool. Nessuno dei due conosce le scelte dell'altro, prevenendo compromessi annacquati.
+1. **Cecità Reciproca & Auto-Routing Skill in Fase 1 (`invoke_subagent` Parallelo)**:
+   L'Orchestratore assegna automaticamente 1–3 skill pertinenti a `Subagent Alpha` (tecniche) e `Subagent Beta` (dominio/UX) e li invoca simultaneamente in una singola chiamata tool. Ciascun subagent apre il proprio report al rigo 1 dichiarando `**Skill Attive (Alpha/Beta)**: \`...\``.
 2. **Mediazione Interattiva in Fase 2 (`/skizzo --mediator`)**:
    Quando l'opzione `--mediator` è attiva, `Subagent Gamma` riceve i report e i `conversationId` di `Alpha` e `Beta`, li contro-interroga tramite `send_message` sui punti in cui sono in disaccordo (con limite rigido di max 1 round di replica) ed emette un lodo arbitrale motivato.
 3. **Arbitrato di Tesler in Fase 3**:
    In base alla Legge della Conservazione della Complessità di Tesler, ogni riduzione di attrito per l'utente (`Beta`) viene preservata nel contratto esterno e pagata tramite un'architettura headless pura e deterministica nel core (`Alpha`).
 4. **Doppio Oracolo di Verifica**:
    Nessun task in modalità `skizzo` è completo se il codice non supera sia la suite di unit test sugli invarianti tecnici (`Oracolo Alpha`) sia i test di scenario d'uso (`Oracolo Beta`).
-5. **Trasparenza e Ispezionabilità (`Banner [!IMPORTANT]` + `conversation://`)**:
-   Ogni risposta inizia con il banner `MODALITÀ SKIZZO ATTIVA` e fornisce i link diretti alle conversazioni dei subagent eseguiti.
+5. **Trasparenza di Subagent e Skill (`Banner [!IMPORTANT]` + `conversation://` + `Skill:`)**:
+   Ogni risposta inizia con il banner `MODALITÀ SKIZZO ATTIVA`, fornisce i link diretti `conversation://<id>` ai subagent eseguiti ed espone a 0-Click i tag `(Skill: \`...\`)` attivati da ciascun binario.
 
 ---
 

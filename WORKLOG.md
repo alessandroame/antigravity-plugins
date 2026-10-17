@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-17 — Evoluzione Plugin `skizzo` v1.2.0 (Auto-Routing & Dichiarazione Sintetica delle Skill alla Partenza)
+- **Tipo**: Evoluzione Protocollo Multi-Agente (`plugins/skizzo/` v1.1.0 $\to$ v1.2.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md)
+- **Sintesi**:
+  - Introdotto in [`SKILL.md`](file:///c:/github/antigravity-plugins/plugins/skizzo/skills/skizzo/SKILL.md) e [`rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/skizzo/rules/AGENTS.md) l'auto-routing di 1–3 skill pertinenti per `Subagent Alpha` e `Subagent Beta`, con dichiarazione obbligatoria al rigo 1 dei subagent (`**Skill Attive (Alpha/Beta)**: \`...\``), esposizione a 0-Click nel banner `[!IMPORTANT]` (`(Skill: \`...\`)`) e riga `| **Skill Attive** |` nella Matrice `<details>`.
+
+---
+
 ## 2026-10-17 — Creazione Plugin `ab-bench` v1.0.0 (Sfida Cieca A/B su 5 Dita, Sanitizer Anti-Bias e Rasoio di Occam)
 - **Tipo**: Nuovo Plugin di Benchmarking Empirico (`plugins/ab-bench/` v1.0.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-17_ab-bench-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_ab-bench-plugin.md)

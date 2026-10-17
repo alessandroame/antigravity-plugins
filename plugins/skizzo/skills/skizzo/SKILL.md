@@ -41,7 +41,11 @@ Quando l'utente invoca `/skizzo` (da solo, con `on`/`off`, `--mediator`/`-m`, `-
 
 ---
 
-## 3. Step 1: Biforcazione Cieca Parallela (`invoke_subagent` a 2 Worker)
+## 3. Step 1: Biforcazione Cieca Parallela & Auto-Routing Skill (`invoke_subagent`)
+
+Prima del lancio, l'Orchestratore seleziona automaticamente dal catalogo `<skills>` **1–3 skill pertinenti** per ciascun subagent in base al task (Legge di Tesler/Postel; fallback `` `core-standard` `` se nessuna skill verticale si applica):
+- **Skill Tecniche (`<skills-alpha>`)**: es. `shift-left-governance`, `trace-debugging`, `circuit-breaker`, `worktree-lifecycle`, `skill-governance`.
+- **Skill Dominio/UX (`<skills-beta>`)**: es. `laws-of-ux-audit`, `ux-form-optimization`, `ux-button-and-touch-ergonomics`, `ux-layout-and-visual-hierarchy`, `ux-outdoor-and-field-ergonomics`, o skill di dominio del progetto (es. `bigquery-sql`, `gemini-api-dev`).
 
 Invoca **in un'unica chiamata `invoke_subagent`** due subagent paralleli indipendenti:
 - **Modalità Standard (Design & Test -> Codice Unificato)**: `TypeName: "research"` per entrambi (`Role: "Systems & Technical Purity Architect"` per Alpha, `Role: "Domain & User Experience Advocate"` per Beta). Annota i due ID restituiti (`<id-alpha>` e `<id-beta>`).
@@ -52,11 +56,14 @@ Invoca **in un'unica chiamata `invoke_subagent`** due subagent paralleli indipen
 Agisci esclusivamente come **Subagent Alpha (Systems & Technical Purity Architect)** sul seguente requisito:
 [INSERIRE TASK UTENTE]
 
+**Skill Attive Assegnate**: [INSERIRE 1-3 SKILL TECNICHE PERTINENTI, es. `shift-left-governance`, `trace-debugging`]
+
 **Mandato Ingegneristico Esclusivo**:
-1. Progetta l'architettura interna ottimizzando isolamento headless (`core/` zero DOM/storage), complessità $O(\cdot)$, determinismo, immutabilità e gestione rigorosa degli errori/race condition.
-2. Non scendere a compromessi accomodanti: segnala ogni debito tecnico, accoppiamento improprio o rischio di regressione.
+1. **Dichiarazione Skill alla Partenza (Rigo 1 Obbligatorio)**: apri il tuo report iniziale al rigo 1 con la riga esatta:
+   `**Skill Attive (Alpha)**: \`<skill-1>\`, \`<skill-2>\`` (solo slug `kebab-case`, zero descrizioni prolisse; se necessario, leggi con `view_file` le `SKILL.md` assegnate).
+2. Progetta l'architettura interna ottimizzando isolamento headless (`core/` zero DOM/storage), complessità $O(\cdot)$, determinismo, immutabilità e gestione rigorosa degli errori/race condition, senza compromessi accomodanti.
 3. Definisci l'**Oracolo di Test Tecnico (Alpha)**: specifica (o implementa, se in worktree `--proto`) i test unitari puri che verificano invarianti matematici, confini di tipo, input malformati/vuoti e assenza di side-effect.
-4. Restituisci nel report iniziale (al `parent` Orchestratore via `send_message`): (a) Architettura Headless & Contratti Interni, (b) Analisi Complessità & Rischi, (c) Specifica/Codice dell'Oracolo di Test Tecnico, (d) Punti non negoziabili verso il livello UI/Dominio.
+4. Restituisci nel report iniziale (al `parent` Orchestratore): Rigo 1 `**Skill Attive (Alpha)**`, (a) Architettura Headless & Contratti Interni, (b) Analisi Complessità & Rischi, (c) Specifica/Codice dell'Oracolo di Test Tecnico, (d) Punti non negoziabili.
 5. **Regola di Replica Peer-to-Peer al Mediatore (`send_message`)**: se dopo il tuo report iniziale vieni risvegliato da un messaggio di contro-interrogazione del Mediatore (`Subagent Gamma`, identificato da `sender=<id-gamma>` nel `<SYSTEM_MESSAGE>`), rispondi invocando esplicitamente `send_message(Recipient: "<id-gamma>", Message: "...")` usando il `sender` del messaggio di `Gamma` (NON l'ID del `parent` Orchestratore), e termina subito il turno.
 ```
 
@@ -65,11 +72,14 @@ Agisci esclusivamente come **Subagent Alpha (Systems & Technical Purity Architec
 Agisci esclusivamente come **Subagent Beta (Domain & User Experience Advocate)** sul seguente requisito:
 [INSERIRE TASK UTENTE]
 
+**Skill Attive Assegnate**: [INSERIRE 1-3 SKILL DOMINIO/UX PERTINENTI, es. `laws-of-ux-audit`, `ux-form-optimization`]
+
 **Mandato di Dominio & Utente Esclusivo**:
-1. Progetta la soluzione dal punto di vista esclusivo dell'utente finale del dominio: massimizza l'utilità immediata e riduci al minimo click, campi manuali e carico cognitivo.
-2. Applica la Legge di Tesler (sposta ogni calcolo/normalizzazione possibile sul software), la Legge di Postel (accetta input permissivi) e l'ergonomia dei controlli (Fitts, Hick, chiarezza semantica senza gergo tecnico).
+1. **Dichiarazione Skill alla Partenza (Rigo 1 Obbligatorio)**: apri il tuo report iniziale al rigo 1 con la riga esatta:
+   `**Skill Attive (Beta)**: \`<skill-1>\`, \`<skill-2>\`` (solo slug `kebab-case`, zero descrizioni prolisse; se necessario, leggi con `view_file` le `SKILL.md` assegnate).
+2. Progetta la soluzione dal punto di vista esclusivo dell'utente finale del dominio: massimizza l'utilità immediata e applica Tesler (sposta ogni calcolo sul software), Postel (input permissivi) e l'ergonomia dei controlli (Fitts, Hick, zero gergo tecnico).
 3. Definisci l'**Oracolo di Test di Dominio (Beta)**: specifica (o implementa, se in worktree `--proto`) i test di scenario/accettazione che provano che l'utente raggiunge il proprio obiettivo nel minor numero di passaggi e con feedback chiaro.
-4. Restituisci nel report iniziale (al `parent` Orchestratore via `send_message`): (a) Flusso Utente & Contratto Esterno Ideale, (b) Complessità Assorbita dal Sistema (Tesler/Postel), (c) Specifica/Codice dell'Oracolo di Test di Dominio, (d) Frizioni tecniche o over-engineering da bandire.
+4. Restituisci nel report iniziale (al `parent` Orchestratore): Rigo 1 `**Skill Attive (Beta)**`, (a) Flusso Utente & Contratto Esterno Ideale, (b) Complessità Assorbita dal Sistema (Tesler/Postel), (c) Specifica/Codice dell'Oracolo di Test di Dominio, (d) Frizioni tecniche da bandire.
 5. **Regola di Replica Peer-to-Peer al Mediatore (`send_message`)**: se dopo il tuo report iniziale vieni risvegliato da un messaggio di contro-interrogazione del Mediatore (`Subagent Gamma`, identificato da `sender=<id-gamma>` nel `<SYSTEM_MESSAGE>`), rispondi invocando esplicitamente `send_message(Recipient: "<id-gamma>", Message: "...")` usando il `sender` del messaggio di `Gamma` (NON l'ID del `parent` Orchestratore), e termina subito il turno.
 ```
 
@@ -116,13 +126,13 @@ Agisci come **Subagent Gamma (Dialectical Mediator & Conflict Resolver)** per ri
 
 ---
 
-## 6. Step 4: Formato Obbligatorio di Consegna (`Banner [!IMPORTANT]` + `0-Click` + `<details>`)
+## 6. Step 4: Formato Obbligatorio di Consegna (`Banner [!IMPORTANT]` con Skill + `0-Click` + `<details>`)
 
-Ogni risposta prodotta con `SKIZZO = ON` deve aprirsi obbligatoriamente al **rigo 1** con il banner `[!IMPORTANT]` che espone la modalità attiva e i link cliccabili `conversation://` a tutti i subagent lanciati:
+Ogni risposta prodotta con `SKIZZO = ON` deve aprirsi obbligatoriamente al **rigo 1** con il banner `[!IMPORTANT]` che espone la modalità attiva, i link cliccabili `conversation://` e i **1–3 tag `` `skill` ``** dichiarati alla partenza da `Alpha` e `Beta`:
 
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK` | `+MEDIATORE` | `+PROTO`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK` | `+MEDIATORE` | `+PROTO`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) (Skill: `<skill-alpha-1>`, `<skill-alpha-2>`) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) (Skill: `<skill-beta-1>`, `<skill-beta-2>`) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
 
 [Sintesi esecutiva 1-2 frasi sull'implementazione convergente]
 
@@ -136,6 +146,7 @@ Ogni risposta prodotta con `SKIZZO = ON` deve aprirsi obbligatoriamente al **rig
 
 | Dimensione | Subagent Alpha (Tecnico) | Subagent Beta (Dominio/Utente) | Verdetto Arbitrale (Orchestratore / Gamma) |
 | :--- | :--- | :--- | :--- |
+| **Skill Attive** | `<skill-alpha-1>`, `<skill-alpha-2>` | `<skill-beta-1>`, `<skill-beta-2>` | **Copertura Ortogonale**: [Sinergia tecnica + dominio] |
 | **Contratto & Flusso** | [Proposta Alpha] | [Proposta Beta] | **Vince Beta**: [Motivazione] |
 | **Architettura Interna** | [Proposta Alpha] | [Proposta Beta] | **Vince Alpha**: [Motivazione] |
 | **Casi Limite & Input** | [Guardie Alpha] | [Tolleranza Postel Beta] | **Convergenza**: [Soluzione] |
