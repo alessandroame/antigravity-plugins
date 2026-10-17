@@ -54,7 +54,7 @@ for (const entry of pluginEntries) {
 
 if (fs.existsSync(GLOBAL_CONFIG_FILE)) {
   try {
-    const rawConfig = fs.readFileSync(GLOBAL_CONFIG_FILE, 'utf-8');
+    const rawConfig = fs.readFileSync(GLOBAL_CONFIG_FILE, 'utf-8').replace(/^\uFEFF/, '');
     const parsedConfig = JSON.parse(rawConfig);
     if (!parsedConfig.plugins || typeof parsedConfig.plugins !== 'object') {
       parsedConfig.plugins = {};

@@ -1,12 +1,12 @@
 ---
-name: shizzo
+name: skizzo
 description: >-
   Attiva o disattiva la modalità dual-track competitiva e collaborativa
   (Subagent Tecnico vs Subagent Dominio/Utente) con mediatore opzionale.
-  Utilizza questa skill quando l'utente invoca /shizzo o richiede analisi dialettica parallela.
+  Utilizza questa skill quando l'utente invoca /skizzo o richiede analisi dialettica parallela.
 ---
 
-# Shizzo: Runbook di Orchestrazione Dual-Track & Mediatore (`/shizzo`)
+# Skizzo: Runbook di Orchestrazione Dual-Track & Mediatore (`/skizzo`)
 
 ## 1. Obiettivo, Ruoli e Semantica del Toggle di Sessione
 
@@ -21,20 +21,20 @@ Mette in competizione e collaborazione parallela prospettive pure e indipendenti
 
 ## 2. Step 0: Gestione del Toggle (`ON`/`OFF`), Flag `--mediator` e Titolo Chat
 
-Quando l'utente invoca `/shizzo` (da solo, con `on`/`off`, `--mediator`/`-m`, `--no-mediator`, `--proto` o seguito da un task):
+Quando l'utente invoca `/skizzo` (da solo, con `on`/`off`, `--mediator`/`-m`, `--no-mediator`, `--proto` o seguito da un task):
 
-1. **Determinazione Stato Sessione (`SHIZZO` e `MEDIATOR`)**:
-   - `/shizzo` (senza argomenti): inverte `SHIZZO` (`OFF -> ON` o `ON -> OFF`).
-   - `/shizzo off`: imposta `SHIZZO = OFF` e `MEDIATOR = OFF`.
-   - `/shizzo on` o `/shizzo <task>`: imposta `SHIZZO = ON`.
-   - `/shizzo --mediator` (o `-m`): imposta `SHIZZO = ON` e `MEDIATOR = ON`; `/shizzo --no-mediator` imposta `MEDIATOR = OFF`.
+1. **Determinazione Stato Sessione (`SKIZZO` e `MEDIATOR`)**:
+   - `/skizzo` (senza argomenti): inverte `SKIZZO` (`OFF -> ON` o `ON -> OFF`).
+   - `/skizzo off`: imposta `SKIZZO = OFF` e `MEDIATOR = OFF`.
+   - `/skizzo on` o `/skizzo <task>`: imposta `SKIZZO = ON`.
+   - `/skizzo --mediator` (o `-m`): imposta `SKIZZO = ON` e `MEDIATOR = ON`; `/skizzo --no-mediator` imposta `MEDIATOR = OFF`.
 2. **Aggiornamento Visivo del Titolo Chat (`set-chat-title.mjs`)**:
-   - **Se `SHIZZO = ON` e `MEDIATOR = OFF`**: `--title "[SHIZZO] <Titolo o Tema>"`
-   - **Se `SHIZZO = ON` e `MEDIATOR = ON`**: `--title "[SHIZZO+MED] <Titolo o Tema>"`
-   - **Se `SHIZZO = OFF`**: `--title "<Titolo senza prefisso [SHIZZO] o [SHIZZO+MED]>"`
+   - **Se `SKIZZO = ON` e `MEDIATOR = OFF`**: `--title "[SKIZZO] <Titolo o Tema>"`
+   - **Se `SKIZZO = ON` e `MEDIATOR = ON`**: `--title "[SKIZZO+MED] <Titolo o Tema>"`
+   - **Se `SKIZZO = OFF`**: `--title "<Titolo senza prefisso [SKIZZO] o [SKIZZO+MED]>"`
 3. **Risposta su Puro Toggle (Nessun Task Associato)**:
-   - Se `SHIZZO = ON`, rispondi aprendo al **rigo 1** con il banner `> [!IMPORTANT]` (`**MODALITÀ SHIZZO ATTIVA (DUAL-TRACK)**` oppure `**MODALITÀ SHIZZO ATTIVA (DUAL-TRACK + MEDIATORE)**`), sintetizza in 2 righe il comportamento per i task successivi e termina il turno.
-   - Se il messaggio include un task (o se `SHIZZO = ON` era già attivo in sessione), procedi allo **Step 1**.
+   - Se `SKIZZO = ON`, rispondi aprendo al **rigo 1** con il banner `> [!IMPORTANT]` (`**MODALITÀ SKIZZO ATTIVA (DUAL-TRACK)**` oppure `**MODALITÀ SKIZZO ATTIVA (DUAL-TRACK + MEDIATORE)**`), sintetizza in 2 righe il comportamento per i task successivi e termina il turno.
+   - Se il messaggio include un task (o se `SKIZZO = ON` era già attivo in sessione), procedi allo **Step 1**.
 
 ---
 
@@ -42,7 +42,7 @@ Quando l'utente invoca `/shizzo` (da solo, con `on`/`off`, `--mediator`/`-m`, `-
 
 Invoca **in un'unica chiamata `invoke_subagent`** due subagent paralleli indipendenti:
 - **Modalità Standard (Design & Test -> Codice Unificato)**: `TypeName: "research"` per entrambi (`Role: "Systems & Technical Purity Architect"` per Alpha, `Role: "Domain & User Experience Advocate"` per Beta). Annota i due ID restituiti (`<id-alpha>` e `<id-beta>`).
-- **Modalità Prototipazione (`/shizzo --proto`)**: secondo `worktree-lifecycle` (`git status --porcelain`), crea 2 Git Worktrees (`git worktree add ../<repo>-shizzo-alpha -b shizzo/alpha-tech` e `git worktree add ../<repo>-shizzo-beta -b shizzo/beta-domain`) e lancia 2 subagent con `TypeName: "self"` e `Workspace: "share"` ciascuno nel proprio worktree.
+- **Modalità Prototipazione (`/skizzo --proto`)**: secondo `worktree-lifecycle` (`git status --porcelain`), crea 2 Git Worktrees (`git worktree add ../<repo>-skizzo-alpha -b skizzo/alpha-tech` e `git worktree add ../<repo>-skizzo-beta -b skizzo/beta-domain`) e lancia 2 subagent con `TypeName: "self"` e `Workspace: "share"` ciascuno nel proprio worktree.
 
 ### Prompt Template — Subagent Alpha (`Systems & Technical Purity Architect`)
 ```markdown
@@ -79,7 +79,7 @@ L'Orchestratore confronta direttamente i report di `Alpha` e `Beta`:
 1. **Vaglio `Alpha -> Beta`**: intercetta rischi di stato mutabile, accoppiamento DOM o casi limite scoperti nella proposta di `Beta`.
 2. **Vaglio `Beta -> Alpha`**: intercetta astrazioni ridondanti (YAGNI), configurazioni manuali inutili o rigidità d'input nella proposta di `Alpha`.
 
-### Caso B — Modalità Mediatore Interattivo (`MEDIATOR = ON`, `/shizzo --mediator`)
+### Caso B — Modalità Mediatore Interattivo (`MEDIATOR = ON`, `/skizzo --mediator`)
 L'Orchestratore invoca via `invoke_subagent` un terzo subagent isolato (`TypeName: "research"`, `Role: "Dialectical Mediator & Conflict Resolver"`), annotandone l'ID `<id-gamma>`.
 > **Nota sul Wakeup Asincrono**: mentre `Subagent Gamma` attende le risposte peer-to-peer da `Alpha`/`Beta`, `Gamma` cede temporaneamente il turno (`idle`) prima di inviare il Lodo Arbitrale finale all'Orchestratore. L'Orchestratore attende il messaggio di `Gamma` contenente il Lodo Arbitrale.
 
@@ -115,11 +115,11 @@ Agisci come **Subagent Gamma (Dialectical Mediator & Conflict Resolver)** per ri
 
 ## 6. Step 4: Formato Obbligatorio di Consegna (`Banner [!IMPORTANT]` + `0-Click` + `<details>`)
 
-Ogni risposta prodotta con `SHIZZO = ON` deve aprirsi obbligatoriamente al **rigo 1** con il banner `[!IMPORTANT]` che espone la modalità attiva e i link cliccabili `conversation://` a tutti i subagent lanciati:
+Ogni risposta prodotta con `SKIZZO = ON` deve aprirsi obbligatoriamente al **rigo 1** con il banner `[!IMPORTANT]` che espone la modalità attiva e i link cliccabili `conversation://` a tutti i subagent lanciati:
 
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SHIZZO ATTIVA (`DUAL-TRACK` | `+MEDIATORE` | `+PROTO`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK` | `+MEDIATORE` | `+PROTO`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
 
 [Sintesi esecutiva 1-2 frasi sull'implementazione convergente]
 
@@ -129,7 +129,7 @@ Ogni risposta prodotta con `SHIZZO = ON` deve aprirsi obbligatoriamente al **rig
 - **Doppio Oracolo di Verifica**: `Oracolo Alpha (Tecnico): PASS` | `Oracolo Beta (Dominio): PASS`.
 
 <details>
-<summary><strong>Matrice Dialettica Shizzo (Alpha Tecnico vs Beta Dominio & Arbitrato)</strong></summary>
+<summary><strong>Matrice Dialettica Skizzo (Alpha Tecnico vs Beta Dominio & Arbitrato)</strong></summary>
 
 | Dimensione | Subagent Alpha (Tecnico) | Subagent Beta (Dominio/Utente) | Verdetto Arbitrale (Orchestratore / Gamma) |
 | :--- | :--- | :--- | :--- |

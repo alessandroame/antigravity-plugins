@@ -1,27 +1,27 @@
-# Template di Riferimento Dialettico & Mediatore (`/shizzo`)
+# Template di Riferimento Dialettico & Mediatore (`/skizzo`)
 
-Questo documento fornisce i template estesi di riferimento per il **Banner Esplicito Modalità Shizzo (`[!IMPORTANT]`)**, la **Matrice Dialettica**, il **Mediatore Interattivo (`/shizzo --mediator`)** e la variante di prototipazione parallela su Git Worktree (`/shizzo --proto`).
+Questo documento fornisce i template estesi di riferimento per il **Banner Esplicito Modalità Skizzo (`[!IMPORTANT]`)**, la **Matrice Dialettica**, il **Mediatore Interattivo (`/skizzo --mediator`)** e la variante di prototipazione parallela su Git Worktree (`/skizzo --proto`).
 
 ---
 
-## 1. Template di Risposta per Attivazione / Disattivazione Toggle (`/shizzo`)
+## 1. Template di Risposta per Attivazione / Disattivazione Toggle (`/skizzo`)
 
-### Passaggio a `ON` Standard (`/shizzo` o `/shizzo on`)
+### Passaggio a `ON` Standard (`/skizzo` o `/skizzo on`)
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SHIZZO ATTIVA (`DUAL-TRACK`)** — Stato sessione: `SHIZZO = ON` | `MEDIATOR = OFF` | Titolo: `[SHIZZO]`
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = OFF` | Titolo: `[SKIZZO]`
 
 - **Subagent Alpha (Systems & Technical Purity)**: presidia isolamento headless, complessità $O(\cdot)$, immutabilità e test di invarianti.
 - **Subagent Beta (Domain & User Advocate)**: presidia ergonomia d'uso, Legge di Tesler/Postel e test di scenario utente.
-- **Opzioni di Sessione**: usa `/shizzo --mediator` (o `-m`) per abilitare il terzo subagent Mediatore (`Subagent Gamma`), `/shizzo --proto` per 2 prototipi in Git Worktree, `/shizzo off` per disattivare.
+- **Opzioni di Sessione**: usa `/skizzo --mediator` (o `-m`) per abilitare il terzo subagent Mediatore (`Subagent Gamma`), `/skizzo --proto` per 2 prototipi in Git Worktree, `/skizzo off` per disattivare.
 
 Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track?
 ```
 
-### Passaggio a `ON` con Mediatore Interattivo (`/shizzo --mediator` o `/shizzo -m`)
+### Passaggio a `ON` con Mediatore Interattivo (`/skizzo --mediator` o `/skizzo -m`)
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SHIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Stato sessione: `SHIZZO = ON` | `MEDIATOR = ON` | Titolo: `[SHIZZO+MED]`
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = ON` | Titolo: `[SKIZZO+MED]`
 
 - **Biforcazione Parallela (`Alpha` vs `Beta`)**: `Subagent Alpha` (Tecnico) e `Subagent Beta` (Dominio) progettano in cecità reciproca nella Fase 1.
 - **Mediatore Interattivo (`Subagent Gamma`)**: nella Fase 2 un terzo subagent isolato esamina i disaccordi, contro-interroga `Alpha` e `Beta` via `send_message` (max 1 round) ed emette il lodo arbitrale vincolante.
@@ -29,9 +29,9 @@ Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track?
 Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track con Mediatore?
 ```
 
-### Passaggio a `OFF` (`/shizzo` o `/shizzo off`)
+### Passaggio a `OFF` (`/skizzo` o `/skizzo off`)
 ```markdown
-**[SHIZZO: OFF]** — Modalità dialettica disattivata (`SHIZZO = OFF`, `MEDIATOR = OFF`). Il flusso operativo torna all'esecuzione standard a singolo binario e il prefisso `[SHIZZO]` / `[SHIZZO+MED]` è stato rimosso dal titolo della conversazione.
+**[SKIZZO: OFF]** — Modalità dialettica disattivata (`SKIZZO = OFF`, `MEDIATOR = OFF`). Il flusso operativo torna all'esecuzione standard a singolo binario e il prefisso `[SKIZZO]` / `[SKIZZO+MED]` è stato rimosso dal titolo della conversazione.
 ```
 
 ---
@@ -40,7 +40,7 @@ Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track con Mediato
 
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SHIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
 
 Implementato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` tramite sintesi dialettica tra architettura headless (`Alpha`), flusso utente a zero attrito (`Beta`) e lodo arbitrale del Mediatore (`Gamma`).
 
@@ -50,7 +50,7 @@ Implementato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` tramite sintes
 - **Doppio Oracolo di Verifica**: `Oracolo Alpha (Tecnico): N/N PASS` | `Oracolo Beta (Dominio): M/M PASS` in `[file.test.js](file:///percorso/file.test.js#L1-L80)`.
 
 <details>
-<summary><strong>Matrice Dialettica Shizzo (Alpha Tecnico vs Beta Dominio & Arbitrato Gamma)</strong></summary>
+<summary><strong>Matrice Dialettica Skizzo (Alpha Tecnico vs Beta Dominio & Arbitrato Gamma)</strong></summary>
 
 | Dimensione | Subagent Alpha (Systems & Purity) | Subagent Beta (Domain & User) | Verdetto Arbitrale (Mediatore Gamma) |
 | :--- | :--- | :--- | :--- |
@@ -64,28 +64,28 @@ Implementato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` tramite sintes
 
 </details>
 
-Vuoi procedere con il prossimo requisito in modalità `SHIZZO` o disattivare il toggle con `/shizzo off`?
+Vuoi procedere con il prossimo requisito in modalità `SKIZZO` o disattivare il toggle con `/skizzo off`?
 ```
 
 ---
 
-## 3. Variante `/shizzo --proto` (Doppio Prototipo in Git Worktrees Isolati — `worktree-lifecycle`)
+## 3. Variante `/skizzo --proto` (Doppio Prototipo in Git Worktrees Isolati — `worktree-lifecycle`)
 
-Quando l'utente richiede esplicitamente di confrontare empiricamente entrambe le implementazioni complete (`/shizzo --proto`):
+Quando l'utente richiede esplicitamente di confrontare empiricamente entrambe le implementazioni complete (`/skizzo --proto`):
 
 1. **Pre-flight Guard & Setup Worktrees (`worktree-lifecycle`)**:
    ```powershell
    git status --porcelain
-   git worktree add ../<repo>-shizzo-alpha -b shizzo/alpha-tech
-   git worktree add ../<repo>-shizzo-beta -b shizzo/beta-domain
+   git worktree add ../<repo>-skizzo-alpha -b skizzo/alpha-tech
+   git worktree add ../<repo>-skizzo-beta -b skizzo/beta-domain
    ```
 2. **Esecuzione Parallela (`invoke_subagent`)**:
-   - `Subagent Alpha` (`TypeName: "self"`, `Role: "Systems & Technical Purity Architect"`, `Workspace: "share"`) opera esclusivamente dentro `../<repo>-shizzo-alpha`.
-   - `Subagent Beta` (`TypeName: "self"`, `Role: "Domain & User Experience Advocate"`, `Workspace: "share"`) opera esclusivamente dentro `../<repo>-shizzo-beta`.
+   - `Subagent Alpha` (`TypeName: "self"`, `Role: "Systems & Technical Purity Architect"`, `Workspace: "share"`) opera esclusivamente dentro `../<repo>-skizzo-alpha`.
+   - `Subagent Beta` (`TypeName: "self"`, `Role: "Domain & User Experience Advocate"`, `Workspace: "share"`) opera esclusivamente dentro `../<repo>-skizzo-beta`.
 3. **Tabella Comparativa Empirica e Teardown Pulito**:
-   - Eseguire i test in entrambi i worktree, esporre nel banner `[!IMPORTANT]` iniziale lo stato `MODALITÀ SHIZZO ATTIVA (DUAL-TRACK + PROTO)` con i link `conversation://` e, dopo la scelta o fusione sul branch principale, rimuovere i worktree e i branch temporanei:
+   - Eseguire i test in entrambi i worktree, esporre nel banner `[!IMPORTANT]` iniziale lo stato `MODALITÀ SKIZZO ATTIVA (DUAL-TRACK + PROTO)` con i link `conversation://` e, dopo la scelta o fusione sul branch principale, rimuovere i worktree e i branch temporanei:
    ```powershell
-   git worktree remove ../<repo>-shizzo-alpha
-   git worktree remove ../<repo>-shizzo-beta
-   git branch -D shizzo/alpha-tech shizzo/beta-domain
+   git worktree remove ../<repo>-skizzo-alpha
+   git worktree remove ../<repo>-skizzo-beta
+   git branch -D skizzo/alpha-tech skizzo/beta-domain
    ```

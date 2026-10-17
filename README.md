@@ -29,7 +29,7 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 | **`skill-governance`** | Governance per skill: audit dimensionale dei trigger (A-E), ottimizzazione budget token, prevenzione collisioni/shadowing e scomposizione a divulgazione progressiva. | Regola attiva (`rules/AGENTS.md`), 3 Skill (`skill-audit`, `skill-token-optimizer`, `skill-collision-check`), Reference, Esempi | [Leggi README](./plugins/skill-governance/README.md) |
 | **`telemetry-analytics`** | Osservabilità, telemetria locale e stima ETA in-flight: iniezione orologio real-time (`PreInvocation`), output ETA su variazione significativa, calibrazione scostamento e report CSV/JSON. | Regola attiva (`rules/AGENTS.md`), 2 Skill (`plugin-analytics`, `telemetry-export`), Hooks (`eta-injector`, `collector`) | [Leggi README](./plugins/telemetry-analytics/README.md) |
 | **`code-inspector`** | Verifica a livello di codice delle funzionalità software tramite il modello IPO Esteso (Ingresso -> Guardie -> Processo -> Uscita), tracciamento payload, stato test e selettori `<details>` con il codice sorgente coinvolto. | Regola attiva (`rules/AGENTS.md`), Skill (`/how-its-made`), Template, Esempio | [Leggi README](./plugins/code-inspector/README.md) |
-| **`shizzo`** | Competizione e collaborazione dialettica parallela tra due subagent isolati (Subagent Alpha orientato al tecnicismo/purezza headless vs Subagent Beta orientato al dominio/utente) con Mediatore interattivo opzionale (`Subagent Gamma` via `/shizzo --mediator`) e banner esplicito in output (`/shizzo`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/shizzo`), Template dialettico | [Leggi README](./plugins/shizzo/README.md) |
+| **`skizzo`** | Competizione e collaborazione dialettica parallela tra due subagent isolati (Subagent Alpha orientato al tecnicismo/purezza headless vs Subagent Beta orientato al dominio/utente) con Mediatore interattivo opzionale (`Subagent Gamma` via `/skizzo --mediator`) e banner esplicito in output (`/skizzo`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/skizzo`), Template dialettico | [Leggi README](./plugins/skizzo/README.md) |
 
 ---
 
@@ -80,10 +80,10 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 - **Cosa fa**: Espone la regola di ispezione e il comando slash `/how-its-made`, che ricostruisce il flusso secondo il modello **Punto di Ingresso $\to$ Guardie $\to$ Processo $\to$ Punto di Uscita**, classificando ciascun passaggio (`[PURE]`, `[STATE]`, `[I/O]`), tracciando l'evoluzione del payload, collegando i test esistenti e fornendo selettori a espansione `<details>` con gli estratti chirurgici del codice sorgente coinvolto.
 - **Guida completa**: [`plugins/code-inspector/README.md`](./plugins/code-inspector/README.md)
 
-### 10. `shizzo`
+### 10. `skizzo`
 - **Goal**: Superare i compromessi al ribasso del ragionamento monolitico mettendo in competizione e collaborazione parallela pura ingegneria tecnica e puro orientamento al dominio utente, con arbitrato interattivo dei conflitti.
-- **Cosa fa**: Rimane dormiente di default (`OFF`) e si attiva come toggle di sessione tramite `/shizzo` (marcando il titolo chat con `[SHIZZO]` o `[SHIZZO+MED]`). Quando è attivo, per ogni task lancia in parallelo 2 subagent isolati tramite `invoke_subagent`: **Subagent Alpha** (*Systems & Technical Purity*) e **Subagent Beta** (*Domain & User Advocate*). Con l'opzione `/shizzo --mediator` (o `-m`), avvia nella Fase 2 un terzo **Subagent Gamma** (*Dialectical Mediator*) che contro-interroga `Alpha` e `Beta` via `send_message` (max 1 round) sui punti di disaccordo ed emette il lodo arbitrale vincolante. Ogni risposta prodotta con modalità attiva si apre al rigo 1 con il banner `[!IMPORTANT] MODALITÀ SHIZZO ATTIVA` e i link cliccabili `conversation://<id>` ai subagent.
-- **Guida completa**: [`plugins/shizzo/README.md`](./plugins/shizzo/README.md)
+- **Cosa fa**: Rimane dormiente di default (`OFF`) e si attiva come toggle di sessione tramite `/skizzo` (marcando il titolo chat con `[SKIZZO]` o `[SKIZZO+MED]`). Quando è attivo, per ogni task lancia in parallelo 2 subagent isolati tramite `invoke_subagent`: **Subagent Alpha** (*Systems & Technical Purity*) e **Subagent Beta** (*Domain & User Advocate*). Con l'opzione `/skizzo --mediator` (o `-m`), avvia nella Fase 2 un terzo **Subagent Gamma** (*Dialectical Mediator*) che contro-interroga `Alpha` e `Beta` via `send_message` (max 1 round) sui punti di disaccordo ed emette il lodo arbitrale vincolante. Ogni risposta prodotta con modalità attiva si apre al rigo 1 con il banner `[!IMPORTANT] MODALITÀ SKIZZO ATTIVA` e i link cliccabili `conversation://<id>` ai subagent.
+- **Guida completa**: [`plugins/skizzo/README.md`](./plugins/skizzo/README.md)
 
 ---
 
@@ -103,7 +103,7 @@ antigravity-plugins/
 │   ├── execution-guard/               # Anti-freeze, watchdog e circuit breaker salva-token
 │   ├── laws-of-ux/                    # Regole ed ergonomia basate sulle 30 Laws of UX
 │   ├── proactive-mentorship/          # Scrutinio critico e prompt refactoring
-│   ├── shizzo/                        # Dual-Track dialettico Tecnico vs Dominio (/shizzo)
+│   ├── skizzo/                        # Dual-Track dialettico Tecnico vs Dominio (/skizzo)
 │   ├── skill-governance/              # Audit, token optimization e collision check
 │   └── telemetry-analytics/           # Telemetria ibrida, latenze, invocazioni plugin e tool
 ├── scripts/
