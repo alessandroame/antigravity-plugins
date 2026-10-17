@@ -9,11 +9,11 @@ Questo documento fornisce i template estesi di riferimento per il **Banner Espli
 ### Passaggio a `ON` Standard (`/skizzo` o `/skizzo on`)
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = OFF` | Titolo: `[SKIZZO]`
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK`)** — Persistente per tutta la sessione fino a `/skizzo stop` o `"stop skizzo"` | Titolo: `[SKIZZO]`
 
 - **Agente Tecnico (Alpha)**: cura la solidità del codice dietro le quinte, la velocità (`O(1)`/`O(n)`) e la prevenzione di bug e blocchi (skill automatiche: `shift-left-governance`, `trace-debugging`, `circuit-breaker`).
 - **Agente Utente (Beta)**: difende la semplicità d'uso, riduce click e passaggi manuali e accetta input flessibili (skill automatiche: `laws-of-ux-audit`, `ux-form-optimization`, `ux-button-and-touch-ergonomics`).
-- **Opzioni di Sessione**: usa `/skizzo --mediator` (o `-m`) per aggiungere il terzo agente Mediatore (`Gamma`), `/skizzo --proto` per creare 2 prototipi separati su Git Worktree, `/skizzo off` per disattivare.
+- **Persistenza Automatica & Stop**: non serve riscrivere `/skizzo` nei prossimi messaggi; la modalità resta attiva da sola fino a fine chat o finché non scrivi `/skizzo stop`, `/skizzo off` o `"stop skizzo"` (`/skizzo --mediator` aggiunge il Mediatore `Gamma`).
 
 Quale funzionalità o problema vuoi affrontare con i due agenti in parallelo?
 ```
@@ -21,17 +21,17 @@ Quale funzionalità o problema vuoi affrontare con i due agenti in parallelo?
 ### Passaggio a `ON` con Mediatore Interattivo (`/skizzo --mediator` o `/skizzo -m`)
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = ON` | Titolo: `[SKIZZO+MED]`
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Persistente per tutta la sessione fino a `/skizzo stop` o `"stop skizzo"` | Titolo: `[SKIZZO+MED]`
 
 - **Lavoro Parallelo Indipendente (`Alpha` vs `Beta`)**: l'`Agente Tecnico (Alpha)` e l'`Agente Utente (Beta)` progettano la soluzione senza influenzarsi a vicenda, attivando automaticamente 1–2 skill specialistiche ciascuno.
-- **Mediatore Interattivo (`Gamma`)**: un terzo agente indipendente esamina i punti in cui `Alpha` e `Beta` non sono d'accordo, li interroga tramite `send_message` (max 1 round) e sceglie la soluzione migliore.
+- **Mediatore Interattivo (`Gamma`)**: un terzo agente indipendente esamina i punti in cui `Alpha` e `Beta` non sono d'accordo, li interroga tramite `send_message` (max 1 round) e sceglie la soluzione migliore per tutti i messaggi della sessione fino al comando di stop.
 
 Quale funzionalità o problema vuoi sottoporre ai due agenti con il Mediatore?
 ```
 
-### Passaggio a `OFF` (`/skizzo` o `/skizzo off`)
+### Passaggio a `OFF` (`/skizzo stop`, `/skizzo off`, `stop skizzo` o `/skizzo`)
 ```markdown
-**[SKIZZO: OFF]** — Modalità a doppio agente disattivata (`SKIZZO = OFF`, `MEDIATOR = OFF`). Il flusso torna all'esecuzione normale e il prefisso `[SKIZZO]` / `[SKIZZO+MED]` è stato rimosso dal titolo della conversazione.
+**[SKIZZO: OFF]** — Modalità a doppio agente fermata (`SKIZZO = OFF`, `MEDIATOR = OFF`). Il flusso torna all'esecuzione normale e il prefisso `[SKIZZO]` / `[SKIZZO+MED]` è stato rimosso dal titolo della conversazione.
 ```
 
 ---
@@ -64,7 +64,7 @@ Aggiornato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` unendo la comodi
 
 </details>
 
-Vuoi procedere con il prossimo compito in modalità `SKIZZO` o disattivarla con `/skizzo off`?
+La modalità `SKIZZO` resta attiva per i prossimi messaggi della sessione (scrivi `/skizzo stop` o `"stop skizzo"` quando vuoi fermarla).
 ```
 
 ---

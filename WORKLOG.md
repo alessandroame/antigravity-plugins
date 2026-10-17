@@ -13,11 +13,11 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
-## 2026-10-17 — Evoluzione Plugin `skizzo` v1.3.0 (Output "Human-First") e Guardia `validateMarkdownHygiene` (`scripts/validate.mjs`)
-- **Tipo**: Evoluzione Protocollo Multi-Agente & Validatore Statico (`plugins/skizzo/` v1.3.0, `scripts/validate.mjs`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md)
+## 2026-10-17 — Evoluzione Plugin `skizzo` v1.4.0 (Persistenza Sticky di Sessione, Stop Naturale, Output "Human-First") e `validateMarkdownHygiene`
+- **Tipo**: Evoluzione Protocollo Multi-Agente & Validatore Statico (`plugins/skizzo/` v1.4.0, `scripts/validate.mjs`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-17_skizzo-session-persistence.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-session-persistence.md), [`.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md)
 - **Sintesi**:
-  - Introdotto in `skizzo` v1.3.0 l'auto-routing di 1–2 skill foglia, la barriera di silenzio sui wakeup parziali e il formato **Human-First** a 4 punti in italiano quotidiano, aggiungendo in `scripts/validate.mjs` la guardia `validateMarkdownHygiene` (zero backtick rotti, grassetto in code span o LaTeX inline nei plugin).
+  - Resa la modalità `/skizzo` (`v1.4.0`) **persistente (sticky) per tutti i turni della sessione** anche quando l'utente non ripete `/skizzo` nei messaggi successivi, fino a fine chat o comando di stop (`/skizzo stop`, `/skizzo off`, `stop skizzo`, `ferma skizzo`), con auto-routing di 1–2 skill foglia, silenzio intermedio, formato **Human-First** a 4 punti e guardia `validateMarkdownHygiene`.
 
 ---
 

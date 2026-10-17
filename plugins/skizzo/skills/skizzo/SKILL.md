@@ -19,25 +19,27 @@ Mette in competizione e collaborazione parallela due prospettive indipendenti pe
 
 ---
 
-## 2. Step 0: Gestione del Toggle (`ON`/`OFF`), Flag `--mediator` e Titolo Chat
+## 2. Step 0: Persistenza Sticky di Sessione, Comandi di Stop, Flag `--mediator` e Titolo Chat
 
-Quando l'utente invoca `/skizzo` (da solo, con `on`/`off`, `--mediator`/`-m`, `--no-mediator`, `--proto` o seguito da un task):
+Quando l'utente invoca `/skizzo` (da solo, con `on`/`off`/`stop`, `--mediator`/`-m`, `--no-mediator`, `--proto` o seguito da un task) **oppure invia un qualsiasi messaggio successivo in una sessione in cui `/skizzo` è già stato attivato**:
 
-1. **Determinazione Stato Sessione (`SKIZZO` e `MEDIATOR`)**:
-   - `/skizzo` (senza argomenti): inverte `SKIZZO` (`OFF -> ON` o `ON -> OFF`).
-   - `/skizzo off`: imposta `SKIZZO = OFF` e `MEDIATOR = OFF`.
-   - `/skizzo on` o `/skizzo <task>`: imposta `SKIZZO = ON`.
-   - `/skizzo --mediator` (o `-m`): imposta `SKIZZO = ON` e `MEDIATOR = ON`; `/skizzo --no-mediator` imposta `MEDIATOR = OFF`.
-2. **Aggiornamento Visivo del Titolo Chat (`set-chat-title.mjs` con `--conversation-id` Obbligatorio)**:
+1. **Persistenza Sticky per Tutta la Sessione (`SKIZZO` e `MEDIATOR`)**:
+   - **Attivazione Permanente in Sessione**: `/skizzo` (quando `OFF`), `/skizzo on` o `/skizzo <task>` imposta `SKIZZO = ON`; `/skizzo --mediator` (o `-m`) imposta `SKIZZO = ON` e `MEDIATOR = ON`.
+   - **Blocco Multi-Turno (`Sticky Session Latch`)**: una volta attivato (anche direttamente insieme al primo compito `/skizzo <task>`), lo stato `SKIZZO = ON` (e `MEDIATOR = ON` se era attivo `--mediator`) **resta bloccato e persistente per tutti i messaggi successivi dell'intera conversazione** fino alla chiusura della sessione o a un comando esplicito di stop — **anche quando nei turni successivi l'utente scrive normali richieste senza ripetere `/skizzo`**.
+   - **Verifica a Inizio di Ogni Turno**: prima di rispondere a qualsiasi messaggio, se in un turno precedente della stessa conversazione è stato attivato `/skizzo` o compare il banner `MODALITÀ SKIZZO ATTIVA` senza un successivo comando di stop, **esegui obbligatoriamente lo Step 1 (Ciclo a 4 Fasi)**.
+2. **Comandi di Stop e Disattivazione (`/skizzo stop`, `/skizzo off`, `stop skizzo`)**:
+   - Torna a `SKIZZO = OFF` e `MEDIATOR = OFF` **esclusivamente** quando l'utente invia un comando di stop: `/skizzo stop`, `/skizzo off`, `/skizzo` (senza argomenti quando è già `ON`) o una richiesta naturale di stop in italiano/inglese (`stop skizzo`, `ferma skizzo`, `disattiva skizzo`, `esci da skizzo`, `chiudi skizzo`).
+   - Se il messaggio di stop contiene anche una richiesta operativa (es. *"stop skizzo, ora sistema X"*), disattiva subito `SKIZZO = OFF`, rimuovi `[SKIZZO]` dal titolo ed esegui direttamente *"X"* in modalità standard (`--no-mediator` disattiva invece solo il Mediatore mantenendo `SKIZZO = ON`).
+3. **Aggiornamento Visivo del Titolo Chat (`set-chat-title.mjs` con `--conversation-id` Obbligatorio)**:
    - Leggi `<Conversation ID>` dal blocco `<user_information>` della sessione corrente ed esegui:
      `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --conversation-id "<Conversation ID>" --title "[SKIZZO] <Titolo>"`
    - **Divieto Esplicito**: è **vietato** invocare `set-chat-title.mjs` senza `--conversation-id "<Conversation ID>"`, per evitare race condition con sessioni concorrenti.
    - **Se `SKIZZO = ON` e `MEDIATOR = OFF`**: `--title "[SKIZZO] <Titolo o Tema>"`
    - **Se `SKIZZO = ON` e `MEDIATOR = ON`**: `--title "[SKIZZO+MED] <Titolo o Tema>"`
-   - **Se `SKIZZO = OFF`**: `--title "<Titolo senza prefisso [SKIZZO] o [SKIZZO+MED]>"`
-3. **Risposta su Puro Toggle (Nessun Task Associato)**:
-   - Se `SKIZZO = ON`, rispondi aprendo al **rigo 1** con il banner `> [!IMPORTANT]` (`MODALITÀ SKIZZO ATTIVA (DUAL-TRACK)` oppure `MODALITÀ SKIZZO ATTIVA (DUAL-TRACK + MEDIATORE)`), sintetizza in 2 righe in italiano semplice il comportamento per i task successivi e termina il turno.
-   - Se il messaggio include un task (o se `SKIZZO = ON` era già attivo in sessione), procedi allo **Step 1**.
+   - **Se `SKIZZO = OFF` (Stop)**: `--title "<Titolo senza prefisso [SKIZZO] o [SKIZZO+MED]>"`
+4. **Risposta su Puro Toggle o Comando di Stop (Nessun Task Associato)**:
+   - Se `SKIZZO = ON`, rispondi aprendo al **rigo 1** con il banner `> [!IMPORTANT]` (`MODALITÀ SKIZZO ATTIVA (DUAL-TRACK — Persistente in sessione fino a "/skizzo stop" o "stop skizzo")`), sintetizza in 2 righe in italiano semplice che resterà attiva da sola su tutti i messaggi successivi finché non deciderà di fermarla, e termina il turno.
+   - Se il messaggio include un task (o se `SKIZZO = ON` era già attivo in sessione da un turno precedente), procedi allo **Step 1**.
 
 ---
 

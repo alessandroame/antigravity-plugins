@@ -19,9 +19,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Divieto di Directory Junctions su Windows & Sync Fisico (`npm run sync`)**:
   - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`) e non effettua discovery da `.agents/plugins/` nei workspace.
   - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
-- **Plugin On-Demand, Auto-Routing Skill, Silenzio Intermedio e Output Human-First (`skizzo`)**:
-  - *Insidia*: Disabilitare un plugin in `config.json` nasconde `/skizzo`; quando un subagent finisce prima dell'altro l'Orchestratore rischia di stampare messaggi intermedi in chat; usare backtick escapati/LaTeX o gergo interno (`Contratto Esterno`, `Tesler/Postel`, `Oracolo Alpha`) rende l'output incomprensibile all'utente.
-  - *Regola*: Mantenere `rules/AGENTS.md` <= 6.500 B con *Clausola di Dormienza*; assegnare 1–2 skill foglia (mai `skizzo`), attendere in silenzio (`0 byte`) finché entrambi i subagent non hanno concluso, ed esporre a 0-Click i 4 punti *Human-First* (*Cosa cambia per te*, *Comodità Beta*, *Problema evitato da Alpha*, *Disaccordo risolto*), confinando metriche e oracoli in `<details>`.
+- **Plugin On-Demand, Persistenza Sticky di Sessione, Silenzio Intermedio e Output Human-First (`skizzo`)**:
+  - *Insidia*: Nei turni 2..N in cui l'utente non ripete `/skizzo`, Antigravity non ri-inietta `SKILL.md` e il modello rischia di tornare a `OFF`; quando un subagent finisce prima dell'altro rischia di stampare messaggi intermedi; usare backtick escapati/LaTeX o gergo interno rende l'output incomprensibile.
+  - *Regola*: Mantenere `rules/AGENTS.md` <= 6.500 B con *Persistenza Sticky di Sessione* (se un turno precedente mostra `MODALITÀ SKIZZO ATTIVA` senza successivo `/skizzo stop|off` o `stop skizzo`, eseguire sempre le 4 fasi), attendere in silenzio (`0 byte`) finché entrambi i subagent non hanno concluso, ed esporre a 0-Click i 4 punti *Human-First*, confinando metriche e oracoli in `<details>`.
 
 ---
 
