@@ -245,7 +245,7 @@ export function sanitizeForBlindJudge(rawOutput) {
     .replace(/^>\s*\[!IMPORTANT\]\r?\n>\s*\*\*VERDETTO AB-BENCH[^\r\n]*\r?\n+/gim, '')
     .replace(/\[[^\]]*\]\(conversation:\/\/[a-zA-Z0-9_-]+\)/g, '[Subagent]')
     .replace(/\bMODALITÀ SKIZZO ATTIVA\b/gi, 'MODALITÀ ANALISI')
-    .replace(/\bSubagent (Alpha|Beta|Gamma)\b/gi, 'Modulo di Analisi')
+    .replace(/\b(?:Subagent (?:Alpha|Beta|Gamma)|Agente (?:Tecnico|Utente)(?:\s*\((?:Alpha|Beta)\))?|Mediatore\s*\(Gamma\))\b/gi, 'Modulo di Analisi')
     .replace(/\bOracolo (Alpha|Beta)\b/gi, 'Suite di Verifica')
     .trim();
 }

@@ -11,11 +11,11 @@ Questo documento fornisce i template estesi di riferimento per il **Banner Espli
 > [!IMPORTANT]
 > **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = OFF` | Titolo: `[SKIZZO]`
 
-- **Subagent Alpha (Systems & Technical Purity)**: presidia isolamento headless, complessità $O(\cdot)$ e test di invarianti (auto-routing skill tecniche: `shift-left-governance`, `trace-debugging`, `circuit-breaker`).
-- **Subagent Beta (Domain & User Advocate)**: presidia ergonomia d'uso, Legge di Tesler/Postel e test di scenario (auto-routing skill UX/dominio: `laws-of-ux-audit`, `ux-form-optimization`, `ux-button-and-touch-ergonomics`).
-- **Opzioni di Sessione**: usa `/skizzo --mediator` (o `-m`) per abilitare il terzo subagent Mediatore (`Subagent Gamma`), `/skizzo --proto` per 2 prototipi in Git Worktree, `/skizzo off` per disattivare.
+- **Agente Tecnico (Alpha)**: cura la solidità del codice dietro le quinte, la velocità (`O(1)`/`O(n)`) e la prevenzione di bug e blocchi (skill automatiche: `shift-left-governance`, `trace-debugging`, `circuit-breaker`).
+- **Agente Utente (Beta)**: difende la semplicità d'uso, riduce click e passaggi manuali e accetta input flessibili (skill automatiche: `laws-of-ux-audit`, `ux-form-optimization`, `ux-button-and-touch-ergonomics`).
+- **Opzioni di Sessione**: usa `/skizzo --mediator` (o `-m`) per aggiungere il terzo agente Mediatore (`Gamma`), `/skizzo --proto` per creare 2 prototipi separati su Git Worktree, `/skizzo off` per disattivare.
 
-Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track?
+Quale funzionalità o problema vuoi affrontare con i due agenti in parallelo?
 ```
 
 ### Passaggio a `ON` con Mediatore Interattivo (`/skizzo --mediator` o `/skizzo -m`)
@@ -23,49 +23,48 @@ Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track?
 > [!IMPORTANT]
 > **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Stato sessione: `SKIZZO = ON` | `MEDIATOR = ON` | Titolo: `[SKIZZO+MED]`
 
-- **Biforcazione Parallela & Auto-Routing Skill (`Alpha` vs `Beta`)**: `Subagent Alpha` (Tecnico) e `Subagent Beta` (Dominio) progettano in cecità reciproca nella Fase 1 dichiarando alla partenza le rispettive 1–3 skill attivate.
-- **Mediatore Interattivo (`Subagent Gamma`)**: nella Fase 2 un terzo subagent isolato esamina i disaccordi, contro-interroga `Alpha` e `Beta` via `send_message` (max 1 round) ed emette il lodo arbitrale vincolante.
+- **Lavoro Parallelo Indipendente (`Alpha` vs `Beta`)**: l'`Agente Tecnico (Alpha)` e l'`Agente Utente (Beta)` progettano la soluzione senza influenzarsi a vicenda, attivando automaticamente 1–2 skill specialistiche ciascuno.
+- **Mediatore Interattivo (`Gamma`)**: un terzo agente indipendente esamina i punti in cui `Alpha` e `Beta` non sono d'accordo, li interroga tramite `send_message` (max 1 round) e sceglie la soluzione migliore.
 
-Quale requisito o funzionalità vuoi sottoporre al flusso Dual-Track con Mediatore?
+Quale funzionalità o problema vuoi sottoporre ai due agenti con il Mediatore?
 ```
 
 ### Passaggio a `OFF` (`/skizzo` o `/skizzo off`)
 ```markdown
-**[SKIZZO: OFF]** — Modalità dialettica disattivata (`SKIZZO = OFF`, `MEDIATOR = OFF`). Il flusso operativo torna all'esecuzione standard a singolo binario e il prefisso `[SKIZZO]` / `[SKIZZO+MED]` è stato rimosso dal titolo della conversazione.
+**[SKIZZO: OFF]** — Modalità a doppio agente disattivata (`SKIZZO = OFF`, `MEDIATOR = OFF`). Il flusso torna all'esecuzione normale e il prefisso `[SKIZZO]` / `[SKIZZO+MED]` è stato rimosso dal titolo della conversazione.
 ```
 
 ---
 
-## 2. Template Completo di Consegna Task con Mediatore (`0-Click` + `1-Click`)
+## 2. Template Completo di Consegna Task "Human-First" (Parlare all'Umano + `<details>` Tecnico)
 
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Subagent: [`Subagent Alpha (Tecnico)`](conversation://<id-alpha>) (Skill: `shift-left-governance`, `trace-debugging`) · [`Subagent Beta (Dominio)`](conversation://<id-beta>) (Skill: `laws-of-ux-audit`, `ux-form-optimization`) · [`Subagent Gamma (Mediatore)`](conversation://<id-gamma>)
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK + MEDIATORE`)** — Subagent: [`Agente Tecnico (Alpha)`](conversation://<id-alpha>) (Skill: `shift-left-governance`, `trace-debugging`) · [`Agente Utente (Beta)`](conversation://<id-beta>) (Skill: `laws-of-ux-audit`, `ux-form-optimization`) · [`Mediatore (Gamma)`](conversation://<id-gamma>)
 
-Implementato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` tramite sintesi dialettica tra architettura headless (`Alpha`), flusso utente a zero attrito (`Beta`) e lodo arbitrale del Mediatore (`Gamma`).
+Aggiornato `[simbolo/modulo](file:///percorso/file.ext#L1-L50)` unendo la comodità d'uso richiesta dall'`Agente Utente (Beta)` con le protezioni dai blocchi progettate dall'`Agente Tecnico (Alpha)`.
 
-- **Contratto Esterno (Dominio Beta)**: [1 riga su come l'utente interagisce e quale complessità viene normalizzata automaticamente].
-- **Motore Interno (Tecnico Alpha)**: [1 riga sull'architettura pura headless, complessità $O(\cdot)$ e gestione casi limite].
-- **Disaccordo Risolto dal Mediatore (Gamma)**: [1 riga sul conflitto chiave tra Alpha e Beta risolto tramite negoziazione `send_message`].
-- **Doppio Oracolo di Verifica**: `Oracolo Alpha (Tecnico): N/N PASS` | `Oracolo Beta (Dominio): M/M PASS` in `[file.test.js](file:///percorso/file.test.js#L1-L80)`.
+- **Cosa cambia per te**: [1 riga concreta in italiano semplice su cosa fa ora il programma o quale miglioramento vedi subito].
+- **Comodità difesa dall'Agente Utente (Beta)**: [1 riga su quale fatica, configurazione manuale o passaggio inutile ti è stato risparmiato].
+- **Problema evitato dall'Agente Tecnico (Alpha)**: [1 riga su quale errore nascosto, rallentamento o caso limite è stato intercettato e risolto dietro le quinte].
+- **Su cosa non erano d'accordo (e perché vince questa soluzione)**: [1 riga sul conflitto pratico tra Alpha e Beta e come è stato risolto] — **Controlli**: `Tutti i test superati (N/N OK)`.
 
 <details>
-<summary><strong>Matrice Dialettica Skizzo (Alpha Tecnico vs Beta Dominio & Arbitrato Gamma)</strong></summary>
+<summary><strong>Dettagli Tecnici, Confronto tra gli Agenti e File Modificati</strong></summary>
 
-| Dimensione | Subagent Alpha (Systems & Purity) | Subagent Beta (Domain & User) | Verdetto Arbitrale (Mediatore Gamma) |
+| Punto Discusso | Proposta Tecnica (Alpha) | Proposta Lato Utente (Beta) | Scelta Finale (Perché è migliore) |
 | :--- | :--- | :--- | :--- |
-| **Skill Attive** | `shift-left-governance`, `trace-debugging` | `laws-of-ux-audit`, `ux-form-optimization` | **Copertura Ortogonale**: rigore headless interno + ergonomia Postel/Tesler esterna |
-| **API / Interazione** | Input tipizzato rigido con parametri espliciti obbligatori | Input permissivo (Postel) con inferenza automatica dei default | **Vince Beta**: parser permissivo in ingresso che normalizza verso la struttura tipizzata di Alpha |
-| **Core & Stato** | Funzioni pure `[PURE]` in `src/core/` con storage adapter iniettabile | Aggiornamento immediato della vista senza attese o ricaricamenti | **Vince Alpha**: store reattivo disaccoppiato dal DOM con optimistic update governato dal core |
-| **Errori & Limiti** | Fallimento deterministico su payload corrotti o race condition | Messaggi azionabili in linguaggio di dominio con recupero stato (Undo) | **Convergenza**: result type tipizzato nel core mappato in azioni di ripristino non distruttive nella UI |
-| **Oracolo di Test** | Unit test su invarianti matematici, input vuoti/null e concorrenza | Test di accettazione sullo scenario d'uso completo end-to-end | **Doppio Oracolo**: entrambi gli oracoli integrati nella test suite automatica |
+| **Skill Attive** | `shift-left-governance`, `trace-debugging` | `laws-of-ux-audit`, `ux-form-optimization` | **Complementari**: rigore del motore interno + semplicità d'uso esterna |
+| **Esperienza d'Uso** | Parametri espliciti obbligatori in ingresso | Input flessibile con valori predefiniti automatici | **Vince Beta**: il sistema accetta input semplici e li converte da solo dietro le quinte |
+| **Architettura Interna** | Funzioni pure in `src/core/` separate dalla grafica | Aggiornamento immediato dello schermo senza attese | **Vince Alpha**: stato reattivo separato dal DOM con aggiornamento rapido (`< 50ms`) |
+| **Errori & Casi Limite** | Blocco immediato su dati corrotti o doppi invii | Messaggi chiari in italiano con tasto Annulla (Undo) | **Unificata**: controllo rigoroso nel motore mappato in azioni di recupero semplici nella pagina |
 
-- **Negoziazione `Gamma -> Alpha` (`send_message`, Round 1/1)**: richiesto ad `Alpha` se il parser permissivo potesse risiedere in un boundary puro senza inquinare il core; `Alpha` ha confermato fornendo la firma di normalizzazione deterministica.
-- **Negoziazione `Gamma -> Beta` (`send_message`, Round 1/1)**: richiesto a `Beta` di sostituire il salvataggio sincrono diretto in `localStorage` con un evento verso lo store iniettabile; `Beta` ha accettato mantenendo invariata la latenza percepita ($< 50\text{ms}$).
+- **Dietro le quinte (Negoziazione `Gamma <-> Alpha/Beta`)**: `Gamma` ha chiesto ad `Alpha` di gestire la pulizia degli input senza appesantire l'utente e a `Beta` di non salvare dati grezzi direttamente nel browser.
+- **Verifiche Tecniche & File Aggiornati**: `Oracolo Alpha: PASS` | `Oracolo Beta: PASS` in `[file.test.js](file:///percorso/file.test.js#L1-L80)`.
 
 </details>
 
-Vuoi procedere con il prossimo requisito in modalità `SKIZZO` o disattivare il toggle con `/skizzo off`?
+Vuoi procedere con il prossimo compito in modalità `SKIZZO` o disattivarla con `/skizzo off`?
 ```
 
 ---

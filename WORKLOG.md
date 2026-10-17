@@ -13,11 +13,11 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
-## 2026-10-17 — Evoluzione Plugin `skizzo` v1.2.0 (Auto-Routing & Dichiarazione Sintetica delle Skill alla Partenza)
-- **Tipo**: Evoluzione Protocollo Multi-Agente (`plugins/skizzo/` v1.1.0 $\to$ v1.2.0)
+## 2026-10-17 — Evoluzione Plugin `skizzo` v1.2.0 $\to$ v1.3.0 (Auto-Routing Skill Foglia, Silenzio Intermedio e Output "Human-First")
+- **Tipo**: Evoluzione Protocollo Multi-Agente & UX Output (`plugins/skizzo/` v1.1.0 $\to$ v1.3.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md)
 - **Sintesi**:
-  - Introdotto in [`SKILL.md`](file:///c:/github/antigravity-plugins/plugins/skizzo/skills/skizzo/SKILL.md) e [`rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/skizzo/rules/AGENTS.md) l'auto-routing di 1–3 skill pertinenti per `Subagent Alpha` e `Subagent Beta`, con dichiarazione obbligatoria al rigo 1 dei subagent (`**Skill Attive (Alpha/Beta)**: \`...\``), esposizione a 0-Click nel banner `[!IMPORTANT]` (`(Skill: \`...\`)`) e riga `| **Skill Attive** |` nella Matrice `<details>`.
+  - Introdotto l'auto-routing di 1–2 skill verticali (escludendo `skizzo`), la barriera di silenzio sui wakeup parziali dei subagent e il formato di consegna **Human-First** a 4 punti in italiano quotidiano (*Cosa cambia per te*, *Comodità Beta*, *Problema evitato da Alpha*, *Disaccordo risolto*), confinando gergo e metriche in `<details>`.
 
 ---
 

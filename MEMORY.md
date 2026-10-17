@@ -19,9 +19,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Divieto di Directory Junctions su Windows & Sync Fisico (`npm run sync`)**:
   - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`) e non effettua discovery da `.agents/plugins/` nei workspace.
   - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
-- **Plugin On-Demand, Dormienza, Auto-Routing Skill e Routing Peer-to-Peer (`skizzo`)**:
-  - *Insidia*: Disabilitare un plugin in `~/.gemini/config/config.json` (`"enabled": false`) nasconde anche le sue skill (`/skizzo`); `send_message` è asincrono (richiede cessione del turno per il wakeup reattivo), il `<subagent_reminder>` nativo spinge i subagent a usare l'ID del `parent` come `Recipient` e i subagent non dichiarano le skill se non iniettate nel prompt di avvio.
-  - *Regola*: Mantenere il plugin abilitato in `config.json` con *Clausola di Dormienza Predefinita* in `rules/AGENTS.md` ($\le 6.500\text{ byte}$); in Fase 1 iniettare 1–3 skill pertinenti in `Alpha`/`Beta` imponendo `**Skill Attive (Alpha/Beta)**: \`...\`` al rigo 1 del report e `(Skill: \`...\`)` nel banner `[!IMPORTANT]`; in `--mediator`, `Gamma` cede il turno dopo `send_message` e `Alpha`/`Beta` rispondono a `Recipient: "<id-gamma>"` (`sender`).
+- **Plugin On-Demand, Auto-Routing Skill, Silenzio Intermedio e Output Human-First (`skizzo`)**:
+  - *Insidia*: Disabilitare un plugin in `config.json` nasconde `/skizzo`; quando un subagent finisce prima dell'altro l'Orchestratore rischia di stampare messaggi intermedi in chat; usare backtick escapati/LaTeX o gergo interno (`Contratto Esterno`, `Tesler/Postel`, `Oracolo Alpha`) rende l'output incomprensibile all'utente.
+  - *Regola*: Mantenere `rules/AGENTS.md` $\le 6.500\text{ B}$ con *Clausola di Dormienza*; assegnare 1–2 skill foglia (mai `skizzo`), attendere in silenzio (`0 byte`) finché entrambi i subagent non hanno concluso, ed esporre a 0-Click i 4 punti *Human-First* (*Cosa cambia per te*, *Comodità Beta*, *Problema evitato da Alpha*, *Disaccordo risolto*), confinando metriche e oracoli in `<details>`.
 
 ---
 

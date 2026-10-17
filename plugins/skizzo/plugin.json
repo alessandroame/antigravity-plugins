@@ -1,8 +1,8 @@
 {
   "name": "skizzo",
   "displayName": "Skizzo — Dual-Track Technical vs Domain Dialectics",
-  "description": "Orchestra una competizione e collaborazione parallela a doppio binario (Subagent Alpha orientato al tecnicismo e purezza architetturale vs Subagent Beta orientato al dominio e punto di vista dell'utente) con auto-routing e dichiarazione sintetica delle skill alla partenza, Mediatore interattivo opzionale (Subagent Gamma via /skizzo --mediator) e banner esplicito in output, attivabile come toggle di sessione tramite /skizzo.",
-  "version": "1.2.0",
+  "description": "Orchestra una competizione e collaborazione parallela a doppio binario (Agente Tecnico Alpha vs Agente Utente Beta) con auto-routing delle skill, Mediatore interattivo opzionale (/skizzo --mediator) e sintesi finale Human-First chiara e priva di gergo interno, attivabile tramite /skizzo.",
+  "version": "1.3.0",
   "suggestedPrompts": [
     "Esegui /skizzo per attivare o disattivare la modalità dual-track (Tecnico vs Dominio) nella sessione corrente",
     "Attiva /skizzo --mediator e implementa questa funzionalità facendo negoziare Subagent Alpha (Tecnico) e Subagent Beta (Dominio) tramite Subagent Gamma (Mediatore)",
