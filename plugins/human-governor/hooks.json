@@ -1,0 +1,11 @@
+{
+  "human-governor-hook": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/governor-hook.mjs",
+        "timeout": 8
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "human-governor",
+  "displayName": "Human Governor & Anti-WIP Guard",
+  "description": "Monitora il carico cognitivo umano, il numero di sessioni WIP contemporanee, il ping-pong compulsivo tra chat e il lavoro fuori orario, interrompendo il flusso quando diventi il passacarte dei tuoi agenti.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Controlla quanti WIP contemporanei e cambi di contesto sto facendo in questa finestra di lavoro",
+    "Configura il limite massimo di WIP contemporanei a 2 e il coprifuoco notturno alle 22:30",
+    "Mostra il report comportamentale delle mie sessioni attive e il livello di frammentazione"
+  ]
+}

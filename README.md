@@ -31,6 +31,7 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 | **`code-inspector`** | Verifica a livello di codice delle funzionalità software tramite il modello IPO Esteso (Ingresso -> Guardie -> Processo -> Uscita), tracciamento payload, stato test e selettori `<details>` con il codice sorgente coinvolto. | Regola attiva (`rules/AGENTS.md`), Skill (`/how-its-made`), Template, Esempio | [Leggi README](./plugins/code-inspector/README.md) |
 | **`skizzo`** | Competizione e collaborazione dialettica parallela tra due subagent isolati (Subagent Alpha orientato al tecnicismo/purezza headless vs Subagent Beta orientato al dominio/utente) con Mediatore interattivo opzionale (`Subagent Gamma` via `/skizzo --mediator`) e banner esplicito in output (`/skizzo`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/skizzo`), Template dialettico | [Leggi README](./plugins/skizzo/README.md) |
 | **`ab-bench`** | Confronto empirico alla cieca A/B tra un prompt base e una variante potenziata con plugin o skill (es. `/skizzo`) tramite il Test delle 5 Dita ("Uomo della Pietra"), sanitizer anti-bias, Rasoio di Occam sul tempo e storico locale (`/ab-bench --stats`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/ab-bench`), Engine CLI (`scripts/bench.mjs`), Test (`tests/bench.test.mjs`) | [Leggi README](./plugins/ab-bench/README.md) |
+| **`human-governor`** | Tutela cognitiva dell'operatore umano contro il sovraccarico da orchestrazione asincrona: monitora i WIP contemporanei (`max 2`), il context-thrashing tra chat, la micro-gestione e il coprifuoco notturno (`22:30–07:00`), bloccando il turno con `ask_question`. | Regola attiva (`rules/AGENTS.md`), Skill (`/focus-audit`), Hook `PreInvocation` (`governor-hook.mjs`), Core (`evaluator.mjs`), CLI (`status.mjs`) | [Leggi README](./plugins/human-governor/README.md) |
 
 ---
 
@@ -91,6 +92,11 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 - **Cosa fa**: Rimane dormiente di default e si attiva tramite `/ab-bench` (zero-config default `Senza /skizzo` vs `Con /skizzo`, oppure `--skill <nome>` e `"Prompt A" vs "Prompt B"`). Lancia i due sfidanti in parallelo, estrae i tempi e gli step reali da `transcript.jsonl`, rimuove ogni firma identificativa del plugin (`sanitizeForBlindJudge`), assegna le etichette cieche `Soluzione X` e `Soluzione Y` in SHA-256 e fa votare un **Subagent Giudice Cieco** sulle **5 Dita** (`0` o `1` per dito, scala `0..5`). Applica il Rasoio di Occam premiando la soluzione più semplice/veloce a parità di punteggio e conserva lo storico in `ab-bench-history.ndjson` (`/ab-bench --stats`).
 - **Guida completa**: [`plugins/ab-bench/README.md`](./plugins/ab-bench/README.md)
 
+### 12. `human-governor`
+- **Goal**: Impedire all'operatore umano di trasformarsi nel gestore di interrupt in tempo reale dei propri agenti, imponendo un tetto al numero di WIP concorrenti e proteggendo il recupero cognitivo.
+- **Cosa fa**: Tramite l'hook `PreInvocation` (`governor-hook.mjs`) scansiona all'inizio del turno utente le conversazioni attive in `~/.gemini/antigravity/brain/` negli ultimi `30` minuti (filtrando solo le sessioni utente `<USER_REQUEST>`), conta i cambi di contesto in `10` minuti, la frequenza di prompt oraria, la durata continua senza pause e il coprifuoco (`22:30–07:00`). Al superamento delle soglie invia una notifica balloon su Windows e inietta `[HUMAN-GOVERNOR ALERT]`, obbligando l'agente a fermarsi con `ask_question` per chiedere all'utente se chiudere i WIP in eccesso, convertire il task in `/goal` o attivare uno snooze consapevole di `30` minuti (`/focus-audit`).
+- **Guida completa**: [`plugins/human-governor/README.md`](./plugins/human-governor/README.md)
+
 ---
 
 ## Struttura del Repository
@@ -108,6 +114,7 @@ antigravity-plugins/
 │   ├── engineering-sobriety/          # Sobrietà, bonifica lessicale e integrità test
 │   ├── engineering-workflow/          # Git governance, worktrees e trace debugging
 │   ├── execution-guard/               # Anti-freeze, watchdog e circuit breaker salva-token
+│   ├── human-governor/                # Guardia WIP concorrenti (/focus-audit) e coprifuoco
 │   ├── laws-of-ux/                    # Regole ed ergonomia basate sulle 30 Laws of UX
 │   ├── proactive-mentorship/          # Scrutinio critico e prompt refactoring
 │   ├── skizzo/                        # Dual-Track dialettico Tecnico vs Dominio (/skizzo)

@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-18 — Creazione Plugin `human-governor` v1.0.0 (Tutela Cognitiva, Limite WIP Contemporanei, Anti-Thrashing e Coprifuoco)
+- **Tipo**: Nuovo Plugin di Governance Operatore & Hook `PreInvocation` (`plugins/human-governor/` v1.0.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-18_human-governor-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_human-governor-plugin.md)
+- **Sintesi**:
+  - Implementato il plugin `human-governor` (`/focus-audit`) con valutatore headless [`evaluator.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/core/evaluator.mjs), hook `PreInvocation` [`governor-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/governor-hook.mjs) (rilevamento WIP concorrenti in `brain/`, context-thrashing, maratone e coprifuoco `22:30–07:00` con blocco `ask_question` e notifica Windows) e CLI [`status.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs) (`5/5 test PASS`).
+
+---
+
 ## 2026-10-18 — Evoluzione Plugin `proactive-mentorship` v1.1.0 (Coaching Antigravity, Agent Training Ladder `L0..L3` e Guardie `L3` in `validate.mjs`)
 - **Tipo**: Evoluzione Plugin & Validatore Statico (`plugins/proactive-mentorship/` v1.1.0, `scripts/validate.mjs`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md)
