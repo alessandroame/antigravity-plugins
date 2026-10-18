@@ -154,6 +154,15 @@ function validateMarkdownHygiene(content, relPath) {
         `${relPath}:${lineNum}: formula matematica LaTeX inline '${rawFormula}' (irregolare in chat). Usa simboli di testo normale: '${suggestedPlain}'`
       );
     }
+
+    if (/<\/summary>\s*$/i.test(lineWithoutCode) && i + 1 < lines.length) {
+      const nextLine = lines[i + 1];
+      if (nextLine.trim() !== '' && !/^\s*<\/details>/i.test(nextLine)) {
+        hygieneErrors.push(
+          `${relPath}:${lineNum}: riga vuota obbligatoria mancante subito dopo </summary> (rompe il rendering GFM dei blocchi interni)`
+        );
+      }
+    }
   }
 
   return hygieneErrors;
@@ -298,6 +307,24 @@ function validatePlugin(pluginDir, existingNames) {
             errors.push(`skills/${ent.name}/SKILL.md: supera il tetto di 200 righe (${lineCount} righe)`);
           }
           errors.push(...validateMarkdownHygiene(content, `skills/${ent.name}/SKILL.md`));
+          for (const refMatch of content.matchAll(/\]\(\.?\/?(references\/[a-zA-Z0-9_./-]+\.md)\)/g)) {
+            const refRel = refMatch[1];
+            const refFull = join(skillsDir, ent.name, refRel);
+            if (!existsSync(refFull)) {
+              errors.push(`skills/${ent.name}/SKILL.md: riferimento mancante su disco '${refRel}'`);
+            }
+          }
+          const refsDir = join(skillsDir, ent.name, 'references');
+          if (existsSync(refsDir) && statSync(refsDir).isDirectory()) {
+            for (const refEnt of readdirSync(refsDir, { withFileTypes: true })) {
+              if (refEnt.isFile() && refEnt.name.endsWith('.md')) {
+                const refContent = readFileSync(join(refsDir, refEnt.name), 'utf-8');
+                errors.push(
+                  ...validateMarkdownHygiene(refContent, `skills/${ent.name}/references/${refEnt.name}`)
+                );
+              }
+            }
+          }
           const fm = parseFrontmatter(content);
           if (!fm) {
             errors.push(`skills/${ent.name}/SKILL.md: frontmatter YAML mancante o malformato`);

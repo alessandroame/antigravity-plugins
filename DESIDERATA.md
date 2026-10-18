@@ -22,7 +22,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `execution-guard` | Plugin | `🟢 Completato` | Watchdog anti-freeze, circuit breaker, timeout script e guardia mock API ([README](./plugins/execution-guard/README.md)). |
 | `engineering-workflow` | Plugin | `🟢 Completato` | Git chirurgico, worktrees, trace debugging, headless core e `shift-left-governance` ([README](./plugins/engineering-workflow/README.md)). |
 | `cognitive-persistence` (v1.4.0) | Plugin | `🟢 Completato` | Architettura 3+1 e anti-bloat (`MEMORY` <= 200, `WORKLOG` <= 300, `DESIDERATA` <= 150, `NOTES` <= 120) ([README](./plugins/cognitive-persistence/README.md)). |
-| `proactive-mentorship` | Plugin | `🟢 Completato` | Scrutinio critico preventivo, prompt refactoring Before/After e compressione token ([README](./plugins/proactive-mentorship/README.md)). |
+| `proactive-mentorship` (v1.1.0) | Plugin | `🟢 Completato` | Coaching AGY (`/grill-me`, `/plan`, `/compact`), Agent Training `L0..L3` e refactoring prompt ([README](./plugins/proactive-mentorship/README.md)). |
 | `skill-governance` | Plugin | `🟢 Completato` | Two-phase token model, audit dimensionale (A-E) e `skill-collision-check` ([README](./plugins/skill-governance/README.md)). |
 | `telemetry-analytics` (v1.5.0) | Plugin | `🟢 Completato` | ETA sui checkpoint entro 2° turno, calibrazione errore, TTL cursori 7gg e rotazione `events.ndjson` 5 MB ([README](./plugins/telemetry-analytics/README.md)). |
 | `code-inspector` | Plugin | `🟢 Completato` | Modello IPO Esteso, `/how-its-made`, widget `<agent-embed>` dual-tab e cassetti `<details>` ([README](./plugins/code-inspector/README.md)). |

@@ -1,11 +1,11 @@
 {
   "name": "proactive-mentorship",
-  "displayName": "Proactive Mentorship & Prompt Refactoring",
-  "description": "Coaching architetturale e sui prompt: scrutinio critico preventivo (KISS/YAGNI/casi limite), assenza di adulazione e refactoring Before/After dei prompt.",
-  "version": "1.0.0",
+  "displayName": "Proactive Mentorship, AGY Coaching & Agent Training",
+  "description": "Coaching architetturale, uso ottimale di Antigravity (comandi slash, contesto, subagent) e tecniche di addestramento degli agenti (Agent Training Ladder L0-L3, refactoring Before/After).",
+  "version": "1.1.0",
   "suggestedPrompts": [
-    "Esamina questo prompt e proponi un refactoring ottimizzato Before vs After",
-    "Analizza i punti ciechi e i casi limite di questo requisito prima di agire",
-    "Valuta questa proposta architetturale contro complessità e over-engineering"
+    "Esamina questo prompt e proponi il refactoring Before/After e il comando Antigravity più adatto",
+    "Trasforma questa mia correzione ricorrente in una regola permanente, una skill o un test automatico",
+    "Analizza i punti ciechi architetturali e i casi limite di questo requisito prima di procedere"
   ]
 }

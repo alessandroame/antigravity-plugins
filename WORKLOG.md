@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-18 — Evoluzione Plugin `proactive-mentorship` v1.1.0 (Coaching Antigravity, Agent Training Ladder `L0..L3` e Guardie `L3` in `validate.mjs`)
+- **Tipo**: Evoluzione Plugin & Validatore Statico (`plugins/proactive-mentorship/` v1.1.0, `scripts/validate.mjs`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md)
+- **Sintesi**:
+  - Espanso `proactive-mentorship` al coaching *just-in-time* sui comandi Antigravity (`/grill-me`, `/plan`, `/compact`, `/goal`, `/learn`, `/skizzo`, `/ab-bench`) e all'Agent Training Ladder (`L0..L3`) con Gate Anti-Disturbo, prontuari in `references/` e guardie `L3` in `scripts/validate.mjs` (`</summary>` e `references/`).
+
+---
+
 ## 2026-10-17 — Evoluzione Plugin `skizzo` v1.4.0 (Persistenza Sticky di Sessione, Stop Naturale, Output "Human-First") e `validateMarkdownHygiene`
 - **Tipo**: Evoluzione Protocollo Multi-Agente & Validatore Statico (`plugins/skizzo/` v1.4.0, `scripts/validate.mjs`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-17_skizzo-session-persistence.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-session-persistence.md), [`.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md)
