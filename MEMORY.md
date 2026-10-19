@@ -19,9 +19,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Divieto di Directory Junctions su Windows & Sync Fisico (`npm run sync`)**:
   - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`) e non effettua discovery da `.agents/plugins/` nei workspace.
   - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
-- **Plugin On-Demand, Persistenza Sticky di Sessione, Silenzio Intermedio e Output Human-First (`skizzo`)**:
-  - *Insidia*: Nei turni 2..N in cui l'utente non ripete `/skizzo`, Antigravity non ri-inietta `SKILL.md` e il modello rischia di tornare a `OFF`; quando un subagent finisce prima dell'altro rischia di stampare messaggi intermedi; usare backtick escapati/LaTeX o gergo interno rende l'output incomprensibile.
-  - *Regola*: Mantenere `rules/AGENTS.md` <= 6.500 B con *Persistenza Sticky di Sessione* (se un turno precedente mostra `MODALITÀ SKIZZO ATTIVA` senza successivo `/skizzo stop|off` o `stop skizzo`, eseguire sempre le 4 fasi), attendere in silenzio (`0 byte`) finché entrambi i subagent non hanno concluso, ed esporre a 0-Click i 4 punti *Human-First*, confinando metriche e oracoli in `<details>`.
+- **Plugin On-Demand, Persistenza Sticky `Auto-Smart`, Gate 0 `FAST-PASS` e Output Human-First (`skizzo`)**:
+  - *Insidia*: Nei turni 2..N Antigravity non ri-inietta `SKILL.md` (rischio ritorno a `OFF`), ma lanciare 2 subagent anche su comandi Git/test, sola lettura, conferme (*"fallo"*) o micro-edit spreca ~110s; inoltre un subagent che finisce prima rischia di stampare testo intermedio e il gergo/LaTeX rompe la leggibilità.
+  - *Regola*: Mantenere `rules/AGENTS.md` <= 6.500 B con *Persistenza Sticky `Auto-Smart`* e **Gate 0 a Priori** (`triage.mjs`: `FAST-PASS` a `0` subagent con banner `[!NOTE]` su task diretti mantenendo `SKIZZO = ON`; `DUAL-TRACK` sui bivi progettuali; override `--force`/`--skip`), silenzio intermedio (`0 byte`) e 4 punti *Human-First* a 0-Click.
 
 ---
 

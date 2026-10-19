@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-19 — Evoluzione Plugin `skizzo` v1.5.0 (Filtro Automatico a Priori `Gate 0: FAST-PASS vs DUAL-TRACK` e Motore `triage.mjs`)
+- **Tipo**: Evoluzione Protocollo Multi-Agente & Ottimizzazione Latenza (`plugins/skizzo/` v1.5.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md)
+- **Sintesi**:
+  - Introdotto il **Gate 0 di Triage Automatico a Priori** ([`triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs), `< 5ms`, `7/7 test PASS` in [`triage.test.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/tests/triage.test.mjs)) che mantiene `SKIZZO = ON` in sessione ma esegue `FAST-PASS` (`0` subagent, ~90–120s risparmiati + banner `[!NOTE]`) su comandi operativi/Git/memoria, sola lettura, conferme di piani già approvati e micro-edit, avviando `DUAL-TRACK` sulle scelte progettuali (con override `--force` e `--skip`).
+
+---
+
 ## 2026-10-18 — Creazione Plugin `human-governor` v1.0.0 (Tutela Cognitiva, Limite WIP Contemporanei, Anti-Thrashing e Coprifuoco)
 - **Tipo**: Nuovo Plugin di Governance Operatore & Hook `PreInvocation` (`plugins/human-governor/` v1.0.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-18_human-governor-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_human-governor-plugin.md)
