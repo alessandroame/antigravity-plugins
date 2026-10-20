@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-20 — Evoluzione `cognitive-persistence` v1.5.0 (Kanban Remoto Universale, Coda Parallela Anti-Conflitto e Kit Vocale Gemini Live / AI Studio)
+- **Tipo**: Evoluzione Architettura Cognitiva & Esecuzione Parallela (`plugins/cognitive-persistence/` v1.5.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md)
+- **Sintesi**:
+  - Integrato nei 4 comandi esistenti (`/take-note`, `/review-notes`, `/next-step`, `/memory-sync`) il ponte Kanban remoto Git-native universale ([`board-engine.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/board-engine.mjs), [`gh-board-sync.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/gh-board-sync.mjs), `15/15 test PASS` in [`board-engine.test.mjs`](file:///c:/github/antigravity-plugins/tests/board-engine.test.mjs)) con auto-discovery cartelle/test multi-stack, sidecar `.agents/board-state.json` (preservando i `<= 160` char di `DESIDERATA.md`), scodamento parallelo su 2 Git Worktree con junction dipendenze `< 20ms`, auto-serializzazione dei conflitti e kit vocale [`voice-intake-kit.md`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/references/voice-intake-kit.md).
+
+---
+
 ## 2026-10-19 — Evoluzione Plugin `skizzo` v1.5.0 (Filtro Automatico a Priori `Gate 0: FAST-PASS vs DUAL-TRACK` e Motore `triage.mjs`)
 - **Tipo**: Evoluzione Protocollo Multi-Agente & Ottimizzazione Latenza (`plugins/skizzo/` v1.5.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md)
@@ -117,19 +125,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Dettagli**: [`.agents/worklog.d/2026-10-15_telemetry-eta-pill-only.md`](file:///.agents/worklog.d/2026-10-15_telemetry-eta-pill-only.md), [`.agents/worklog.d/2026-10-15_telemetry-live-eta.md`](file:///.agents/worklog.d/2026-10-15_telemetry-live-eta.md)
 - **Sintesi**:
   - Silenziato `stdout` (`{}\n`) in `eta-injector.mjs` per eliminare i blocchi `[TELEMETRY-ETA-CLOCK]` dagli output dei tool, sottraendo le pause `ask_question` dal calcolo di `Elapsed` e introducendo l'auto-calibrazione `etaCalibrationFactor`.
-
----
-
-## 2026-10-15 — Creazione Plugin `code-inspector` e Comando `/how-its-made` con Widget Dual-Tab `<agent-embed>`
-- **Tipo**: Nuovo Plugin / Ispezione Flussi Esecutivi (`plugins/code-inspector/`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-15_code-inspector-plugin.md`](file:///.agents/worklog.d/2026-10-15_code-inspector-plugin.md)
-- **Sintesi**:
-  - Implementato il protocollo IPO Esteso a 5 livelli (*Ingresso -> Guardie -> Processo `[PURE]/[STATE]/[I/O]` -> Payload -> Uscita & Test*) con selettore interattivo `<agent-embed>` dual-tab (`Albero Testuale` + `Grafico a Blocchi`) e cassetti `<details>` con estratti chirurgici verificati.
-
----
-
-## 2026-10-15 — Buffer Pre-Desiderata `NOTES.md`, Cattura In-Flight (`/take-note`) e Triage Differito (`/review-notes`)
-- **Tipo**: Architettura Cognitiva 3+1 (`cognitive-persistence` v1.2.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-15_in-flight-notes-and-review-workflow.md`](file:///.agents/worklog.d/2026-10-15_in-flight-notes-and-review-workflow.md)
-- **Sintesi**:
-  - Introdotto il file canonico `NOTES.md` con cattura passiva a zero cambio di contesto (`/take-note`, divieto di lettura codice sorgente) e comando di analisi approfondita a lavorazione ferma (`/review-notes`) per la promozione controllata in `DESIDERATA.md`.

@@ -6,14 +6,14 @@ description: Sincronizza la memoria di progetto a fine task creando il frammento
 # Project Memory & Knowledge Persistence Runbook
 
 ## 1. Obiettivo
-Garantire che l'esperienza acquisita, i refactoring complessi e le decisioni architetturali non vadano perdute tra una sessione e l'altra, permettendo a qualsiasi sessione futura di comprendere istantaneamente lo stato del progetto.
+Garantire che l'esperienza acquisita, i refactoring complessi e le decisioni architetturali non vadano perdute tra una sessione e l'altra, permettendo a qualsiasi sessione futura di comprendere istantaneamente lo stato del progetto e chiudendo in sicurezza eventuali Git Worktree paralleli e schede sulla Kanban remota.
 
 ---
 
 ## 2. Flusso di Sincronizzazione di Fine Task
 
 ```
-[Verifica Test Superata: 100%]
+[Verifica Test Superata: 100% + Guardia Worktree Diff P0-ISO]
                │
                ▼
 [1. Scrittura Frammento] ──► Crea ADR esteso in .agents/worklog.d/YYYY-MM-DD_<topic>.md
@@ -26,7 +26,7 @@ Garantire che l'esperienza acquisita, i refactoring complessi e le decisioni arc
                │             + Compattazione in .agents/archive/ se > 200 righe
                ▼
 [4. Sync DESIDERATA/NOTES]──► Sposta feature in Completate (DESIDERATA <= 150 righe, cella <= 160 char)
-               │             + Chiude eventuale NOTE-XXX in tabella 1 riga (NOTES <= 120 righe, max 10 risolte)
+               │             + Chiude eventuale NOTE-XXX / Issue GitHub e pulisce il Git Worktree
                ▼
 [5. Resoconto all'Utente] ──► Presentazione delle modifiche e guida al collaudo
 ```
@@ -89,7 +89,7 @@ Per evitare di duplicare centinaia di righe tra `.agents/worklog.d/` e `WORKLOG.
      1. Archiviare lo snapshot integrale corrente in `.agents/archive/MEMORY_v<N>_archive.md`.
      2. Riscrivere `MEMORY.md` raggruppando e fondendo i vincoli attivi in 5–8 sezioni di dominio sotto le **120–150 righe**, inserendo in testa il callout di governance con il link all'archivio e alla suite di test automatici:
         ```markdown
-        > **Governance anti-bloat**: tetto massimo **200 righe**. Vietato l'append cronologico numerato: aggiornare le sezioni *in-place* sostituendo le regole superate. Storico pre-distillazione archiviato in [`.agents/archive/MEMORY_v1_archive.md`](file:///...).
+        > **Governance anti-bloat**: tetto massimo **200 righe**. Vietato l'append numerato: aggiornare le sezioni *in-place* sostituendo le regole superate. Storico pre-distillazione archiviato in [`.agents/archive/MEMORY_v1_archive.md`](file:///...).
         ```
 
 ### C. Governance Anti-Bloat di `DESIDERATA.md` (<= 150 righe) e `NOTES.md` (<= 120 righe)
@@ -97,5 +97,6 @@ Per evitare di duplicare centinaia di righe tra `.agents/worklog.d/` e `WORKLOG.
    - Strutturare `DESIDERATA.md` in due sezioni: `## 1. Backlog Attivo & Funzionalità Pianificate` (in alto, `🟡 In Lavorazione` / `🔴 Prioritario` / `⚪ Pianificato`) e `## 2. Funzionalità Completate & Consolidate` (in basso, `🟢 Completato`).
    - Spostare la funzionalità appena conclusa dalla tabella *Backlog Attivo* alla tabella *Completate* con stato `🟢 Completato` e una nota sintetica **<= 160 caratteri** (i dettagli risiedono in `WORKLOG.md`).
    - Se `DESIDERATA.md` supera le **150 righe** (o 40 righe completate), archiviare lo storico dettagliato in `.agents/archive/DESIDERATA_v<N>_archive.md` e consolidare i sotto-step passati in righe di macro-fase.
-2. **Tabella Risolte a 1 Riga e Rotazione in `NOTES.md` (<= 120 righe, max 10 risolte)**:
-   - Se l'intervento completato risolve una nota aperta `[NOTE-XXX]` in `NOTES.md`, rimuovere il blocco multi-riga da `## 📥 Da Analizzare (Open)` e aggiungere una **singola riga** in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Completata in <File/Modulo> |`, esito <= 120 char), preservando nell'header `> **Ultimo ID Assegnato**: NOTE-XXX` e ruotando in `.agents/archive/NOTES_archive.md` le righe risolte oltre le 10 unità.
+2. **Tabella Risolte a 1 Riga, Guardia Worktree (`[P0-ISO]`) e Chiusura Kanban (`NOTES.md` <= 120 righe)**:
+   - Se il task è stato eseguito in un Git Worktree parallelo, verifica prima del merge con `verifyWorktreeDiffIsolation` (`board-engine.mjs`) che `git diff --name-only` non abbia toccato file appartenenti a un altro worktree attivo né i 4 file cognitivi globali (`Single-Writer Commit Phase`: l'aggiornamento di `DESIDERATA.md` e `WORKLOG.md` avviene solo sul branch principale a test superati).
+   - Se l'intervento completato risolve una nota aperta `[NOTE-XXX]` in `NOTES.md` (o una Issue GitHub `#N`), rimuovere il blocco multi-riga da `## 📥 Da Analizzare (Open)` e aggiungere una **singola riga** in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Completata in <File/Modulo> |`, esito <= 120 char), preservando nell'header `> **Ultimo ID Assegnato**: NOTE-XXX`, chiudendo la scheda remota e ruotando in `.agents/archive/NOTES_archive.md` le righe risolte oltre le 10 unità.

@@ -32,10 +32,11 @@ Registrare istantaneamente nel file `NOTES.md` (alla radice del workspace) pensi
 2. Calcola il prossimo identificativo univoco `NOTE-XXX` (es. `NOTE-001`, `NOTE-002`) leggendo il metadato di testa `> **Ultimo ID Assegnato**: NOTE-XXX` (e verificando per sicurezza che sia >= al numero più alto presente nel file) e **aggiorna immediatamente il contatore nell'header** con il nuovo ID assegnato.
 3. Appendi la nuova scheda (o le nuove schede) in fondo alla sezione `## 📥 Da Analizzare (Open)`.
 
-### Step 4: Conferma Ultra-Compatta e Ripresa Lavorazione
-1. Rispondi all'utente con una conferma sintetica (massimo 2-3 righe o micro-tabella con `ID` e `Titolo`):
+### Step 4: Conferma Ultra-Compatta, Opzione Remota (`--remote`) e Ripresa Lavorazione
+1. **Default Locale Anti-Rumore (`0ms` Rete)**: per non intasare GitHub di appunti temporanei presi al PC, `/take-note` salva solo in `NOTES.md`. Se invece l'utente specifica `--remote` (o detta la nota da smartphone con Gemini Live / Google AI Studio seguendo [`references/voice-intake-kit.md`](../../references/voice-intake-kit.md)), la nota viene creata anche come Issue GitHub (`status:inbox`).
+2. Rispondi all'utente con una conferma sintetica (massimo 2-3 righe o micro-tabella con `ID` e `Titolo`):
    - Esempio: `Registrata [NOTE-004] in NOTES.md (analisi differita a /review-notes).`
-2. Se nella sessione corrente era in corso un task operativo, **riprendi immediatamente** il passo successivo di quel task senza attendere ulteriori conferme.
+3. Se nella sessione corrente era in corso un task operativo, **riprendi immediatamente** il passo successivo di quel task senza attendere ulteriori conferme.
 
 ---
 

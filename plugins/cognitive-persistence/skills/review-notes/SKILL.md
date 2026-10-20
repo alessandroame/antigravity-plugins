@@ -7,7 +7,7 @@ description: Mostra le annotazioni aperte in NOTES.md ed esegue l'analisi approf
 
 ## 1. Obiettivo
 
-Fornire il comando unificato per **mostrare le note raccolte** in `NOTES.md` ed **eseguire il task di analisi tecnica e UX approfondita** a lavorazione ferma (o su richiesta esplicita), riconciliando ogni osservazione con lo stato reale e aggiornato del codice sorgente prima di promuoverla in `DESIDERATA.md` o implementarla.
+Fornire il comando unificato per **mostrare le note raccolte** in `NOTES.md` (incluse le idee inviate da smartphone o via voce tramite Gemini Live / Google AI Studio) ed **eseguire il task di analisi tecnica e UX approfondita** a lavorazione ferma, riconciliando ogni osservazione con lo stato reale del codice sorgente prima di promuoverla in `DESIDERATA.md` e certificare il `Touch-Set` per lo scodamento parallelo.
 
 ---
 
@@ -21,15 +21,18 @@ Fornire il comando unificato per **mostrare le note raccolte** in `NOTES.md` ed 
 
 ## 3. Flusso Operativo Passo-Passo
 
-### Step 1: Scansione e Visualizzazione Cruscotto (`NOTES.md` + `DESIDERATA.md`)
-1. Leggi `NOTES.md` e `DESIDERATA.md` alla radice del workspace.
+### Step 1: Sync Remoto Protetto e Visualizzazione Cruscotto (`NOTES.md` + `DESIDERATA.md`)
+1. **Importazione Sicura da Kanban Mobile/Vocale (`gh-board-sync.mjs`)**:
+   - Esegui `node plugins/cognitive-persistence/scripts/gh-board-sync.mjs` (o `node ~/.gemini/config/plugins/cognitive-persistence/scripts/gh-board-sync.mjs`).
+   - Lo script verifica l'autore proprietario (`verifyTrustedTaskOrigin` `[P0-SEC]`), degrada a `LOCAL_ONLY` in `< 3s` se offline e calcola con `planSafeInboxImport` quante Issue `status:inbox` importare in `NOTES.md` senza mai superare il tetto di **115/120 righe** (lasciando le eccedenti su GitHub per il giro successivo).
+2. Leggi `NOTES.md` e `DESIDERATA.md` alla radice del workspace.
    - Se `NOTES.md` non esiste o non contiene voci sotto `## 📥 Da Analizzare (Open)`, notifica: *"Nessuna nota aperta in `NOTES.md`. Usa `/take-note <testo>` per annotare pensieri durante l'uso dell'app."* e termina.
-2. Verifica se in `DESIDERATA.md` esiste ancora un task `🟡 In Lavorazione`:
+3. Verifica se in `DESIDERATA.md` esiste ancora un task `🟡 In Lavorazione`:
    - Se presente, segnala in testa: *"Attenzione: risulta ancora in corso il task `[Nome Task]`. L'analisi terrà conto delle modifiche parziali."*
-3. **Mostra sempre all'utente la Tabella Cruscotto delle Note Aperte**:
+4. **Mostra sempre all'utente la Tabella Cruscotto delle Note Aperte**:
    | ID | Titolo Sintetico | Data Cattura | Lavorazione Attiva alla Cattura | Ambito Presunto |
    | :--- | :--- | :---: | :--- | :--- |
-4. Se l'utente ha invocato `/review-notes` senza specificare quale nota analizzare, usa il tool `ask_question` per chiedergli quale nota vuole sottoporre subito al task di analisi:
+5. Se l'utente ha invocato `/review-notes` senza specificare quale nota analizzare, usa il tool `ask_question` per chiedergli quale nota vuole sottoporre subito al task di analisi:
    - Opzione 1: `(Recommended) Analizza tutte le note aperte in sequenza`
    - Opzioni successive: `Analizza [NOTE-XXX]: <Titolo Sintetico>` per ciascuna nota aperta.
 
@@ -50,17 +53,20 @@ Per ciascuna nota selezionata, esegui un'ispezione rigorosa articolata in 4 punt
    - Verifica i vincoli architetturali in `MEMORY.md` (es. Headless Core, disaccoppiamento DOM, zero regressioni).
 3. **Scrutinio UX & Architetturale (`laws-of-ux` & `proactive-mentorship`)**:
    - Valuta l'idea dell'utente rispetto a ergonomia touch (>= 48px), carico cognitivo (Hick's Law, Progressive Disclosure) e pulizia visiva.
-   - Se la soluzione ipotizzata a caldo nella nota (es. una specifica combo o posizionamento) presenta controindicazioni su mobile/outdoor, proponi l'alternativa tecnica superiore.
+   - Se la soluzione ipotizzata a caldo nella nota presenta controindicazioni su mobile/outdoor, proponi l'alternativa tecnica superiore.
 4. **Output della Scheda di Analisi**:
    Presenta per la nota una scheda strutturata:
    - **Nota Originale (`[NOTE-XXX]`)**: citazione del pensiero registrato.
    - **Stato Attuale nel Codice & Delta**: link cliccabili ai file (`[File.js](file:///...#L10-L25)`) e impatto delle ultime lavorazioni.
-   - **Proposta Ingegneristica & UX**: soluzione raccomandata, file da toccare e casi limite gestiti.
+   - **Proposta Ingegneristica & UX**: soluzione raccomandata, file esatti da toccare (`Touch-Set`) e casi limite gestiti.
 
-### Step 4: Decisione Operativa e Consolidamento Anti-Bloat (`NOTES.md` -> `DESIDERATA.md`)
+### Step 4: Decisione Operativa, Sidecar Touch-Set e Consolidamento Anti-Bloat (`NOTES.md` -> `DESIDERATA.md`)
 Al termine dell'analisi, chiedi all'utente tramite `ask_question` come consolidare la nota analizzata:
-1. **Promuovi in `DESIDERATA.md` (`🔴 Prioritario`, `🔴 Pianificato` o `⚪ Pianificato`)**:
-   - Aggiungi la nuova riga formale nella sezione `## 1. Backlog Attivo & Funzionalità Pianificate` di `DESIDERATA.md` mantenendo la cella `Note / Specifica` **<= 160 caratteri** (pronta per essere eseguita con `/next-step`).
+1. **Promuovi in `DESIDERATA.md` (`🔴 Prioritario`, `🔴 Pianificato` o `⚪ Pianificato`) e Certifica il Touch-Set**:
+   - Aggiungi la nuova riga formale (`[TASK-XX]`) nella sezione `## 1. Backlog Attivo & Funzionalità Pianificate` di `DESIDERATA.md` mantenendo la cella `Note / Specifica` **<= 160 caratteri** (senza inserire lunghi percorsi `@file` nella cella di `DESIDERATA.md`).
+   - **Salvataggio Touch-Set nel Sidecar (`.agents/board-state.json`)**: registra i file esatti individuati nello Step 3 eseguendo:
+     `node plugins/cognitive-persistence/scripts/gh-board-sync.mjs --record-touch-set TASK-XX "percorso/file1,percorso/file2"`
+     Così `/next-step` disporrà del perimetro esatto (`VERIFIED_BY_REVIEW`) per lo scodamento parallelo senza consumare i 160 caratteri di `DESIDERATA.md`.
    - Rimuovi il blocco multi-riga della nota da `## 📥 Da Analizzare (Open)` in `NOTES.md` e inserisci in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` una **singola riga compatta** (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Promossa in DESIDERATA (<Sezione/Modulo>) |`, cella esito <= 120 char).
 2. **Implementa Subito nella Sessione Corrente**:
    - Promuovi la voce nella sezione `## 1. Backlog Attivo` di `DESIDERATA.md` direttamente come `🟡 In Lavorazione`, avvia lo sviluppo e i test, e a fine task (`/memory-sync`) sposta la voce nella sezione `## 2. Funzionalità Completate` di `DESIDERATA.md` (`🟢 Completato`, cella <= 160 char) e consolida `NOTE-XXX` come singola riga nella tabella `✅ Analizzate & Consolidate` di `NOTES.md`.
@@ -68,4 +74,4 @@ Al termine dell'analisi, chiedi all'utente tramite `ask_question` come consolida
    - Rimuovi il blocco da `## 📥 Da Analizzare (Open)` e inserisci una singola riga nella tabella `## ✅ Analizzate & Consolidate` di `NOTES.md` con esito `⚪ Archiviata (<Motivazione <= 120 char>)`.
 4. **Rotazione Storica di `NOTES.md` (`> 10 risolte` o `> 120 righe`)**:
    - Preserva sempre nell'header la riga `> **Ultimo ID Assegnato**: NOTE-XXX`.
-   - Se la tabella `## ✅ Analizzate & Consolidate` supera le **10 righe** (o se `NOTES.md` supera le **120 righe** o contiene ancora vecchie schede risolte multi-riga), sposta le note risolte meno recenti in `.agents/archive/NOTES_archive.md`.
+   - Se la tabella `## ✅ Analizzate & Consolidate` supera le **10 righe** (o se `NOTES.md` supera le **120 righe**), sposta le note risolte meno recenti in `.agents/archive/NOTES_archive.md`.

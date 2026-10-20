@@ -61,7 +61,7 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit√
 
 ---
 
-## 5. Continuit√† Cognitiva & Governance Anti-Bloat (`cognitive-persistence`)
+## 5. Continuit√† Cognitiva, Kanban Remoto & Governance Anti-Bloat (`cognitive-persistence`)
 
 - **Isolamento In-Flight (`/take-note`) vs Analisi Differita (`/review-notes`)**:
   - *Insidia*: Ispezionare il codice durante `/take-note` inquina il contesto del task attivo e analizza file in mutazione.
@@ -69,3 +69,6 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit√
 - **Tetti Massimi e Rotazione dei 4 File Canonici (`MEMORY` <= 200, `WORKLOG` <= 300, `DESIDERATA` <= 150, `NOTES` <= 120)**:
   - *Insidia*: Append numerati in `MEMORY.md`, copie integrali di ADR in `WORKLOG.md`, mini-ADR nelle celle di `DESIDERATA.md` o schede risolte multi-riga perpetue in `NOTES.md` gonfiano il contesto letto ad ogni sessione.
   - *Regola*: `MEMORY.md` <= 200 righe (*in-place* per dominio); `WORKLOG.md` <= 300 righe (max 15 *Pointer Record* da 4‚Äì5 righe); `DESIDERATA.md` <= 150 righe (split *Backlog Attivo*/*Completate*, celle `Note` <= 160 char); `NOTES.md` <= 120 righe (header `Ultimo ID Assegnato` + tabella 1 riga max 10 risolte), con archiviazione eccedenze in `.agents/archive/` (verificato da `scripts/validate.mjs --all`).
+- **Kanban Remoto Multi-Progetto, Sidecar `.agents/board-state.json` e Worktree Junctions (`board-engine.mjs`)**:
+  - *Insidia*: Salvare percorsi `@file` lunghi dentro `DESIDERATA.md` sfora i 160 char; `git worktree add` non copia `node_modules`/`.venv`; l'app GitHub Mobile ignora `?title=`/`?body=` negli URL `issues/new`.
+  - *Regola*: Salvare i `verifiedTouchSet` e i lock in `.agents/board-state.json` (`mergeDesiderataWithSidecar`), collegare `node_modules`/`.venv` nei worktree via junction (`linkWorktreeDependencies`) e usare su Gemini Live il blocco Copia 1-Tap o Function Calling API (`buildIssueFromVoicePayload`).
