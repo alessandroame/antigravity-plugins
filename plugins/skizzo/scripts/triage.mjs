@@ -38,12 +38,12 @@ const OPS_GUARD_PATTERNS = [
 // Guard G2: Pure read-only / inspection questions without design or modification intent
 const READONLY_START_PATTERNS = [
   /^\/how-its-made\b/i,
-  /^(?:spiega(?:mi)?|mostra(?:mi)?|leggi|dove\s+si\s+trova|cosa\s+fa|come\s+funziona|a\s+che\s+punto\s+siamo|qual\s+[eè]|quali\s+sono|elenca|explain|where\s+is|show\s+me|what\s+does)\b/i
+  /^(?:spiega(?:mi)?|mostra(?:mi)?|leggi|dove\s+si\s+trova|cosa\s+fa|come\s+funziona|come\s+mai|perch[eé]\s+(?:c'[eè]|non|la|il|lo|i|gli|le)|non\s+(?:comprendo|capisco)|a\s+che\s+punto\s+siamo|qual\s+[eè]|quali\s+sono|elenca|explain|where\s+is|show\s+me|what\s+does|why\s+is)\b/i
 ];
 
 // Guard G3: Surgical single-choice micro-edits (typo, rename, single constant/color/padding tweak)
 const MICRO_EDIT_PATTERNS = [
-  /\b(?:correggi\s+(?:il\s+)?(?:typo|refuso)|fix\s+typo|rinomina|rename|cambia\s+il\s+(?:colore|testo|padding|margine|titolo|numero|valore)|aggiorna\s+la\s+versione|bump\s+version|fix\s+(?:lint|import))\b/i
+  /\b(?:correggi\s+(?:il\s+)?(?:typo|refuso)|fix\s+typo|rinomina|rename|cambia\s+il\s+(?:colore|testo|padding|margine|titolo|numero|valore)|tieni\s+la\s+camera\s+pi[uù]\s+(?:lontana|vicina|alta|bassa)|avvicina\s+la\s+camera|allontana\s+la\s+camera|aggiorna\s+la\s+versione|bump\s+version|fix\s+(?:lint|import))\b/i
 ];
 
 // Signals that indicate genuine design, architectural, or UX trade-offs (overrides G2/G3)

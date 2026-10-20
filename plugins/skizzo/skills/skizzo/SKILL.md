@@ -40,7 +40,7 @@ Quando l'utente invoca `/skizzo` (da solo, con `on`/`off`/`stop`, `--force`/`-f`
 
 ## 3. Step 0.5 (Gate 0): Filtro Automatico a Priori (`FAST-PASS` vs `DUAL-TRACK`, `< 5ms`)
 
-Prima di avviare subagent (salvo `--force`), valuta in `< 5ms` il messaggio tramite le regole deterministiche di [`plugins/skizzo/scripts/triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs):
+**Prima di leggere qualsiasi file del progetto (`0` chiamate `read_file` pre-triage)** e prima di avviare subagent (salvo `--force`), valuta al **Turno 1** in `< 5ms` il messaggio tramite le regole deterministiche di [`plugins/skizzo/scripts/triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs):
 
 | Categoria del Messaggio | Scelta Automatica | Azione Operativa |
 | :--- | :---: | :--- |
@@ -60,7 +60,7 @@ Prima di avviare subagent (salvo `--force`), valuta in `< 5ms` il messaggio tram
 ## 4. Step 1: Biforcazione Cieca Parallela, Auto-Routing Skill & Silenzio Intermedio (`DUAL-TRACK`)
 
 Seleziona dal catalogo `<skills>` **1–2 skill verticali pertinenti** per ciascun subagent (**vietato assegnare meta-skill** come `skizzo` o `ab-bench`; fallback `core-standard`) e invoca **in un'unica chiamata `invoke_subagent`** due subagent paralleli (`TypeName: "research"`, oppure `TypeName: "self"` in 2 Git Worktrees con `--proto`):
-- **Barriera di Silenzio su Wakeup Parziale**: quando il primo subagent termina mentre il secondo è `running`, **non stampare alcun testo intermedio in chat**; verifica con `manage_subagents(Action: 'list')` e termina il turno con **0 byte** finché entrambi non hanno risposto.
+- **Divieto di Polling (`0` `schedule` / `0` `manage_subagents`) e Silenzio su Wakeup Parziale**: appena invocati i subagent (e quando il primo subagent termina mentre il secondo è `running`), **non chiamare `schedule`, non chiamare `manage_subagents(Action: 'list')` e non stampare testo intermedio**; termina immediatamente il turno con **0 tool call e 0 byte** lasciando agire il wakeup reattivo nativo.
 
 ### Prompt Template — Subagent Alpha (`Systems & Technical Purity Architect`)
 ```markdown
@@ -69,11 +69,12 @@ Agisci esclusivamente come **Subagent Alpha (Systems & Technical Purity Architec
 
 **Skill Attive Assegnate**: [INSERIRE 1-2 SKILL TECNICHE FOGLIA, es. `shift-left-governance`, `trace-debugging` — MAI `skizzo`]
 
-**Mandato Ingegneristico Esclusivo**:
+**Mandato Ingegneristico Esclusivo (Budget Rigido: Max 4 Turni Tool)**:
 1. **Dichiarazione Skill alla Partenza (Rigo 1 Obbligatorio)**: apri al rigo 1 con **Skill Attive (Alpha)**: seguito dagli ID `kebab-case`.
-2. Progetta l'architettura interna ottimizzando isolamento headless (`core/` zero DOM/storage), complessità `O(1)`/`O(n)`, determinismo, immutabilità e gestione errori/race condition.
-3. Definisci l'**Oracolo di Test Tecnico (Alpha)**: specifica i test unitari puri che verificano invarianti matematici, confini di tipo, input malformati/vuoti e assenza di side-effect.
-4. Restituisci: Rigo 1 **Skill Attive (Alpha)**, (a) Architettura Headless & Contratti Interni, (b) Trappola tecnica principale evitata (anche in 1 frase per un non-tecnico), (c) Specifica/Codice dell'Oracolo di Test Tecnico, (d) Punti non negoziabili.
+2. **Budget di Ricerca Chirurgica (`<= 4` turni di tool)**: usa `grep_search` e letture mirate (`<= 150` righe per chiamata, zero scansioni integrali di file lunghi) per individuare in massimo 4 turni i punti esatti di intervento.
+3. Progetta l'architettura interna ottimizzando isolamento headless (`core/` zero DOM/storage), complessità `O(1)`/`O(n)`, determinismo, immutabilità e gestione errori/race condition.
+4. Definisci l'**Oracolo di Test Tecnico (Alpha)**: specifica i test unitari puri che verificano invarianti matematici, confini di tipo, input malformati/vuoti e assenza di side-effect.
+5. Restituisci: Rigo 1 **Skill Attive (Alpha)**, (a) Architettura Headless & File/Righe Esatte `#Lxx-Lyy` da modificare, (b) Trappola tecnica principale evitata (anche in 1 frase per un non-tecnico), (c) Specifica/Codice dell'Oracolo di Test Tecnico, (d) Punti non negoziabili.
 5. **Replica Peer-to-Peer al Mediatore (`send_message`)**: se risvegliato da `Subagent Gamma` (`sender=<id-gamma>`), rispondi con `send_message(Recipient: "<id-gamma>", Message: "...")` e termina il turno.
 ```
 
@@ -84,11 +85,12 @@ Agisci esclusivamente come **Subagent Beta (Domain & User Experience Advocate)**
 
 **Skill Attive Assegnate**: [INSERIRE 1-2 SKILL DOMINIO/UX FOGLIA, es. `laws-of-ux-audit`, `ux-form-optimization` — MAI `skizzo`]
 
-**Mandato di Dominio & Utente Esclusivo**:
+**Mandato di Dominio & Utente Esclusivo (Budget Rigido: Max 4 Turni Tool)**:
 1. **Dichiarazione Skill alla Partenza (Rigo 1 Obbligatorio)**: apri al rigo 1 con **Skill Attive (Beta)**: seguito dagli ID `kebab-case`.
-2. Progetta la soluzione dal punto di vista dell'utente finale: massimizza l'utilità immediata, sposta ogni calcolo sul software, accetta input permissivi ed elimina click, scelte inutili e gergo tecnico.
-3. Definisci l'**Oracolo di Test di Dominio (Beta)**: specifica i test di scenario/accettazione che provano il minor numero di passaggi e feedback chiaro.
-4. Restituisci: Rigo 1 **Skill Attive (Beta)**, (a) Flusso Utente Ideale, (b) Comodità pratica difesa per l'utente (in 1 frase priva di gergo), (c) Specifica/Codice dell'Oracolo di Test di Dominio, (d) Frizioni tecniche da bandire.
+2. **Budget di Ricerca Chirurgica (`<= 4` turni di tool)**: individua in massimo 4 turni di ricerca mirata i componenti UI/dominio coinvolti e i relativi numeri di riga `#Lxx-Lyy`, senza leggere interi file monolitici.
+3. Progetta la soluzione dal punto di vista dell'utente finale: massimizza l'utilità immediata, sposta ogni calcolo sul software, accetta input permissivi ed elimina click, scelte inutili e gergo tecnico.
+4. Definisci l'**Oracolo di Test di Dominio (Beta)**: specifica i test di scenario/accettazione che provano il minor numero di passaggi e feedback chiaro.
+5. Restituisci: Rigo 1 **Skill Attive (Beta)**, (a) Flusso Utente Ideale & File/Righe Esatte `#Lxx-Lyy` coinvolte, (b) Comodità pratica difesa per l'utente (in 1 frase priva di gergo), (c) Specifica/Codice dell'Oracolo di Test di Dominio, (d) Frizioni tecniche da bandire.
 5. **Replica Peer-to-Peer al Mediatore (`send_message`)**: se risvegliato da `Subagent Gamma` (`sender=<id-gamma>`), rispondi con `send_message(Recipient: "<id-gamma>", Message: "...")` e termina il turno.
 ```
 

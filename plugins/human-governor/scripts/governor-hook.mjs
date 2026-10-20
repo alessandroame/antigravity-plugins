@@ -70,6 +70,14 @@ export function loadGovernorState(stateFile) {
   }
 }
 
+const SUBAGENT_SIGNATURE_RX =
+  /Skill Attive \((?:Alpha|Beta|Gamma)\)|Agisci esclusivamente come \*\*Subagent|Subagent (?:Alpha|Beta|Gamma)\b|Dialectical Mediator & Conflict Resolver|You have been spawned as a subagent|<subagent_context>|Oracolo di Test (?:Tecnico|di Dominio)/i;
+
+export function isSubagentTranscriptHead(headText) {
+  if (typeof headText !== 'string' || !headText) return false;
+  return SUBAGENT_SIGNATURE_RX.test(headText);
+}
+
 export function discoverRecentBrainSessions(brainDir, nowMs, wipWindowMinutes) {
   const discovered = [];
   if (!existsSync(brainDir)) return discovered;
@@ -87,12 +95,12 @@ export function discoverRecentBrainSessions(brainDir, nowMs, wipWindowMinutes) {
         const st = statSync(transcriptPath);
         if (st.mtimeMs < cutoffMs) continue;
 
-        // Read the first 4KB to verify it is a direct user chat (<USER_REQUEST>) and not a subagent
-        const head = readFileSync(transcriptPath, 'utf-8').slice(0, 4096);
+        // Read the first 8KB to verify it is a direct user chat (<USER_REQUEST>) and not a subagent
+        const head = readFileSync(transcriptPath, 'utf-8').slice(0, 8192);
         if (!head.includes('<USER_REQUEST>')) {
           continue;
         }
-        if (head.includes('Skill Attive (Alpha)') || head.includes('Skill Attive (Beta)')) {
+        if (isSubagentTranscriptHead(head)) {
           continue;
         }
 
@@ -170,11 +178,16 @@ async function main() {
     process.exit(0);
   }
 
-  // Skip if this transcript belongs to an internal subagent
+  // Skip if this transcript or prompt belongs to an internal subagent
+  const promptText = typeof payload.prompt === 'string' ? payload.prompt : '';
+  if (isSubagentTranscriptHead(promptText) || isSubagentTranscriptHead(rawInput)) {
+    process.stdout.write('{}\n');
+    process.exit(0);
+  }
   if (payload.transcriptPath && existsSync(payload.transcriptPath)) {
     try {
-      const snippet = readFileSync(payload.transcriptPath, 'utf-8').slice(0, 4096);
-      if (snippet.includes('Skill Attive (Alpha)') || snippet.includes('Skill Attive (Beta)')) {
+      const snippet = readFileSync(payload.transcriptPath, 'utf-8').slice(0, 8192);
+      if (isSubagentTranscriptHead(snippet)) {
         process.stdout.write('{}\n');
         process.exit(0);
       }
