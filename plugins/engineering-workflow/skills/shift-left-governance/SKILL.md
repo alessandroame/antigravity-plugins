@@ -16,14 +16,14 @@ Questa skill guida l'impostazione e l'esecuzione del protocollo **Shift-Left**: 
 Prima di dichiarare completato qualsiasi task o proporre modifiche per il commit:
 
 ```
-[Gate 1: Pre-Design] ➔ [Gate 2: In-Flight Core/UI] ➔ [Gate 3: Automated Suite] ➔ [Gate 4: Geometry] ➔ [Gate 5: Briefing]
+[Gate 1: Pre-Design] ➔ [Gate 2: In-Flight Core/UI] ➔ [Gate 3: Automated Suite] ➔ [Gate 4: Browser Probe] ➔ [Gate 5: 4-Measure Receipt]
 ```
 
 ### Gate 1: Conformità Pre-Design (Ex-Ante)
 Verificare preliminarmente all'apertura del codice o markup:
 1. **Occam's Razor**: nessun controllo o rotta duplicata rispetto alla barra di navigazione globale.
 2. **Touch Ergonomics**: target >= 48 x 48 px per elementi interattivi touch.
-3. **Anti-Naked Numbers**: nessuna grandezza numerica isolata priva di unità di misura, etichetta o contesto semantico.
+3. **Anti-Naked Numbers**: nessuna grandezza numerica isolata priva di unità di misura, con `white-space: nowrap` sul gruppo `valore + unità`.
 4. **Theme & Contrast**: supporto preventivo per contrasti elevati (WCAG 2.1 AA >= 4.5:1).
 
 ### Gate 2: Rigore di Implementazione In-Flight
@@ -36,7 +36,6 @@ Durante la scrittura del codice:
 ### Gate 3: Test Suite di Governance Automatizzata (`npm test`)
 Verificare che la suite esegua asserzioni statiche sul codice:
 ```javascript
-// Esempio asserzione isolamento core
 const coreFiles = readdirSync('core').filter(f => f.endsWith('.js'));
 for (const file of coreFiles) {
   const content = readFileSync(join('core', file), 'utf-8');
@@ -44,13 +43,18 @@ for (const file of coreFiles) {
 }
 ```
 
-### Gate 4: Ispezione Geometrica e Viewport
-1. **Mobile Width Resilience**: visualizzazione fluida su schermi 360px–390px senza barre di scorrimento orizzontali parassite.
-2. **Dynamic Viewport**: impiego di unità `100dvh` per prevenire il troncamento da barre di navigazione mobili.
-3. **Flexbox Clipping Guard**: inclusione di `min-width: 0` e `flex-shrink: 0` su contenitori con testo a rischio overflow.
+### Gate 4: Collaudo Browser, Sonda Geometrica e Flusso Interattivo Reale
+Per ogni modifica UI (`.html`, `.css`, `ui/`), è vietato chiudere il task con il solo `npm test` o con un giudizio "a occhio" sullo screenshot:
+1. **Doppio Viewport Reale (`360x800` Mobile & `1280x800` Desktop)**: avviare il browser ed eseguire [`scripts/ui-geometry-probe.js`](./scripts/ui-geometry-probe.js) via `evaluate_script` o Playwright (`pass: true`, `0` overflow orizzontali, `0` controlli coperti da overlay `elementFromPoint`, `0` testi tagliati, touch target `>= 44px`).
+2. **Budget Schermo 60/40 e Gerarchia in 3 Secondi**: verificare che mappe/grafici primari abbiano `>= 60%` dell'altezza viewport libera a riposo, massimo 4 card *above-the-fold* su mobile e `white-space: nowrap` sui gruppi `valore + unità` (`24 km/h`).
+3. **Flusso Utente (`Prima -> Click/Input -> Dopo`)**: eseguire almeno 1 interazione reale, verificando che l'effetto del click sia visibile subito senza scrollare e con `0` errori console.
 
-### Gate 5: Briefing di Consegna con Evidenza Pre-Flight
-La risposta di consegna deve riepilogare sinteticamente l'esito dei 5 Gate, certificando l'assenza di regressioni.
+### Gate 5: Briefing di Consegna e Ricevuta Oggettiva a 4 Misure
+La risposta di consegna espone in chiaro (*0-Click*) max 3–5 bullet e in `<details>` (*1-Click*) la **Ricevuta a 4 Misure** (se tutte le misure sono già regolari al primo controllo, applicare **0 modifiche** per il Rasoio di Occam):
+1. **Budget Schermo**: `%` libera per il contenuto primario (`>= 60%`).
+2. **Scala Tipografica & Unità**: `Dato primario px` vs `Etichetta px` e unità inseparabili (`nowrap`).
+3. **Esito Sonda (`ui-geometry-probe.js`)**: `overflow: 0, coveredControls: 0, clippedText: 0, smallTargets: 0`.
+4. **Flusso Interattivo (`Prima -> Dopo`)**: azione eseguita, riscontro visivo senza scroll e `consoleErrors: 0`.
 
 ---
 

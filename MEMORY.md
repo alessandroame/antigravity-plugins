@@ -39,7 +39,7 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit√
 
 ---
 
-## 3. Ergonomia Chat (~600px), Markdown GFM & Visualizzazione Flussi
+## 3. Ergonomia Chat (~600px), Collaudo Visivo UI & Flussi
 
 - **Riga Vuota Obbligatoria dopo `</summary>` e Igiene Code Span / LaTeX in GFM**:
   - *Insidia*: Incollare codice subito dopo `</summary>` disattiva il parser Markdown; annidare backtick escapati (`` `(Skill: \`...\`)` ``), asterischi dentro code span singoli (`` `**...**` ``) o formule LaTeX (`$\le ...$`) rompe il rendering e il font in chat.
@@ -47,6 +47,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit√
 - **Divieto di `flowchart LR` e Selettore Dual-Tab (`code-inspector`)**:
   - *Insidia*: Nella colonna di chat (~600px), i grafi `flowchart LR` con >= 4 nodi scalano il testo a dimensioni illeggibili.
   - *Regola*: Usare il widget `<agent-embed>` dual-tab (`Albero Testuale` a spina verticale max 65 char + `Grafico a Blocchi`) o `flowchart TD` con etichette <= 28 char.
+- **Collaudo Browser Gate 4 (`ui-geometry-probe.js`) e Ricevuta a 4 Misure (Zero Giudizi "A Occhio" e Zero Quote Artificiali)**:
+  - *Insidia*: I test Node.js non verificano il layout CSS; guardare uno screenshot "a occhio" porta a bias di autoconferma (*"vedo i box -> tutto ok"* anche con mappe soffocate o bottoni coperti), mentre imporre una quota fissa di difetti da trovare viola il Rasoio di Occam facendo inventare problemi inesistenti.
+  - *Regola*: Per ogni modifica UI eseguire nel browser (`360x800` e `1280x800`) [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js) e riportare la **Ricevuta a 4 Misure** (Budget schermo `>= 60%`, Gerarchia 3s + `nowrap` unit√†, Sonda `violations: 0`, Flusso `Prima -> Click -> Dopo` visibile senza scroll), applicando **0 modifiche** se gi√† conforme.
 
 ---
 

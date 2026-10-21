@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-21 — Collaudo Browser Gate 4 (`ui-geometry-probe.js`) e Ricevuta Visiva a 4 Misure (`engineering-workflow`, `laws-of-ux`)
+- **Tipo**: Evoluzione Governance Visiva & Verifica Browser (`plugins/engineering-workflow/`, `plugins/laws-of-ux/`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md)
+- **Sintesi**:
+  - Introdotta la sonda browser [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js) (`2/2 test PASS` in [`ui-geometry-probe.test.mjs`](file:///c:/github/antigravity-plugins/tests/ui-geometry-probe.test.mjs)) e la **Ricevuta Oggettiva a 4 Misure** (Budget schermo `>= 60%`, Gerarchia 3s + `nowrap` unità, Sonda `violations: 0`, Flusso `Prima -> Click -> Dopo` visibile senza scroll), vietando i giudizi generici "a occhio" e le quote artificiali di difetti (`0 modifiche` se già conforme).
+
+---
+
 ## 2026-10-20 — Evoluzione `cognitive-persistence` v1.5.0 (Kanban Remoto Universale, Coda Parallela Anti-Conflitto e Kit Vocale Gemini Live / AI Studio)
 - **Tipo**: Evoluzione Architettura Cognitiva & Esecuzione Parallela (`plugins/cognitive-persistence/` v1.5.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md)
@@ -101,27 +109,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Sintesi**:
   - Obbligo di emettere la prima stima (`· ETA tot ~Ns`) **entro il 2° turno** scrivendola sia in `toolAction` sia in `toolSummary` dell'ultimo tool di lettura del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`).
   - Corretto `collector.mjs` per registrare `etaOutcome` su `Stop` (`--finalize`) anche quando `newSteps.length === 0` e preservare `lastIndex` in `.cursor_<id>.json`.
-
----
-
-## 2026-10-15 — Audit Stato Installazione Plugin Globali e Sincronizzazione `config.json`
-- **Tipo**: Infrastruttura & Discovery Runtime (`scripts/sync-to-global.mjs`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-15_global_and_project_plugin_sync_audit.md`](file:///.agents/worklog.d/2026-10-15_global_and_project_plugin_sync_audit.md)
-- **Sintesi**:
-  - Rimossa la junction residua su `telemetry-analytics`, sincronizzati fisicamente tutti i 9 plugin in `~/.gemini/config/plugins/` con abilitazione in `~/.gemini/config/config.json` e verificato il caricamento tramite endpoint RPC `GetAllPlugins`.
-
----
-
-## 2026-10-15 — Integrazione Anti-Rationalization Tables e Posizionamento Agentic Harness Engineering
-- **Tipo**: Governance Cognitiva & Documentazione (`engineering-workflow`, `execution-guard`, `code-inspector`, `cognitive-persistence`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-15_anti-rationalization-tables-and-harness-positioning.md`](file:///.agents/worklog.d/2026-10-15_anti-rationalization-tables-and-harness-positioning.md)
-- **Sintesi**:
-  - Integrate le *Anti-Rationalization Tables* nei 4 plugin operativi principali per bloccare le scorciatoie del modello su test, numeri di riga, task asincroni e cattura note, e bonificato `README.md` rimuovendo tutte le emoji decorative dalle intestazioni.
-
----
-
-## 2026-10-15 — Silenziamento `ephemeralMessage` in `eta-injector.mjs` e Stima Riferita all'Intera Lavorazione
-- **Tipo**: Telemetria & Pulizia Output (`telemetry-analytics` v1.2.0–1.3.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-15_telemetry-eta-pill-only.md`](file:///.agents/worklog.d/2026-10-15_telemetry-eta-pill-only.md), [`.agents/worklog.d/2026-10-15_telemetry-live-eta.md`](file:///.agents/worklog.d/2026-10-15_telemetry-live-eta.md)
-- **Sintesi**:
-  - Silenziato `stdout` (`{}\n`) in `eta-injector.mjs` per eliminare i blocchi `[TELEMETRY-ETA-CLOCK]` dagli output dei tool, sottraendo le pause `ask_question` dal calcolo di `Elapsed` e introducendo l'auto-calibrazione `etaCalibrationFactor`.

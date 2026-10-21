@@ -40,11 +40,15 @@ Questo documento definisce gli standard per il controllo di versione, la localiz
 
 ## 5. I 5 Gate di Qualità Shift-Left
 
-1. **Gate 1 (Pre-Design UX & Dominio)**: zero controlli ridondanti, touch target >= 48px, zero numeri isolati privi di unità e contrasto WCAG AA/AAA.
+1. **Gate 1 (Pre-Design UX & Dominio)**: zero controlli ridondanti, touch target >= 48px, zero numeri isolati privi di unità (`white-space: nowrap` su `valore + unità`) e contrasto WCAG AA/AAA.
 2. **Gate 2 (Rigore In-Flight)**: isolamento headless del core, store reattivo unico (SSOT) e inglese esclusivo nel codice.
 3. **Gate 3 (Test Suite di Governance)**: eseguire test statici automatici (`npm test`) per validare assenza di DOM nel core, assenza di token vietati e integrità CSS.
-4. **Gate 4 (Ispezione Geometrica)**: verificare su viewport mobile (`360px–390px`) l'assenza di overflow orizzontale e troncamenti flexbox.
-5. **Gate 5 (Briefing di Consegna a 1-Click)**: in chiaro (*0-Click*) max 3–5 bullet di 1 riga ed esito sintetico dei test; in `<details>` (*1-Click*) la tabella dei file modificati e le evidenze dei Gate 1–4.
+4. **Gate 4 (Collaudo Browser, Sonda Geometrica & Flusso Reale)**:
+   - Per ogni modifica UI (`.html`, `.css`, `ui/`), aprire il browser reale su mobile (`360x800`) e desktop (`1280x800`).
+   - Eseguire la sonda [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js): `0` overflow orizzontale, `0` controlli coperti da overlay (`elementFromPoint`), `0` testi troncati (`scrollWidth > clientWidth`), touch target `>= 44px` e area libera mappa/canvas `>= 60%`.
+   - Eseguire almeno **1 flusso interattivo (`Prima -> Click/Input -> Dopo`)**, verificando che il cambio di stato sia visibile senza scrollare e con `0` errori in console.
+5. **Gate 5 (Briefing di Consegna a 1-Click & Ricevuta a 4 Misure)**:
+   - In chiaro (*0-Click*) max 3–5 bullet di 1 riga ed esito dei test; in `<details>` (*1-Click*) allegare la **Ricevuta Oggettiva a 4 Misure** (se tutte passano al primo colpo, applicare **0 modifiche** per il Rasoio di Occam): (1) `%` schermo libera per mappa/contenuto primario (`>= 60%`), (2) scala tipografica (`Dato primario px` vs `Etichetta px`) e unità inseparabili, (3) JSON della sonda geometrica (`violations: 0`), (4) esito del flusso `Prima -> Click -> Dopo`.
 
 ---
 
@@ -53,6 +57,8 @@ Questo documento definisce gli standard per il controllo di versione, la localiz
 | Razionalizzazione Vietata | Vincolo Inaggirabile (Rebuttal) |
 | :--- | :--- |
 | *"La modifica è di poche righe, non rieseguo i test."* | Eseguire sempre la test suite e riportare l'esito reale prima di chiudere il task. |
+| *"I test Node.js (`npm test`) passano, consegno la UI senza aprire il browser."* | Node.js non esegue il layout CSS; ogni modifica UI richiede il Gate 4 nel browser reale. |
+| *"Ho guardato lo screenshot e a occhio sembra tutto ok."* | Vietato il giudizio visivo generico: riportare la Ricevuta a 4 Misure e l'output di `ui-geometry-probe.js` (0 modifiche se già conforme). |
 | *"Applico subito un fix probabile senza trace."* | Se la causa non è certa staticamente, usare `[DEBUG-TRACE #X]` per isolare il guasto. |
 | *"Uso `git add .` per comodità."* | Vietato lo staging massivo: usare `git status --porcelain` e aggiungere file per percorso. |
 | *"Lascio questo calcolo matematico nella vista UI."* | La logica di dominio appartiene al core headless testabile in Node.js puro. |

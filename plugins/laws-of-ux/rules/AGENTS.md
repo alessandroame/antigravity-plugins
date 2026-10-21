@@ -15,6 +15,7 @@ Applica queste regole durante la progettazione, scrittura o revisione di interfa
 
 ## 2. Layout, Raggruppamento Visivo & Card (Gestalt)
 - **Proximity & Common Region**: raggruppa elementi correlati ravvicinandoli e racchiudendoli in card o confini espliciti (max 1 livello di contenimento perimetrale).
+- **Gerarchia in 3 Secondi (Anti-"Muro di Box")**: mantieni massimo **4 card/gruppi visibili *above-the-fold*** su mobile (`360x800`) con **3 livelli netti di scala tipografica** (Dato Primario Hero `24–32px bold` -> Secondario `14–16px` -> Etichetta/Unità `11–12px`) e `white-space: nowrap` sui gruppi `valore + unità` (`24 km/h`, `1850 m`).
 - **Similarity & Connectedness**: mantieni stile identico per funzioni uguali e usa connettori visivi per flussi sequenziali.
 - **Prägnanz & Occam's Razor**: rimuovi decorazioni, gradienti o controlli ridondanti.
 
@@ -46,6 +47,7 @@ Applica queste regole durante la progettazione, scrittura o revisione di interfa
 ---
 
 ## 7. Standard Outdoor, Field & High-Glare (Uso con Guanti / Sole Diretto)
+- **Budget Schermo 60/40 (Anti-Soffocamento Mappa/Grafico)**: nelle viste operative (mappe di volo, meteogrammi, telemetria), riserva **>= 60% dell'altezza viewport (`360x800`)** al canvas primario senza scroll; header, barre filtri e HUD flottanti non devono superare il `40%` né occludere controlli (`elementFromPoint`).
 - **Touch Floor >= 48px**: estendi i controlli compatti tramite padding trasparente o `::before`.
 - **Caroselli Monoriga (`touch-action: pan-x`)**: vieta il `flex-wrap` multi-riga per barre di filtri/date; usa scorrimento orizzontale con scroll-snap.
 - **Cooperative Gestures & `100dvh`**: usa `touch-action: pan-y` sui canvas/mappe per non bloccare lo scroll verticale e adotta `100dvh` anziché `100vh`.
@@ -56,3 +58,9 @@ Applica queste regole durante la progettazione, scrittura o revisione di interfa
 ## 8. Ergonomia Cognitiva dell'Output in Chat (`~600px`)
 - **Progressive Disclosure (0-Click + 1-Click `<details>`)**: esponi in chiaro solo la sintesi decisionale (`800–1.200` char, 3–5 bullet di 1 riga) e racchiudi tabelle, codice e dettagli in blocchi `<details>` chiusi di default.
 - **Von Restorff Tipografico**: usa il grassetto solo sull'etichetta iniziale del bullet (<= 15% del testo) e isola a fine messaggio l'unica domanda o conferma per l'utente.
+
+---
+
+## 9. Metro di Giudizio Visivo nel Browser (Zero Giudizi "A Occhio")
+- **Divieto di Auto-Conferma Generica e di Quote Artificiali**: quando ispezioni uno screenshot nel browser, è vietato dire *"sembra tutto ok"* senza misure, ed è vietato inventare difetti se i controlli passano (**0 modifiche** per il Rasoio di Occam).
+- **Ricevuta di Collaudo a 4 Misure**: valida sempre (1) **Budget schermo** (`>= 60%` libero per mappa/grafico), (2) **Scala gerarchica in 3s** e unità inseparabili (`nowrap`), (3) **Sonda geometrica** (`0` sovrapposizioni `elementFromPoint`, `0` testi tagliati, `0` scroll orizzontali su `360x800`), (4) **Flusso `Prima -> Click -> Dopo`** visibile nel campo visivo corrente senza scrollare.

@@ -1,6 +1,6 @@
 # Protocollo Dialettico Dual-Track, Auto-Triage & Mediatore (`/skizzo`)
 
-Governa l'esecuzione parallela (**Systems & Technical Purity** vs **Domain & User Experience Advocate**) con **Filtro Automatico a Priori (`FAST-PASS` vs `DUAL-TRACK`)**, **Auto-Routing Skill**, **Mediatore Interattivo** e restituzione **Human-First**.
+Governa l'esecuzione parallela (**Systems & Technical Purity** vs **Domain & User Experience Advocate**) con **Filtro a Priori (`FAST-PASS` vs `DUAL-TRACK`)**, **Auto-Routing Skill**, **Mediatore** e output **Human-First**.
 
 ---
 
@@ -9,7 +9,7 @@ Governa l'esecuzione parallela (**Systems & Technical Purity** vs **Domain & Use
 1. **Inattivo a Inizio Chat (`OFF`)**: all'apertura è `OFF` (`SKIZZO = OFF`, `MEDIATOR = OFF`).
 2. **Persistenza Sticky in Sessione (`ON` finché non fermato)**:
    - Attivato con `/skizzo`, `/skizzo on`, `/skizzo --mediator` (`-m`) o `/skizzo <task>`, `SKIZZO = ON` **resta attivo per tutti i messaggi della sessione** (anche dopo un `FAST-PASS`).
-   - **Verifica a Inizio Turno**: se nello storico è stato attivato `/skizzo` o compare `MODALITÀ SKIZZO ATTIVA` senza stop successivo, eseguire il **Gate 0**.
+   - **Verifica a Inizio Turno**: se nello storico compare `/skizzo` o `MODALITÀ SKIZZO ATTIVA` senza stop successivo, eseguire il **Gate 0**.
 3. **Override (`--force` / `--skip`) e Stop (`/skizzo stop`)**:
    - **Forza 2 Agenti (`--force` / `-f` / `"forza skizzo"` / `"usa skizzo"`)**: salta il Gate 0 ed esegue il **Ciclo a 4 Fasi (`DUAL-TRACK`)**.
    - **Salta 1 Turno (`--skip` / `--fast` / `"senza skizzo"` / `"risposta veloce"`)**: esegue **`FAST-PASS` (`0` subagent)** mantenendo `SKIZZO = ON`.
@@ -47,11 +47,11 @@ Selezionare **1–2 skill verticali** per binario (**vietate meta-skill** come `
 2. **Mediatore (`MEDIATOR = ON`)**: invocare **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, `TypeName: "research"`, `<id-gamma>`)** che interroga `<id-alpha>` e `<id-beta>` via `send_message` (**max 1 round**), cede il turno in silenzio e invia il **Lodo Arbitrale** al `parent`.
 
 ### Fase 3 & Fase 4 — Sintesi, Doppio Oracolo e Restituzione "Human-First"
-1. **Unificazione**: semplicità esterna di `Beta` sostenuta dal core headless di `Alpha` (`--proto` su 2 Git Worktrees se richiesto).
+1. **Unificazione**: semplicità di `Beta` sostenuta dal core headless di `Alpha` (`--proto` su 2 Git Worktrees se richiesto).
 2. **Banner `[!IMPORTANT]` al Rigo 1**:
    `> [!IMPORTANT]`
    `> MODALITÀ SKIZZO ATTIVA (DUAL-TRACK | +MEDIATORE | +PROTO) — Subagent: [Agente Tecnico (Alpha)](conversation://<id-alpha>) (Skill: <skills-alpha>) · [Agente Utente (Beta)](conversation://<id-beta>) (Skill: <skills-beta>) · [Mediatore (Gamma)](conversation://<id-gamma>)`
-3. **Corpo Visibile (Zero Gergo & Zero LaTeX fuori da `<details>`)**: esporre in italiano semplice **Cosa cambia per te**, **Comodità difesa dall'Agente Utente (Beta)**, **Problema evitato dall'Agente Tecnico (Alpha)**, **Su cosa non erano d'accordo (e perché vince questa soluzione)** — **Controlli**: `Tutti i test superati (X/X OK)`. Racchiudere **Matrice Dialettica**, oracoli e file in `<details>` (chiuso di default, riga vuota dopo `</summary>`).
+3. **Corpo Visibile (Zero Gergo & Zero LaTeX fuori da `<details>`)**: esporre in italiano semplice **Cosa cambia per te**, **Comodità difesa dall'Agente Utente (Beta)**, **Problema evitato dall'Agente Tecnico (Alpha)**, **Su cosa non erano d'accordo (e perché vince questa soluzione)** — **Controlli**: `Tutti i test superati (X/X OK)`. Racchiudere **Matrice Dialettica**, oracoli e file in `<details>` (chiuso, riga vuota post-`</summary>`).
 
 ---
 
