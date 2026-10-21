@@ -278,8 +278,8 @@ function validatePlugin(pluginDir, existingNames) {
       if (ruleContent.startsWith('---')) {
         warnings.push('rules/AGENTS.md: contiene frontmatter YAML. Le regole dei plugin devono essere markdown puro senza frontmatter.');
       }
-      if (agentsRuleBytes > 6500) {
-        errors.push(`rules/AGENTS.md: peso eccessivo (${agentsRuleBytes} byte > 6500 byte max). Compattare per preservare il token budget inline.`);
+      if (agentsRuleBytes > 6000) {
+        errors.push(`rules/AGENTS.md: peso eccessivo (${agentsRuleBytes} byte > 6000 byte max). Compattare per preservare il token budget inline.`);
       }
     }
     const ruleEntries = readdirSync(rulesDir, { withFileTypes: true });

@@ -7,21 +7,21 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 
 ## 1. Architettura Plugin, Regole & Skill Loader
 
-- **Purezza Markdown delle Regole (`rules/AGENTS.md`)**:
-  - *Insidia*: Inserire frontmatter YAML (`---`) in `rules/*.md` fa sì che il loader tratti il file come blocco raw anziché iniettarlo nel system prompt.
-  - *Regola*: Zero blocchi `---` di apertura nei file sotto `rules/` (verificato da `scripts/validate.mjs`).
-- **Frontmatter Obbligatorio delle Skill (`skills/<name>/SKILL.md`)**:
-  - *Insidia*: Skill prive di `name` o `description` YAML non vengono indicizzate nella fase 1 del system prompt.
-  - *Regola*: Includere sempre `name` (`kebab-case`) e `description` (80–250 caratteri con trigger esplicito `Use this skill when...`).
+- **Purezza Markdown delle Regole (`rules/AGENTS.md <= 6.000 B`) e Regole Condizionali Workspace**:
+  - *Insidia*: Inserire frontmatter YAML (`---`) in `plugins/*/rules/AGENTS.md` impedisce l'iniezione inline; al contrario, lasciare privi di frontmatter (`trigger: model_decision`) i file verticali `.agents/rules/*.md` di un workspace li inietta integralmente ad ogni turno (+8.000 token/turno).
+  - *Regola*: Mantenere `plugins/*/rules/AGENTS.md` in markdown puro `<= 6.000 B` senza frontmatter (`validate.mjs`); usare `trigger: model_decision` + `description` + `globs` sui file verticali `.agents/rules/*.md` dei singoli progetti.
+- **Frontmatter Obbligatorio delle Skill (`skills/<name>/SKILL.md`) e Igiene Catalogo Globale**:
+  - *Insidia*: Skill prive di `name`/`description` non vengono indicizzate; d'altra parte lasciare decine di skill inutilizzate in `~/.gemini/config/skills/` o `description > 250` char nei plugin di terze parti brucia migliaia di token ad ogni turno.
+  - *Regola*: Includere sempre `name` (`kebab-case`) e `description` (`80–250` caratteri con trigger `Use this skill when...`), e archiviare fuori da `~/.gemini/config/skills/` le skill di domini non attivi.
 - **Vincoli Manifest (`plugin.json`)**:
   - *Insidia*: Più di 3 elementi in `suggestedPrompts` o `version` non SemVer rompono la validazione e la UI di avvio rapido.
   - *Regola*: Usare sempre versione `X.Y.Z` e massimo 3 `suggestedPrompts`.
 - **Divieto di Directory Junctions su Windows & Sync Fisico (`npm run sync`)**:
   - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`) e non effettua discovery da `.agents/plugins/` nei workspace.
   - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
-- **Plugin On-Demand, Persistenza Sticky `Auto-Smart`, Gate 0 `FAST-PASS` e Output Human-First (`skizzo`)**:
-  - *Insidia*: Nei turni 2..N Antigravity non ri-inietta `SKILL.md` (rischio ritorno a `OFF`), ma lanciare 2 subagent anche su comandi Git/test, sola lettura, conferme (*"fallo"*) o micro-edit spreca ~110s; inoltre un subagent che finisce prima rischia di stampare testo intermedio e il gergo/LaTeX rompe la leggibilità.
-  - *Regola*: Mantenere `rules/AGENTS.md` <= 6.500 B con *Persistenza Sticky `Auto-Smart`* e **Gate 0 a Priori** (`triage.mjs`: `FAST-PASS` a `0` subagent con banner `[!NOTE]` su task diretti mantenendo `SKIZZO = ON`; `DUAL-TRACK` sui bivi progettuali; override `--force`/`--skip`), silenzio intermedio (`0 byte`) e 4 punti *Human-First* a 0-Click.
+- **Modalità `Auto-Skizzo Silente` (`AUTO`), Gate 0 `FAST-PASS` (`silentFastPass`) e Auto-Apprendimento `L1..L3` (`skizzo`, `proactive-mentorship`)**:
+  - *Insidia*: Mostrare il banner `[!NOTE] FAST-PASS` sull'88% dei turni non-skizzo inquina la chat, mentre ignorare clausole mid-sentence (*"non agire è solo una domanda"*) o correggere bug 3D/fisici senza test numerici causa falsi positivi (+178s) e regressioni cicliche.
+  - *Regola*: Partire in `SKIZZO = AUTO` (`triage.mjs`: `silentFastPass: true` a `0 byte` di banner se implicito, `DUAL-TRACK` automatico su `score >= 4`, guardia `READONLY_OVERRIDE_PATTERNS`); ad ogni regressione o lezione trasversale (`session-miner.mjs`) applicare in autonomia l'aggiornamento `L3`/`L2b`/`L2a` (`<= 6.500 B`), `validate.mjs --all` e `npm run sync` con ricevuta a 1 riga.
 
 ---
 
@@ -69,9 +69,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Isolamento In-Flight (`/take-note`) vs Analisi Differita (`/review-notes`)**:
   - *Insidia*: Ispezionare il codice durante `/take-note` inquina il contesto del task attivo e analizza file in mutazione.
   - *Regola*: Durante `/take-note` toccare solo `NOTES.md` (e leggere `DESIDERATA.md`), rimandando l'ispezione del codice a `/review-notes`.
-- **Tetti Massimi e Rotazione dei 4 File Canonici (`MEMORY` <= 200, `WORKLOG` <= 300, `DESIDERATA` <= 150, `NOTES` <= 120)**:
-  - *Insidia*: Append numerati in `MEMORY.md`, copie integrali di ADR in `WORKLOG.md`, mini-ADR nelle celle di `DESIDERATA.md` o schede risolte multi-riga perpetue in `NOTES.md` gonfiano il contesto letto ad ogni sessione.
-  - *Regola*: `MEMORY.md` <= 200 righe (*in-place* per dominio); `WORKLOG.md` <= 300 righe (max 15 *Pointer Record* da 4–5 righe); `DESIDERATA.md` <= 150 righe (split *Backlog Attivo*/*Completate*, celle `Note` <= 160 char); `NOTES.md` <= 120 righe (header `Ultimo ID Assegnato` + tabella 1 riga max 10 risolte), con archiviazione eccedenze in `.agents/archive/` (verificato da `scripts/validate.mjs --all`).
+- **Tetti Massimi in Righe e Byte dei 4 File Canonici (`MEMORY <= 16 KB`, `WORKLOG <= 20 KB`, `DESIDERATA <= 150 righe`, `NOTES <= 120 righe`) e Filtro Subagent in `human-governor`**:
+  - *Insidia*: Righe molto lunghe (350+ char) gonfiano `MEMORY.md` (> 26 KB) e `WORKLOG.md` (> 43 KB) pur restando sotto il limite di righe; inoltre in `governor-hook.mjs` contare i transcript dei subagent (`Alpha`/`Beta`/`Gamma`) come sessioni umane attiva falsi positivi `CRITICAL` (`4–6 WIP`).
+  - *Regola*: Imporre `MEMORY.md <= 200 righe / 16 KB`, `WORKLOG.md <= 300 righe / 20 KB` (max 12–15 *Pointer Record*), `DESIDERATA.md <= 150 righe` (celle `<= 160` char) e `NOTES.md <= 120 righe` (`validate.mjs --all`). In `governor-hook.mjs`, filtrare i subagent con `isHumanConversationTranscript(tPath)`.
 - **Kanban Remoto Multi-Progetto, Sidecar `.agents/board-state.json` e Worktree Junctions (`board-engine.mjs`)**:
   - *Insidia*: Salvare percorsi `@file` lunghi dentro `DESIDERATA.md` sfora i 160 char; `git worktree add` non copia `node_modules`/`.venv`; l'app GitHub Mobile ignora `?title=`/`?body=` negli URL `issues/new`.
   - *Regola*: Salvare i `verifiedTouchSet` e i lock in `.agents/board-state.json` (`mergeDesiderataWithSidecar`), collegare `node_modules`/`.venv` nei worktree via junction (`linkWorktreeDependencies`) e usare su Gemini Live il blocco Copia 1-Tap o Function Calling API (`buildIssueFromVoicePayload`).

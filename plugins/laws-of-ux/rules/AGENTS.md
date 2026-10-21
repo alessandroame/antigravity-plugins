@@ -1,66 +1,17 @@
-# Laws of UX Engineering Rules
+# Laws of UX Engineering Rules (`laws-of-ux`)
 
-Applica queste regole durante la progettazione, scrittura o revisione di interfacce utente e nella formattazione delle risposte nella colonna di chat di Antigravity (`~600px`).
+Applica queste regole nella progettazione/revisione di interfacce utente e nella colonna di chat di Antigravity (`~600px`).
 
----
+## 1. Moduli, Layout (Gestalt) & Target Touch
+- **Input & Form (Postel, Tesler, Chunking)**: accetta input permissivi normalizzandoli via software; mantieni `<= 6–8` campi per step in colonna singola con `autocomplete`, distanza label-input `<= 8px` e tra gruppi `>= 16–24px`.
+- **Gerarchia in 3 Secondi (Anti-"Muro di Box")**: massimo **4 card/gruppi visibili *above-the-fold*** su mobile (`360x800`), max 1 livello di contenimento perimetrale, **3 livelli netti di scala tipografica** (Dato Primario Hero `24–32px bold` -> Secondario `14–16px` -> Etichetta/Unità `11–12px`) e `white-space: nowrap` sui gruppi `valore + unità` (`24 km/h`, `1850 m`).
+- **Fitts's Law & Von Restorff**: touch target **`>= 48 x 48 px`** su mobile (`>= 32px` desktop) con gap `>= 8px`; un solo pulsante primario ad alto contrasto nella zona del pollice.
 
-## 1. Moduli, Input & Validazione Dati
-- **Postel's Law**: accetta input permissivi (spazi, separatori) e normalizza i dati in modo trasparente.
-- **Form Field Reduction & Single Column**: mantieni <= 6–8 campi per step in layout a colonna singola.
-- **Parkinson's Law & Autofill**: dichiara sempre attributi `autocomplete` semantici.
-- **Proximity & Error Prevention**: distanza label-input <= 8px, tra gruppi >= 16–24px; previeni errori con vincoli UI nativi e suddividi stringhe lunghe (Chunking 4-4-4).
-- **Tesler's Law**: sposta la complessità calcolabile sul software anziché sull'utente.
+## 2. Reattività, Navigazione & Accessibilità (WCAG POUR)
+- **Doherty Threshold (`< 400ms`) & Caricamenti**: feedback visivo immediato (`:active`, anti-doppio tap); `< 1s` nessun loader, `1–3s` skeleton senza CLS, `3–10s` progress bar, `> 10s` stima + asincrono; finestra di Undo (`5–10s`) sulle azioni distruttive.
+- **Hick's & Miller's Law**: limita le scelte di primo livello a `3–5` opzioni e i gruppi informativi a `5–7` elementi.
+- **Safe Autonomy & WCAG 2.1 AA/AAA**: esponi la fonte dei suggerimenti automatici con override in 1 tap (`Cheap Takeover`); contrasto `>= 4.5:1` testo normale (`>= 7:1` indicatori critici outdoor), `:focus-visible` e semantica nativa.
 
----
-
-## 2. Layout, Raggruppamento Visivo & Card (Gestalt)
-- **Proximity & Common Region**: raggruppa elementi correlati ravvicinandoli e racchiudendoli in card o confini espliciti (max 1 livello di contenimento perimetrale).
-- **Gerarchia in 3 Secondi (Anti-"Muro di Box")**: mantieni massimo **4 card/gruppi visibili *above-the-fold*** su mobile (`360x800`) con **3 livelli netti di scala tipografica** (Dato Primario Hero `24–32px bold` -> Secondario `14–16px` -> Etichetta/Unità `11–12px`) e `white-space: nowrap` sui gruppi `valore + unità` (`24 km/h`, `1850 m`).
-- **Similarity & Connectedness**: mantieni stile identico per funzioni uguali e usa connettori visivi per flussi sequenziali.
-- **Prägnanz & Occam's Razor**: rimuovi decorazioni, gradienti o controlli ridondanti.
-
----
-
-## 3. Pulsanti, CTA & Target di Puntamento (Ergonomia)
-- **Fitts's Law**: touch target minimo **>= 48 x 48 px** su mobile/touch (>= 32 x 32 px desktop) con gap >= 8px.
-- **Thumb Zone & Von Restorff Effect**: colloca le azioni primarie nella zona del pollice e mostra **un solo pulsante primario ad alto contrasto** per vista.
-
----
-
-## 4. Reattività, Feedback & Latenza (Timing Hierarchy)
-- **Doherty Threshold (< 400ms)**: fornisci feedback visivo immediato a ogni interazione (`:active`, disabilitazione anti-doppio tap).
-- **Gerarchia Caricamenti**: < 1s nessun loader; 1–3s skeleton/spinner senza CLS; 3–10s barra di progresso; > 10s stima temporale ed esecuzione asincrona.
-- **Undo & Peak-End Rule**: offri una finestra di annullamento (5–10s) sulle azioni distruttive e cura gli stati di conferma finale.
-
----
-
-## 5. Navigazione, Tabelle & Riduzione delle Scelte
-- **Hick's & Miller's Law**: limita le scelte di primo livello a 3–5 opzioni e i gruppi informativi a 5–7 elementi.
-- **Serial Position & Jakob's Law**: posiziona le destinazioni chiave all'inizio e alla fine della barra di navigazione rispettando i pattern standard web/mobile.
-
----
-
-## 6. Interfacce Autonome, Generative & Accessibilità (WCAG POUR)
-- **Explainability, Cheap Takeover & Safe Autonomy**: esponi sempre la motivazione/fonte dei suggerimenti automatici, consenti l'override con 1 tap e richiedi conferma per azioni irreversibili.
-- **WCAG 2.1 AA/AAA**: contrasto minimo `4.5:1` per testo normale (`3:1` grande, `7:1` per indicatori critici outdoor), navigabilità completa da tastiera con `:focus-visible` e semantica HTML nativa.
-
----
-
-## 7. Standard Outdoor, Field & High-Glare (Uso con Guanti / Sole Diretto)
-- **Budget Schermo 60/40 (Anti-Soffocamento Mappa/Grafico)**: nelle viste operative (mappe di volo, meteogrammi, telemetria), riserva **>= 60% dell'altezza viewport (`360x800`)** al canvas primario senza scroll; header, barre filtri e HUD flottanti non devono superare il `40%` né occludere controlli (`elementFromPoint`).
-- **Touch Floor >= 48px**: estendi i controlli compatti tramite padding trasparente o `::before`.
-- **Caroselli Monoriga (`touch-action: pan-x`)**: vieta il `flex-wrap` multi-riga per barre di filtri/date; usa scorrimento orizzontale con scroll-snap.
-- **Cooperative Gestures & `100dvh`**: usa `touch-action: pan-y` sui canvas/mappe per non bloccare lo scroll verticale e adotta `100dvh` anziché `100vh`.
-- **Dual High-Contrast Theme & Feedback Tri-Modale**: supporta tema chiaro/scuro ad alto contrasto e combina sempre **Colore + Testo Esplicito + Simbolo Funzionale** per ogni stato di sicurezza.
-
----
-
-## 8. Ergonomia Cognitiva dell'Output in Chat (`~600px`)
-- **Progressive Disclosure (0-Click + 1-Click `<details>`)**: esponi in chiaro solo la sintesi decisionale (`800–1.200` char, 3–5 bullet di 1 riga) e racchiudi tabelle, codice e dettagli in blocchi `<details>` chiusi di default.
-- **Von Restorff Tipografico**: usa il grassetto solo sull'etichetta iniziale del bullet (<= 15% del testo) e isola a fine messaggio l'unica domanda o conferma per l'utente.
-
----
-
-## 9. Metro di Giudizio Visivo nel Browser (Zero Giudizi "A Occhio")
-- **Divieto di Auto-Conferma Generica e di Quote Artificiali**: quando ispezioni uno screenshot nel browser, è vietato dire *"sembra tutto ok"* senza misure, ed è vietato inventare difetti se i controlli passano (**0 modifiche** per il Rasoio di Occam).
-- **Ricevuta di Collaudo a 4 Misure**: valida sempre (1) **Budget schermo** (`>= 60%` libero per mappa/grafico), (2) **Scala gerarchica in 3s** e unità inseparabili (`nowrap`), (3) **Sonda geometrica** (`0` sovrapposizioni `elementFromPoint`, `0` testi tagliati, `0` scroll orizzontali su `360x800`), (4) **Flusso `Prima -> Click -> Dopo`** visibile nel campo visivo corrente senza scrollare.
+## 3. Standard Outdoor / High-Glare & Metro di Giudizio Visivo (4 Misure)
+- **Budget Schermo 60/40 & `100dvh`**: nelle viste operative (mappe, meteogrammi, telemetria 3D), riserva **`>= 60%` dell'altezza viewport (`360x800`)** al canvas primario senza scroll; header, filtri e HUD flottanti `<= 40%` senza occludere controlli (`elementFromPoint`). Usa `100dvh`, `touch-action: pan-x` sui caroselli monoriga (vietato `flex-wrap`) e tema chiaro/scuro ad alto contrasto con feedback Tri-Modale (Colore + Testo + Simbolo).
+- **Ricevuta di Collaudo a 4 Misure (Zero Giudizi "A Occhio")**: quando ispezioni uno screenshot nel browser è vietato dire *"sembra tutto ok"* senza misure o inventare difetti se i controlli passano (**0 modifiche** per il Rasoio di Occam). Valida sempre: (1) **Budget schermo** (`>= 60%` libero), (2) **Scala gerarchica in 3s** + `nowrap`, (3) **Sonda geometrica** (`0` sovrapposizioni `elementFromPoint`, `0` testi tagliati, `0` scroll orizzontali su `360x800`), (4) **Flusso `Prima -> Click -> Dopo`** visibile senza scrollare.

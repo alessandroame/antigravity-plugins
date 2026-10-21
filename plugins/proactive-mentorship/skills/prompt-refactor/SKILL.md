@@ -1,17 +1,19 @@
 ---
 name: prompt-refactor
 description: >-
-  Utilizza questa skill quando un prompt presenta ambiguità, attrito di workflow Antigravity o correzioni ricorrenti all'agente, applicando refactoring Before/After, comandi nativi AGY e addestramento L0-L3.
+  Utilizza questa skill quando un prompt presenta ambiguità, attrito di workflow Antigravity,
+  regressioni o correzioni all'agente, applicando auto-apprendimento continuo L0-L3,
+  session-miner.mjs e refactoring Before/After.
 ---
 
-# Prompt Refactoring, Antigravity Coaching & Agent Training Runbook
+# Prompt Refactoring, Antigravity Coaching & Autonomous Self-Learning Runbook
 
 ## 1. Obiettivo e Architettura a 3 Dimensioni
 
-Questa skill trasforma un momento di attrito (prompt vago, uso dispersivo dell'IDE o correzione ripetuta all'agente) in un kit **Copia-Incolla immediato** su 3 dimensioni:
+Questa skill trasforma un momento di attrito (prompt vago, regressione ricorrente o lezione emersa in sessione) in **auto-apprendimento immediato dell'agente (`Zero-Prompt Self-Learning`)** e in un kit operativo su 3 dimensioni:
 1. **Prompt Refactoring (Determinismo 1-Shot & Token Economy)**: iniezione dei percorsi esatti `@file`, perimetro chiuso e comando oggettivo di verifica.
 2. **Antigravity Workflow Coaching (Just-in-Time)**: selezione dell'**unica** scorciatoia nativa di Antigravity che dimezza i passaggi manuali per il task corrente (prontuario completo in [agy-commands-and-context.md](./references/agy-commands-and-context.md)).
-3. **Agent Training & Harness Engineering (`L0..L3`)**: trasformazione delle correzioni ricorrenti dell'utente in memoria di progetto, regole `/learn`, skill procedurali o test automatici shift-left (prontuario completo in [agent-training-ladder.md](./references/agent-training-ladder.md)).
+3. **Autonomous Self-Learning & Harness Engineering (`L0..L3`)**: estrazione automatica delle lezioni apprese nella sessione (tramite [`scripts/session-miner.mjs`](./scripts/session-miner.mjs) e [agent-training-ladder.md](./references/agent-training-ladder.md)) con promozione diretta in test/sonde `L3`, skill `L2b`, regole `L2a` o `MEMORY.md` (`L1`), validazione `validate.mjs --all` e sincronizzazione `npm run sync`.
 
 ---
 
@@ -19,7 +21,7 @@ Questa skill trasforma un momento di attrito (prompt vago, uso dispersivo dell'I
 
 ### Step 1 — Verifica del Gate Anti-Disturbo
 Prima di emettere qualsiasi suggerimento, verifica la **Clausola di Silenzio**:
-- Il prompt cita già il file bersaglio (`@file` o funzione), tocca `<= 2 file` e non presenta rischi architetturali né correzioni ripetute?
+- Il prompt cita già il file bersaglio (`@file` o funzione), tocca `<= 2 file` e non presenta rischi architetturali né correzioni o lezioni da apprendere?
   - **SÌ**: **Taci (`0 byte` di coaching)** ed esegui direttamente il task richiesto.
   - **NO**: Procedi allo **Step 2**.
 
@@ -30,55 +32,42 @@ Identifica il collo di bottiglia principale dell'utente e seleziona **1 solo com
 | :--- | :--- | :--- |
 | **Requisito ampio con scelte di design implicite** | `/grill-me <obiettivo>` | L'agente intervista l'utente sui buchi logici prima di scrivere codice errato. |
 | **Modifica su `>= 3 file` o refactoring strutturale** | `/plan <obiettivo>` | Produce un piano d'azione approvabile prima di toccare il codice sorgente. |
-| **Confronto critico tra purezza tecnica e UX** | `/skizzo <obiettivo>` | Mette in parallelo l'Agente Tecnico (`Alpha`) e l'Agente Utente (`Beta`). |
+| **Confronto critico tra purezza tecnica e UX** | `/skizzo <obiettivo>` | Attivo di serie in `Auto-Skizzo Silente` sui bivi `score >= 4` (forzabile con `--force`). |
 | **Prompt telegrafico di poche parole da strutturare** | `/boost <bozza>` | Espande la richiesta con vincoli, casi limite e criteri di accettazione. |
 | **Task lungo autonomo con test di uscita chiaro** | `/goal <obiettivo e test>` | L'agente itera in autonomia finché tutti i controlli non sono verdi. |
 | **Chat oltre 25-30 turni o cambio di argomento** | `/compact` | Comprime lo storico liberando la finestra di contesto dalle scorie precedenti. |
-| **Correzione comportamentale ripetuta all'agente** | `/learn <regola>` | Persiste subito la correzione per le sessioni future senza ripeterla a mano. |
 | **Dubbio su quale prompt o skill funzioni meglio** | `/ab-bench <compito>` | Esegue una sfida cieca A/B misurando il Test delle 5 Dita e il tempo reale. |
 
-### Step 3 — Classificazione sull'Agent Training Ladder (`L0..L3`)
-Se l'utente sta correggendo l'agente o ripetendo una procedura a mano, scegli il gradino minimo efficace (dettagli e template in [agent-training-ladder.md](./references/agent-training-ladder.md)):
-1. **L0 (Prompt 1-Shot + Esempio Prima/Dopo)**: errore isolato dovuto a istruzione ambigua nel turno corrente.
-2. **L1 (`MEMORY.md` — Vincolo di Progetto)**: insidia specifica di questo codebase non intercettabile con una semplice regex.
-3. **L2a (`/learn` o `rules/AGENTS.md` — Regola Globale/Sempre Attiva)**: preferenza o divieto comportamentale valido su ogni turno.
-4. **L2b (`skills/<nome>/SKILL.md` — Procedura Riutilizzabile)**: checklist manuale di `>= 3 passaggi` che l'utente incolla ripetutamente.
-5. **L3 (`scripts/validate.mjs` o Test Unitario — Zero-Token Guard)**: errore verificabile via codice (`Regex`, `AST`, limite righe/byte, token vietati). **Regola d'Oro**: se può diventare un test `L3` in `< 20 righe`, non lasciarlo come testo in `L1`/`L2`.
+### Step 3 — Auto-Apprendimento Autonomo sull'Agent Training Ladder (`L0..L3`)
+Quando l'utente corregge l'agente, segnala una regressione (`"avviene ancora"`, `"non funziona"`) o chiede di analizzare le sessioni passate:
+1. **Mining Deterministico delle Sessioni (`session-miner.mjs`)**:
+   - Esegui `node plugins/proactive-mentorship/scripts/session-miner.mjs --limit 40` per estrarre le statistiche sui pattern ricorrenti (`sessionToPluginEvolution`, `repeatedRegressionOrFriction`, `readonlyQuestionWithClause`) e i candidati `L1..L3`.
+2. **Applicazione Autonoma sul Gradino Minimo Efficace (`Act -> Verify -> Sync -> 1-Line Receipt`)**:
+   - **L0 (Prompt 1-Shot + Esempio Prima/Dopo)**: ambiguità isolata nel turno corrente.
+   - **L1 (`MEMORY.md` + Test Invariante Locale)**: insidia specifica di questo codebase -> aggiorna *in-place* `MEMORY.md` **e** aggiungi un test unitario numerico/geometrico nel progetto per bloccare la regressione.
+   - **L2b (`skills/<nome>/SKILL.md` o `references/`)**: procedura riutilizzabile multi-step (`0 token` fissi nel System Prompt, `<= 200` righe).
+   - **L2a (`rules/AGENTS.md` — Regola Sempre Attiva)**: preferenza universale -> aggiorna *in-place* compattando il file sotto `<= 6.500 byte`.
+   - **L3 (`scripts/validate.mjs`, `triage.mjs`, `ui-geometry-probe.js`, Test Unitario — Zero-Token Guard)**: se può diventare un controllo eseguibile in `< 20 righe`, **codificalo sempre in `L3`**.
+3. **Validazione e Sync Automatico**:
+   - Esegui `node scripts/validate.mjs --all` e `npm run sync` (`scripts/sync-to-global.mjs`).
+   - Se la validazione fallisce, applica il rollback immediato (`git checkout --`) senza lasciare file rotti.
 
-### Step 4 — Confezionamento del Kit "Copia-Incolla" in `<details>`
-Genera l'avviso di 1 riga a 0-Click e racchiudi in `<details>` (con **riga vuota obbligatoria dopo `</summary>`**) solo i blocchi pertinenti, già precompilati con i percorsi reali del repository:
+### Step 4 — Ricevuta a 1 Riga (0-Click) e Dettagli in `<details>` (1-Click)
+Mostra in chiaro una sola riga con la ricevuta dell'auto-apprendimento (e l'opzione `"annulla regola"`) e racchiudi il diff e il kit in `<details>` (con **riga vuota obbligatoria dopo `</summary>`**):
 
 ```markdown
 > [!IMPORTANT]
-> **Scrutinio & Coaching**: [1 frase secca sul rischio/attrito e sull'unica mossa o regola consigliata].
+> **Auto-Apprendimento Applicato**: aggiornato `[target]` (`L3/L2`, `validate.mjs` + `npm run sync` OK) · Scrivi `"annulla regola"` per ripristinare.
 
 <details>
-<summary><strong>Proactive Mentorship, Mossa Antigravity & Agent Training (Espandi kit pronto all'uso)</strong></summary>
+<summary><strong>Dettagli Auto-Apprendimento, Mossa Antigravity & Kit Prompt (Espandi)</strong></summary>
 
-- **Rischio / Attrito Identificato**: [Causa tecnica, spreco di contesto o motivo dell'errore dell'agente]
-- **Alternativa Più Snella**: [Soluzione tecnica o di workflow più diretta]
-- **Mossa Antigravity Consigliata**: `[Comando esatto compilato, es. /grill-me ... | /compact | /plan ...]` — [1 riga sul vantaggio immediato]
-- **Pillola di Addestramento Agente (`L0..L3`)**: [Comando `/learn ...`, blocco `MEMORY.md`, bozza `SKILL.md` o asserzione `L3` pronta da incollare]
-
-#### Prompt Ricevuto:
-`[Testo o sintesi del prompt iniziale]`
+- **Lezione / Regressione Intercettata**: [Causa radice tecnica o pattern emerso dalla sessione]
+- **Intervento Applicato (`L1..L3`)**: [File aggiornati in-place e test `L3` aggiunto]
+- **Mossa Antigravity Consigliata**: `[Comando esatto compilato]` — [1 riga sul vantaggio immediato]
 
 #### Prompt Ottimizzato (Target Diretto & Verifica):
 `[Versione ottimizzata con @percorso/file esatti e comando di test]`
 
 </details>
 ```
-
----
-
-## 3. Compressione del Contesto per Payload LLM (Tabular Token Economy)
-
-Quando un prompt o una chiamata LLM deve trasmettere serie storiche, metriche o elenchi strutturati:
-- **Evitare Array JSON Verbosi**: non ripetere le chiavi JSON per decine di oggetti identici.
-- **Usare Tabelle Pipe-Delimited Compatte**:
-  ```text
-  Time | Wind (km/h) | Gusts | Dir | Temp (C) | Rain
-  10:00| 8           | 12    | S   | 18       | 0.0
-  11:00| 12          | 18    | SSW | 21       | 0.0
-  ```
-- **Beneficio**: riduzione fino all'80% dei token consumati nel contesto e minore latenza di risposta.

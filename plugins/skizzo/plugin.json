@@ -1,8 +1,8 @@
 {
   "name": "skizzo",
   "displayName": "Skizzo — Dual-Track Technical vs Domain Dialectics",
-  "description": "Orchestra una competizione e collaborazione parallela a doppio binario (Agente Tecnico Alpha vs Agente Utente Beta) persistente in sessione con filtro automatico a priori (Fast-Pass rapido per modifiche dirette vs Dual-Track sulle scelte di progetto), auto-routing skill, Mediatore (/skizzo --mediator) e sintesi Human-First.",
-  "version": "1.5.0",
+  "description": "Orchestra una competizione e collaborazione parallela a doppio binario (Agente Tecnico Alpha vs Agente Utente Beta) con modalità Auto-Skizzo Silente di serie (0 banner sui task diretti, auto-escalation sui bivi progettuali), Mediatore (/skizzo --mediator) e sintesi Human-First.",
+  "version": "1.6.0",
   "suggestedPrompts": [
     "Esegui /skizzo per attivare la modalità dual-track intelligente (con Fast-Pass automatico sui task diretti e /skizzo stop per fermarla)",
     "Attiva /skizzo --mediator e implementa questa funzionalità facendo negoziare Subagent Alpha (Tecnico) e Subagent Beta (Dominio) tramite Subagent Gamma (Mediatore)",

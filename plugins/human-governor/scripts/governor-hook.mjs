@@ -71,11 +71,33 @@ export function loadGovernorState(stateFile) {
 }
 
 const SUBAGENT_SIGNATURE_RX =
-  /Skill Attive \((?:Alpha|Beta|Gamma)\)|Agisci esclusivamente come \*\*Subagent|Subagent (?:Alpha|Beta|Gamma)\b|Dialectical Mediator & Conflict Resolver|You have been spawned as a subagent|<subagent_context>|Oracolo di Test (?:Tecnico|di Dominio)/i;
+  /Skill Attive \((?:Alpha|Beta|Gamma)\)|Agisci esclusivamente come \*\*Subagent|Sei \*\*Subagent (?:Alpha|Beta|Gamma)|Subagent (?:Alpha|Beta|Gamma)\b|Dialectical Mediator & Conflict Resolver|You have been spawned as a subagent|<subagent_context>|Oracolo (?:di Test )?(?:Tecnico|di Dominio)|\[Message\] timestamp=[^\]]+sender=[0-9a-f-]{36}/i;
 
 export function isSubagentTranscriptHead(headText) {
   if (typeof headText !== 'string' || !headText) return false;
   return SUBAGENT_SIGNATURE_RX.test(headText);
+}
+
+export function isHumanConversationTranscript(transcriptPath) {
+  if (!transcriptPath || !existsSync(transcriptPath)) return false;
+  try {
+    const head = readFileSync(transcriptPath, 'utf-8').slice(0, 12288);
+    if (!head.includes('<USER_REQUEST>') && !head.includes('"source":"USER_EXPLICIT"')) {
+      return false;
+    }
+    const firstUserIdx = head.indexOf('<USER_REQUEST>');
+    const firstAgentMsgIdx = head.search(/\[Message\] timestamp=[^\]]+sender=[0-9a-f-]{36}/i);
+    if (firstAgentMsgIdx !== -1 && (firstUserIdx === -1 || firstAgentMsgIdx < firstUserIdx)) {
+      return false;
+    }
+    const headBeforeFirstTool = firstUserIdx !== -1 ? head.slice(0, firstUserIdx + 1500) : head.slice(0, 2500);
+    if (isSubagentTranscriptHead(headBeforeFirstTool)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function discoverRecentBrainSessions(brainDir, nowMs, wipWindowMinutes) {
@@ -94,16 +116,9 @@ export function discoverRecentBrainSessions(brainDir, nowMs, wipWindowMinutes) {
       try {
         const st = statSync(transcriptPath);
         if (st.mtimeMs < cutoffMs) continue;
+        if (!isHumanConversationTranscript(transcriptPath)) continue;
 
-        // Read the first 8KB to verify it is a direct user chat (<USER_REQUEST>) and not a subagent
         const head = readFileSync(transcriptPath, 'utf-8').slice(0, 8192);
-        if (!head.includes('<USER_REQUEST>')) {
-          continue;
-        }
-        if (isSubagentTranscriptHead(head)) {
-          continue;
-        }
-
         let topic = 'Sessione attiva';
         const reqMatch = head.match(/<USER_REQUEST>\s*([\s\S]*?)\s*<\/USER_REQUEST>/);
         if (reqMatch && reqMatch[1]) {
@@ -172,32 +187,35 @@ async function main() {
   }
 
   const invocationNum = typeof payload.invocationNum === 'number' ? payload.invocationNum : 1;
-  // Only evaluate at the start of a new user turn (invocationNum === 1)
   if (invocationNum > 1) {
     process.stdout.write('{}\n');
     process.exit(0);
   }
 
-  // Skip if this transcript or prompt belongs to an internal subagent
   const promptText = typeof payload.prompt === 'string' ? payload.prompt : '';
   if (isSubagentTranscriptHead(promptText) || isSubagentTranscriptHead(rawInput)) {
     process.stdout.write('{}\n');
     process.exit(0);
   }
-  if (payload.transcriptPath && existsSync(payload.transcriptPath)) {
-    try {
-      const snippet = readFileSync(payload.transcriptPath, 'utf-8').slice(0, 8192);
-      if (isSubagentTranscriptHead(snippet)) {
-        process.stdout.write('{}\n');
-        process.exit(0);
-      }
-    } catch {
-      // Ignore read errors
+
+  const brainDir = getBrainDir();
+  const conversationId = payload.conversationId || 'unknown-session';
+  const resolvedTranscriptPath =
+    payload.transcriptPath ||
+    join(brainDir, conversationId, '.system_generated', 'logs', 'transcript.jsonl');
+
+  if (existsSync(resolvedTranscriptPath)) {
+    if (!isHumanConversationTranscript(resolvedTranscriptPath)) {
+      process.stdout.write('{}\n');
+      process.exit(0);
     }
+  } else if (!promptText.trim()) {
+    // Subagents spawned without an existing user transcript or prompt text must be ignored
+    process.stdout.write('{}\n');
+    process.exit(0);
   }
 
   const nowMs = Date.now();
-  const conversationId = payload.conversationId || 'unknown-session';
   const analyticsDir = getAnalyticsDir();
   mkdirSync(analyticsDir, { recursive: true });
 
@@ -205,28 +223,29 @@ async function main() {
   const state = loadGovernorState(stateFile);
   const cfg = state.config;
 
-  // Merge brain-discovered sessions with tracked sessions
-  const brainSessions = discoverRecentBrainSessions(getBrainDir(), nowMs, cfg.wipWindowMinutes);
-  const retentionCutoffMs = nowMs - 2 * 60 * 60 * 1000; // Keep 2h rolling state
+  // Rebuild activeSessions strictly from verified human brain sessions to purge any subagent IDs
+  const brainSessions = discoverRecentBrainSessions(brainDir, nowMs, cfg.wipWindowMinutes);
+  const retentionCutoffMs = nowMs - 2 * 60 * 60 * 1000;
+  const humanSessionIds = new Set(brainSessions.map((bs) => bs.conversationId));
+  humanSessionIds.add(conversationId);
 
+  const cleanActiveSessions = {};
   for (const bs of brainSessions) {
     const existing = state.activeSessions[bs.conversationId] || 0;
-    state.activeSessions[bs.conversationId] = Math.max(existing, bs.lastActiveMs);
+    cleanActiveSessions[bs.conversationId] = Math.max(existing, bs.lastActiveMs);
   }
-  state.activeSessions[conversationId] = nowMs;
+  cleanActiveSessions[conversationId] = nowMs;
+  state.activeSessions = cleanActiveSessions;
 
-  // Prune old sessions and history older than 2h
-  const activeSessionsList = [];
-  for (const [cid, ts] of Object.entries(state.activeSessions)) {
-    if (ts >= retentionCutoffMs) {
-      activeSessionsList.push({ conversationId: cid, lastActiveMs: ts });
-    } else {
-      delete state.activeSessions[cid];
-    }
-  }
+  const activeSessionsList = Object.entries(state.activeSessions).map(([cid, ts]) => ({
+    conversationId: cid,
+    lastActiveMs: ts
+  }));
 
   state.promptHistory.push({ conversationId, timestampMs: nowMs });
-  state.promptHistory = state.promptHistory.filter((e) => e.timestampMs >= retentionCutoffMs);
+  state.promptHistory = state.promptHistory.filter(
+    (e) => e.timestampMs >= retentionCutoffMs && humanSessionIds.has(e.conversationId)
+  );
 
   const nowDate = new Date(nowMs);
   const localMinutesOfDay = nowDate.getHours() * 60 + nowDate.getMinutes();
@@ -240,7 +259,6 @@ async function main() {
     config: cfg
   });
 
-  // Check snooze and per-conversation cooldown
   const isSnoozed = state.snoozeUntilMs > nowMs;
   const lastAlert = state.lastAlertByConv[conversationId];
   const cooldownMs = (cfg.cooldownMinutes || 20) * 60 * 1000;
@@ -249,7 +267,7 @@ async function main() {
     nowMs - lastAlert.timestampMs < cooldownMs &&
     evaluation.metrics.activeWipCount <= (lastAlert.wipCount || 0);
 
-  let shouldInject = evaluation.status !== 'OK' && !isSnoozed && !inCooldown;
+  const shouldInject = evaluation.status !== 'OK' && !isSnoozed && !inCooldown;
 
   if (shouldInject) {
     state.lastAlertByConv[conversationId] = {

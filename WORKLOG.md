@@ -13,6 +13,24 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-21 — Bonifica Inefficienze Token Cross-Repo (`-18.500 token/turno`), Regole Condizionali GlideMind, Tetti in Byte e Filtro Subagent in `human-governor`
+- **Tipo**: Ottimizzazione Token Budget, Hook Governance & Validazione Statica (`plugins/*/rules/AGENTS.md`, `plugins/human-governor/scripts/governor-hook.mjs`, `scripts/validate.mjs`, `glidemind`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-21_token-efficiency-remediation-and-governor-subagent-filter.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_token-efficiency-remediation-and-governor-subagent-filter.md)
+- **Sintesi**:
+  - Archiviate `29` skill GCP/BigQuery inutilizzate in `~/.gemini/config/skills-disabled-gcp/`, compresse `10` description di plugin terzi (`<= 200` char), convertite a regole condizionali (`trigger: model_decision`) le `6` specifiche verticali di GlideMind (`-32,3 KB` Always-On) e compattati del `32,5%` i 12 file `plugins/*/rules/AGENTS.md` (tetto `<= 6.000 B`).
+  - Esclusi i subagent dal conteggio WIP in [`governor-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/governor-hook.mjs) (`isHumanConversationTranscript`) e ruotati/compattati `WORKLOG.md` (`43,5 -> 14,8 KB`) e `MEMORY.md` (`26,3 -> 10,9 KB`) in GlideMind con guardie statiche `<= 16 KB` / `<= 20 KB`.
+
+---
+
+## 2026-10-21 — Modalità `Auto-Skizzo Silente` (`AUTO`), Mining Sessioni (`session-miner.mjs`) e Auto-Apprendimento Continuo (`L1..L3`)
+- **Tipo**: Evoluzione Orchestrazione & Auto-Apprendimento (`skizzo` v1.6.0, `proactive-mentorship` v1.2.0, `cognitive-persistence` v1.6.0, `engineering-workflow` v1.2.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-21_auto-skizzo-silent-and-autonomous-self-learning.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_auto-skizzo-silent-and-autonomous-self-learning.md)
+- **Sintesi**:
+  - Attivata di serie in [`triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs) (`9/9 test PASS`) la modalità `Auto-Skizzo Silente` (`silentFastPass: true` a `0 byte` di banner sull'88% di turni diretti, auto-escalation `DUAL-TRACK` su `score >= 4`, guardia mid-sentence `non agire / solo una domanda`).
+  - Creato [`session-miner.mjs`](file:///c:/github/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs) (`4/4 test PASS`) e integrato il ciclo di **Auto-Apprendimento Continuo (`L1..L3`)** con invarianti numerici anti-regressione, `validate.mjs --all`, `npm run sync` automatico e ricevuta a 1 riga.
+
+---
+
 ## 2026-10-21 — Collaudo Browser Gate 4 (`ui-geometry-probe.js`) e Ricevuta Visiva a 4 Misure (`engineering-workflow`, `laws-of-ux`)
 - **Tipo**: Evoluzione Governance Visiva & Verifica Browser (`plugins/engineering-workflow/`, `plugins/laws-of-ux/`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md)

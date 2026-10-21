@@ -1,8 +1,8 @@
 {
   "name": "cognitive-persistence",
   "displayName": "Cognitive Persistence & Project Memory",
-  "description": "Preserva la continuità architetturale, governa i 4 file cognitivi contro il bloat e sincronizza la Kanban remota Git/Vocale (/take-note, /review-notes, /next-step con coda parallela anti-conflitto e /memory-sync).",
-  "version": "1.5.0",
+  "description": "Preserva la continuità architetturale, governa i 4 file cognitivi contro il bloat, distilla l'esperienza di sessione in skill/regole L1-L3 e sincronizza la Kanban remota Git/Vocale (/take-note, /review-notes, /next-step, /memory-sync).",
+  "version": "1.6.0",
   "suggestedPrompts": [
     "Annota un pensiero rapido in NOTES.md senza interrompere il task con /take-note",
     "Mostra le note aperte in NOTES.md e avvia l'analisi approfondita con /review-notes",
