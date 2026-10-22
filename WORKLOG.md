@@ -13,6 +13,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-22 — Evoluzione `skizzo` v1.7.0 (Orchestrazione Multi-Dominio Dinamica `2..4` Agenti Ordinati per Importanza dall'LLM, Audit `TRI-TRACK` e Regola `Anti-Example Hardcoding`)
+- **Tipo**: Evoluzione Protocollo Multi-Agente, Ranking Dominio-Agnostico & Governance Skill (`plugins/skizzo/` v1.7.0, `plugins/skill-governance/`, `plugins/ab-bench/`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md)
+- **Sintesi**:
+  - Sostituito il vincolo fisso a 2 ruoli con la scoperta semantica e l'ordinamento per importanza dei domini via LLM (`2..4` subagent: `DUAL-TRACK`, `TRI-TRACK`, `QUAD-TRACK` con regola di arresto del Rasoio di Occam e matrice in `<details>` trasposta a 4 colonne fisse per riga su `~600px`).
+  - Introdotta [`rankAndCapDomains`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs#L139-L194) in `triage.mjs` (`12/12` test verdi in [`triage.test.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/tests/triage.test.mjs)), esteso `sanitizeForBlindJudge` in [`bench.mjs`](file:///c:/github/antigravity-plugins/plugins/ab-bench/scripts/bench.mjs#L241-L253) agli slot `Delta`/`Epsilon` e codificato il divieto di overfitting sugli esempi (`Anti-Example Hardcoding`) in [`skill-governance/rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/skill-governance/rules/AGENTS.md#L14).
+
+---
+
 ## 2026-10-21 — Bonifica Inefficienze Token Cross-Repo (`-18.500 token/turno`), Regole Condizionali GlideMind, Tetti in Byte e Filtro Subagent in `human-governor`
 - **Tipo**: Ottimizzazione Token Budget, Hook Governance & Validazione Statica (`plugins/*/rules/AGENTS.md`, `plugins/human-governor/scripts/governor-hook.mjs`, `scripts/validate.mjs`, `glidemind`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-21_token-efficiency-remediation-and-governor-subagent-filter.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_token-efficiency-remediation-and-governor-subagent-filter.md)

@@ -19,9 +19,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Divieto di Directory Junctions su Windows & Sync Fisico (`npm run sync`)**:
   - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`) e non effettua discovery da `.agents/plugins/` nei workspace.
   - *Regola*: Vietato usare Junction/symlink per i plugin. Eseguire sempre `npm run sync` (`scripts/sync-to-global.mjs`) per clonare fisicamente i plugin in `~/.gemini/config/plugins/` e abilitarli in `~/.gemini/config/config.json`.
-- **Modalità `Auto-Skizzo Silente` (`AUTO`), Gate 0 `FAST-PASS` (`silentFastPass`) e Auto-Apprendimento `L1..L3` (`skizzo`, `proactive-mentorship`)**:
-  - *Insidia*: Mostrare il banner `[!NOTE] FAST-PASS` sull'88% dei turni non-skizzo inquina la chat, mentre ignorare clausole mid-sentence (*"non agire è solo una domanda"*) o correggere bug 3D/fisici senza test numerici causa falsi positivi (+178s) e regressioni cicliche.
-  - *Regola*: Partire in `SKIZZO = AUTO` (`triage.mjs`: `silentFastPass: true` a `0 byte` di banner se implicito, `DUAL-TRACK` automatico su `score >= 4`, guardia `READONLY_OVERRIDE_PATTERNS`); ad ogni regressione o lezione trasversale (`session-miner.mjs`) applicare in autonomia l'aggiornamento `L3`/`L2b`/`L2a` (`<= 6.500 B`), `validate.mjs --all` e `npm run sync` con ricevuta a 1 riga.
+- **Modalità `Auto-Skizzo Silente` (`AUTO`), Orchestrazione Multi-Dominio Dinamica (`2..4` Agenti), `Anti-Example Hardcoding` e Auto-Apprendimento `L1..L3` (`skizzo`, `skill-governance`, `proactive-mentorship`)**:
+  - *Insidia*: Cablare solo 2 ruoli fissi (Tecnico vs Utente) o trasformare in regex gli esempi conversazionali dell'utente (*overfitting sugli esempi*) irrigidisce `/skizzo`; d'altra parte mettere `3–4` agenti sulle colonne di una tabella in chat (`~600px`) genera 5–6 colonne illeggibili, mentre in `triage.mjs` usare `fileURLToPath(import.meta.url)` senza `.replace(/\\/g, '/')` rompe `isMain` su Windows.
+  - *Regola*: Partire in `SKIZZO = AUTO` (`triage.mjs`: `silentFastPass: true` sui turni diretti, escalation su `score >= 4`); delegare all'LLM l'individuazione semantica e l'ordinamento per importanza dei domini (`rankAndCapDomains`, cap `2..4` con regola del Rasoio di Occam: aggiungere il `3°`/`4°` solo se introduce un oracolo ortogonale) esponendo la matrice in `<details>` a **4 colonne fisse con i domini sulle righe** (`12/12` test in `triage.test.mjs`). Vietato cablare esempi del prompt utente nelle skill/regole (`skill-governance/rules/AGENTS.md`).
 
 ---
 
