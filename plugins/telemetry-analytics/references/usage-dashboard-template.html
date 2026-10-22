@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Antigravity Usage Monitor</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-2">
+  <div class="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-xl p-3.5 shadow-sm">
+    <!-- Top Header & Interactive Filters -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-3 border-b border-[var(--border)]">
+      <div>
+        <div class="text-xs font-mono text-[var(--muted-foreground)]">TELEMETRIA &amp; SESSIONI LOCALI (v2.0)</div>
+        <h2 class="text-base font-semibold text-[var(--foreground)]">Monitoraggio Utilizzo Antigravity</h2>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Workspace Filter -->
+        <label for="ws-filter" class="sr-only">Filtra per progetto</label>
+        <select
+          id="ws-filter"
+          onchange="setWorkspaceFilter(this.value)"
+          class="text-xs rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-2.5 py-1.5 font-medium focus:outline-none">
+          <option value="ALL">Tutti i progetti</option>
+        </select>
+
+        <!-- Period Filter -->
+        <div class="inline-flex rounded-lg border border-[var(--border)] bg-[var(--background)] p-0.5" role="group" aria-label="Filtro periodo">
+          <button
+            id="period-7"
+            type="button"
+            onclick="setPeriodFilter(7)"
+            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+            7g
+          </button>
+          <button
+            id="period-30"
+            type="button"
+            onclick="setPeriodFilter(30)"
+            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+            30g
+          </button>
+          <button
+            id="period-all"
+            type="button"
+            onclick="setPeriodFilter(0)"
+            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)]">
+            Storico
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Hero KPI Cards (Above-the-Fold, 3 Typographic Levels, nowrap units) -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+      <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+        <div class="text-xs text-[var(--muted-foreground)]">Sessioni Umane</div>
+        <div id="kpi-sessions" class="text-xl font-bold whitespace-nowrap mt-0.5">0</div>
+        <div id="kpi-sessions-sub" class="text-xs text-[var(--muted-foreground)] whitespace-nowrap mt-0.5">0 prompt · 0 subagent</div>
+      </div>
+
+      <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+        <div class="text-xs text-[var(--muted-foreground)]">Tempo Attivo Netto</div>
+        <div id="kpi-time" class="text-xl font-bold whitespace-nowrap mt-0.5">0.0 h</div>
+        <div id="kpi-time-sub" class="text-xs text-[var(--muted-foreground)] whitespace-nowrap mt-0.5">media 0m / chat</div>
+      </div>
+
+      <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+        <div class="text-xs text-[var(--muted-foreground)]">Token &amp; Cache Hit</div>
+        <div id="kpi-tokens" class="text-xl font-bold whitespace-nowrap mt-0.5">0</div>
+        <div id="kpi-tokens-sub" class="text-xs text-[var(--muted-foreground)] whitespace-nowrap mt-0.5">Cache 0.0%</div>
+      </div>
+
+      <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+        <div class="text-xs text-[var(--muted-foreground)]">Tool &amp; Calibrazione ETA</div>
+        <div id="kpi-tools" class="text-xl font-bold whitespace-nowrap mt-0.5">0</div>
+        <div id="kpi-tools-sub" class="text-xs text-[var(--muted-foreground)] whitespace-nowrap mt-0.5">100% OK · ETA 1.0x</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex flex-wrap gap-1 p-0.5 mb-3 rounded-lg border border-[var(--border)] bg-[var(--background)]" role="tablist" aria-label="Sezioni monitoraggio">
+      <button
+        id="tab-habits"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        onclick="switchTab('habits')"
+        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap">
+        Tempi &amp; Abitudini
+      </button>
+      <button
+        id="tab-tokens"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        onclick="switchTab('tokens')"
+        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
+        Token &amp; Modelli
+      </button>
+      <button
+        id="tab-workflow"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        onclick="switchTab('workflow')"
+        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
+        Workflow &amp; Plugin
+      </button>
+      <button
+        id="tab-sessions"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        onclick="switchTab('sessions')"
+        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
+        Storico Sessioni
+      </button>
+    </div>
+
+    <!-- TAB 1: Tempi, Fasce Orarie & Progetti -->
+    <div id="panel-habits" class="space-y-2.5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <!-- Hourly Distribution (00-23) -->
+        <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-semibold">Distribuzione Oraria Prompt (00:00–23:00)</span>
+            <span id="peak-hour-label" class="text-xs font-mono text-[var(--muted-foreground)] whitespace-nowrap">Picco: --</span>
+          </div>
+          <div id="hourly-bars" class="grid grid-cols-24 gap-0.5 items-end h-16 pt-2"></div>
+          <div class="flex justify-between text-xs font-mono text-[var(--muted-foreground)] mt-1">
+            <span>00h</span>
+            <span>06h</span>
+            <span>12h</span>
+            <span>18h</span>
+            <span>23h</span>
+          </div>
+        </div>
+
+        <!-- Weekday + Projects -->
+        <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-semibold">Giorni della Settimana &amp; Top Progetti</span>
+            <span id="peak-day-label" class="text-xs font-mono text-[var(--muted-foreground)] whitespace-nowrap">Top: --</span>
+          </div>
+          <div id="weekday-bars" class="grid grid-cols-7 gap-1 items-end h-12 mb-2"></div>
+          <div id="projects-mini-list" class="space-y-1 pt-1.5 border-t border-[var(--border)]"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Token, Cache & Modelli AI -->
+    <div id="panel-tokens" class="hidden space-y-2.5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+          <div class="text-xs font-semibold mb-2">Bilancio Token &amp; Efficienza Cache</div>
+          <div id="token-breakdown-list" class="space-y-1.5 text-xs"></div>
+        </div>
+        <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+          <div class="text-xs font-semibold mb-2">Modelli AI Selezionati nelle Sessioni</div>
+          <div id="models-list" class="space-y-1.5 text-xs max-h-40 overflow-y-auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Slash Command, Plugin & Tool -->
+    <div id="panel-workflow" class="hidden space-y-2.5">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+          <div class="text-xs font-semibold mb-1.5">Top Comandi Slash</div>
+          <div id="slash-list" class="space-y-1 text-xs max-h-40 overflow-y-auto"></div>
+        </div>
+        <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+          <div class="text-xs font-semibold mb-1.5">Top Plugin &amp; Skill</div>
+          <div id="plugins-list" class="space-y-1 text-xs max-h-40 overflow-y-auto"></div>
+        </div>
+        <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+          <div class="text-xs font-semibold mb-1.5">Top Tool di Sistema</div>
+          <div id="tools-list" class="space-y-1 text-xs max-h-40 overflow-y-auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Storico Sessioni Umane -->
+    <div id="panel-sessions" class="hidden">
+      <div class="rounded-lg border border-[var(--border)] bg-[var(--background)] overflow-hidden">
+        <div class="max-h-48 overflow-y-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-[var(--border)] text-[var(--muted-foreground)]">
+                <th class="py-1.5 px-2 font-medium">Data</th>
+                <th class="py-1.5 px-2 font-medium">Progetto</th>
+                <th class="py-1.5 px-2 font-medium">Topic Sessione</th>
+                <th class="py-1.5 px-2 font-medium text-right">Prompt</th>
+                <th class="py-1.5 px-2 font-medium text-right">Durata</th>
+                <th class="py-1.5 px-2 font-medium text-right">Token</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-tbody" class="divide-y divide-[var(--border)]"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__USAGE_DASHBOARD_DATA__ = /*__PAYLOAD_JSON__*/ {};
+
+    const state = {
+      days: 0,
+      workspace: 'ALL',
+      tab: 'habits'
+    };
+
+    function fmtTokens(n) {
+      const val = Number(n) || 0;
+      if (val >= 1e9) return (val / 1e9).toFixed(2) + 'B';
+      if (val >= 1e6) return (val / 1e6).toFixed(1) + 'M';
+      if (val >= 1e3) return (val / 1e3).toFixed(1) + 'k';
+      return String(val);
+    }
+
+    function fmtDuration(ms) {
+      const val = Number(ms) || 0;
+      if (val < 60000) return Math.max(1, Math.round(val / 1000)) + 's';
+      const mins = val / 60000;
+      if (mins < 60) return Math.round(mins) + 'm';
+      return (mins / 60).toFixed(1) + ' h';
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function initDashboard() {
+      const raw = window.__USAGE_DASHBOARD_DATA__ || {};
+      const sessions = Array.isArray(raw.sessions) ? raw.sessions : [];
+      const wsSelect = document.getElementById('ws-filter');
+
+      const wsCount = {};
+      for (const s of sessions) {
+        if (!s.workspace || s.workspace === 'unknown') continue;
+        if (!wsCount[s.workspace]) {
+          wsCount[s.workspace] = { name: s.workspaceName || s.workspace, count: 0 };
+        }
+        wsCount[s.workspace].count += 1;
+      }
+
+      const sortedWs = Object.entries(wsCount).sort((a, b) => b[1].count - a[1].count);
+      for (const [wsKey, info] of sortedWs) {
+        const opt = document.createElement('option');
+        opt.value = wsKey;
+        opt.textContent = info.name + ' (' + info.count + ')';
+        wsSelect.appendChild(opt);
+      }
+
+      renderDashboard();
+    }
+
+    function setPeriodFilter(days) {
+      state.days = Number(days) || 0;
+      const map = { 7: 'period-7', 30: 'period-30', 0: 'period-all' };
+      for (const [k, id] of Object.entries(map)) {
+        const btn = document.getElementById(id);
+        if (!btn) continue;
+        if (Number(k) === state.days) {
+          btn.className = 'px-2.5 py-1 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)]';
+        } else {
+          btn.className = 'px-2.5 py-1 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+        }
+      }
+      renderDashboard();
+    }
+
+    function setWorkspaceFilter(ws) {
+      state.workspace = ws || 'ALL';
+      renderDashboard();
+    }
+
+    function switchTab(tabName) {
+      state.tab = tabName;
+      const tabs = ['habits', 'tokens', 'workflow', 'sessions'];
+      for (const t of tabs) {
+        const btn = document.getElementById('tab-' + t);
+        const panel = document.getElementById('panel-' + t);
+        if (!btn || !panel) continue;
+        if (t === tabName) {
+          panel.classList.remove('hidden');
+          btn.className = 'flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap';
+          btn.setAttribute('aria-selected', 'true');
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap';
+          btn.setAttribute('aria-selected', 'false');
+        }
+      }
+    }
+
+    function renderDashboard() {
+      const raw = window.__USAGE_DASHBOARD_DATA__ || {};
+      const allSessions = Array.isArray(raw.sessions) ? raw.sessions : [];
+      const liveSummary = raw.liveSummary || {};
+      const nowMs = raw.generatedAtMs || Date.now();
+      const cutoffMs = state.days > 0 ? nowMs - state.days * 86400000 : 0;
+
+      let humanSessions = 0;
+      let subagentSessions = 0;
+      let totalPrompts = 0;
+      let totalActiveMs = 0;
+      let totalToolCalls = 0;
+      let totalToolErrors = 0;
+      let inTok = 0;
+      let outTok = 0;
+      let cacheTok = 0;
+
+      const hourly = Array(24).fill(0);
+      const weekday = Array(7).fill(0);
+      const wsMap = {};
+      const modelsMap = {};
+      const slashMap = {};
+      const pluginsMap = {};
+      const toolsMap = {};
+      const filteredHuman = [];
+
+      for (const s of allSessions) {
+        if (cutoffMs > 0 && s.lastStepAtMs < cutoffMs) continue;
+        if (state.workspace !== 'ALL' && s.workspace !== state.workspace) continue;
+
+        if (s.isSubagent) {
+          subagentSessions += 1;
+        } else {
+          humanSessions += 1;
+          filteredHuman.push(s);
+        }
+
+        totalPrompts += s.userPromptsCount || 0;
+        totalActiveMs += s.activeDurationMs || 0;
+        totalToolCalls += s.toolCallsCount || 0;
+        totalToolErrors += s.toolErrorsCount || 0;
+        inTok += s.tokens?.input || 0;
+        outTok += s.tokens?.output || 0;
+        cacheTok += s.tokens?.cacheRead || 0;
+
+        if (!s.isSubagent) {
+          for (const [h, c] of Object.entries(s.hourlyMap || {})) {
+            const hi = Number(h);
+            if (hi >= 0 && hi < 24) hourly[hi] += c;
+          }
+          for (const [w, c] of Object.entries(s.weekdayMap || {})) {
+            const wi = Number(w);
+            if (wi >= 0 && wi < 7) weekday[wi] += c;
+          }
+        }
+
+        const wk = s.workspaceName || 'Non assegnato';
+        if (!wsMap[wk]) wsMap[wk] = { sessions: 0, prompts: 0, activeMs: 0, tokens: 0 };
+        if (!s.isSubagent) wsMap[wk].sessions += 1;
+        wsMap[wk].prompts += s.userPromptsCount || 0;
+        wsMap[wk].activeMs += s.activeDurationMs || 0;
+        wsMap[wk].tokens += (s.tokens?.input || 0) + (s.tokens?.output || 0);
+
+        for (const [m, c] of Object.entries(s.modelsUsed || {})) {
+          modelsMap[m] = (modelsMap[m] || 0) + c;
+        }
+        for (const [cmd, c] of Object.entries(s.slashCommands || {})) {
+          slashMap[cmd] = (slashMap[cmd] || 0) + c;
+        }
+        for (const [p, pInfo] of Object.entries(s.plugins || {})) {
+          pluginsMap[p] = (pluginsMap[p] || 0) + (pInfo.invocations || 0);
+        }
+        for (const [t, tInfo] of Object.entries(s.tools || {})) {
+          if (!toolsMap[t]) toolsMap[t] = { calls: 0, errors: 0 };
+          toolsMap[t].calls += tInfo.calls || 0;
+          toolsMap[t].errors += tInfo.errors || 0;
+        }
+      }
+
+      // If viewing full history, take max with cumulative liveSummary tokens/tools so rotated logs are preserved
+      if (state.days === 0 && state.workspace === 'ALL' && liveSummary.global) {
+        inTok = Math.max(inTok, liveSummary.global.totalInputTokens || 0);
+        outTok = Math.max(outTok, liveSummary.global.totalOutputTokens || 0);
+        cacheTok = Math.max(cacheTok, liveSummary.global.totalCacheReadTokens || 0);
+      }
+
+      const totDirectTok = inTok + outTok;
+      const cachePct = totDirectTok + cacheTok > 0 ? ((cacheTok / (totDirectTok + cacheTok)) * 100).toFixed(1) : '0.0';
+      const avgSessionMs = humanSessions > 0 ? totalActiveMs / humanSessions : 0;
+      const toolOkPct = totalToolCalls > 0 ? (((totalToolCalls - totalToolErrors) / totalToolCalls) * 100).toFixed(1) : '100.0';
+      const etaCalib = liveSummary.global?.etaCalibrationFactor
+        ? Number(liveSummary.global.etaCalibrationFactor).toFixed(2)
+        : '1.00';
+
+      document.getElementById('kpi-sessions').textContent = String(humanSessions);
+      document.getElementById('kpi-sessions-sub').textContent =
+        totalPrompts + ' prompt · ' + subagentSessions + ' subagent';
+
+      document.getElementById('kpi-time').textContent = fmtDuration(totalActiveMs);
+      document.getElementById('kpi-time-sub').textContent =
+        'media ' + fmtDuration(avgSessionMs) + ' / chat';
+
+      document.getElementById('kpi-tokens').textContent = fmtTokens(totDirectTok) + ' tok';
+      document.getElementById('kpi-tokens-sub').textContent =
+        'Cache ' + fmtTokens(cacheTok) + ' (' + cachePct + '%)';
+
+      document.getElementById('kpi-tools').textContent = fmtTokens(totalToolCalls) + ' call';
+      document.getElementById('kpi-tools-sub').textContent =
+        toolOkPct + '% OK · ETA ' + etaCalib + 'x';
+
+      // Render 24h bars
+      const maxHour = Math.max(1, ...hourly);
+      let peakHour = 0;
+      for (let i = 0; i < 24; i++) {
+        if (hourly[i] > hourly[peakHour]) peakHour = i;
+      }
+      document.getElementById('peak-hour-label').textContent =
+        hourly[peakHour] > 0 ? 'Picco: ' + String(peakHour).padStart(2, '0') + ':00 (' + hourly[peakHour] + ')' : 'Picco: --';
+
+      const hourlyContainer = document.getElementById('hourly-bars');
+      hourlyContainer.style.gridTemplateColumns = 'repeat(24, minmax(0, 1fr))';
+      hourlyContainer.innerHTML = hourly
+        .map((cnt, h) => {
+          const pct = cnt > 0 ? Math.max(14, Math.round((cnt / maxHour) * 100)) : 6;
+          const bgClass = cnt > 0 ? 'bg-[var(--primary)]' : 'bg-[var(--border)]';
+          return (
+            '<div class="flex flex-col items-center justify-end h-full" title="Ore ' +
+            String(h).padStart(2, '0') +
+            ':00 — ' +
+            cnt +
+            ' prompt">' +
+            '<div class="w-full rounded-t ' +
+            bgClass +
+            '" style="height:' +
+            pct +
+            '%"></div></div>'
+          );
+        })
+        .join('');
+
+      // Render Weekday bars (Mon..Sun order)
+      const dayOrder = [
+        { idx: 1, label: 'Lun' },
+        { idx: 2, label: 'Mar' },
+        { idx: 3, label: 'Mer' },
+        { idx: 4, label: 'Gio' },
+        { idx: 5, label: 'Ven' },
+        { idx: 6, label: 'Sab' },
+        { idx: 0, label: 'Dom' }
+      ];
+      const maxDay = Math.max(1, ...weekday);
+      let topDayLabel = '--';
+      let topDayVal = 0;
+      for (const d of dayOrder) {
+        if (weekday[d.idx] > topDayVal) {
+          topDayVal = weekday[d.idx];
+          topDayLabel = d.label + ' (' + topDayVal + ')';
+        }
+      }
+      document.getElementById('peak-day-label').textContent = 'Top: ' + topDayLabel;
+      document.getElementById('weekday-bars').innerHTML = dayOrder
+        .map((d) => {
+          const cnt = weekday[d.idx];
+          const pct = cnt > 0 ? Math.max(18, Math.round((cnt / maxDay) * 100)) : 8;
+          const bgClass = cnt > 0 ? 'bg-[var(--primary)]' : 'bg-[var(--border)]';
+          return (
+            '<div class="flex flex-col items-center justify-end h-full">' +
+            '<div class="w-full rounded-t ' +
+            bgClass +
+            '" style="height:' +
+            pct +
+            '%" title="' +
+            d.label +
+            ': ' +
+            cnt +
+            ' prompt"></div>' +
+            '<span class="text-xs font-mono text-[var(--muted-foreground)] mt-0.5">' +
+            d.label +
+            '</span></div>'
+          );
+        })
+        .join('');
+
+      // Render top projects mini list
+      const topProjects = Object.entries(wsMap)
+        .sort((a, b) => b[1].prompts - a[1].prompts)
+        .slice(0, 3);
+      document.getElementById('projects-mini-list').innerHTML =
+        topProjects.length > 0
+          ? topProjects
+              .map(
+                ([name, info]) =>
+                  '<div class="flex items-center justify-between text-xs">' +
+                  '<span class="font-medium truncate max-w-[150px]">' +
+                  escapeHtml(name) +
+                  '</span>' +
+                  '<span class="font-mono text-[var(--muted-foreground)] whitespace-nowrap">' +
+                  info.sessions +
+                  ' chat · ' +
+                  info.prompts +
+                  ' prompt · ' +
+                  fmtDuration(info.activeMs) +
+                  '</span></div>'
+              )
+              .join('')
+          : '<div class="text-xs text-[var(--muted-foreground)]">Nessun progetto nel filtro attivo.</div>';
+
+      // TAB 2: Token breakdown & Models
+      document.getElementById('token-breakdown-list').innerHTML = [
+        { label: 'Input Token', val: fmtTokens(inTok) },
+        { label: 'Output Token', val: fmtTokens(outTok) },
+        { label: 'Cache Read Token', val: fmtTokens(cacheTok) },
+        { label: 'Efficienza Cache Hit', val: cachePct + '%' },
+        {
+          label: 'Media Token per Sessione Umana',
+          val: humanSessions > 0 ? fmtTokens(Math.round(totDirectTok / humanSessions)) : '0'
+        }
+      ]
+        .map(
+          (r) =>
+            '<div class="flex justify-between py-1 border-b border-[var(--border)] last:border-0">' +
+            '<span class="text-[var(--muted-foreground)]">' +
+            escapeHtml(r.label) +
+            '</span>' +
+            '<span class="font-mono font-semibold whitespace-nowrap">' +
+            escapeHtml(r.val) +
+            '</span></div>'
+        )
+        .join('');
+
+      const sortedModels = Object.entries(modelsMap).sort((a, b) => b[1] - a[1]);
+      document.getElementById('models-list').innerHTML =
+        sortedModels.length > 0
+          ? sortedModels
+              .map(
+                ([mName, cnt]) =>
+                  '<div class="flex justify-between py-1 border-b border-[var(--border)] last:border-0">' +
+                  '<span class="font-medium truncate pr-2">' +
+                  escapeHtml(mName) +
+                  '</span>' +
+                  '<span class="font-mono text-[var(--muted-foreground)] whitespace-nowrap">' +
+                  cnt +
+                  ' turni</span></div>'
+              )
+              .join('')
+          : '<div class="text-xs text-[var(--muted-foreground)]">Modello predefinito di sessione (nessun cambio esplicito registrato nel periodo).</div>';
+
+      // TAB 3: Slash commands, Plugins, Tools
+      const sortedSlash = Object.entries(slashMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+      document.getElementById('slash-list').innerHTML =
+        sortedSlash.length > 0
+          ? sortedSlash
+              .map(
+                ([cmd, cnt]) =>
+                  '<div class="flex justify-between py-0.5">' +
+                  '<span class="font-mono font-medium">' +
+                  escapeHtml(cmd) +
+                  '</span>' +
+                  '<span class="font-mono text-[var(--muted-foreground)] whitespace-nowrap">' +
+                  cnt +
+                  '</span></div>'
+              )
+              .join('')
+          : '<div class="text-xs text-[var(--muted-foreground)]">Nessuno slash command rilevato.</div>';
+
+      const sortedPlugins = Object.entries(pluginsMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+      document.getElementById('plugins-list').innerHTML =
+        sortedPlugins.length > 0
+          ? sortedPlugins
+              .map(
+                ([p, cnt]) =>
+                  '<div class="flex justify-between py-0.5">' +
+                  '<span class="font-mono truncate pr-1">' +
+                  escapeHtml(p) +
+                  '</span>' +
+                  '<span class="font-mono text-[var(--muted-foreground)] whitespace-nowrap">' +
+                  cnt +
+                  '</span></div>'
+              )
+              .join('')
+          : '<div class="text-xs text-[var(--muted-foreground)]">Nessun plugin attivato.</div>';
+
+      const sortedTools = Object.entries(toolsMap)
+        .sort((a, b) => b[1].calls - a[1].calls)
+        .slice(0, 8);
+      document.getElementById('tools-list').innerHTML =
+        sortedTools.length > 0
+          ? sortedTools
+              .map(
+                ([t, info]) =>
+                  '<div class="flex justify-between py-0.5">' +
+                  '<span class="font-mono truncate pr-1">' +
+                  escapeHtml(t) +
+                  '</span>' +
+                  '<span class="font-mono text-[var(--muted-foreground)] whitespace-nowrap">' +
+                  info.calls +
+                  '</span></div>'
+              )
+              .join('')
+          : '<div class="text-xs text-[var(--muted-foreground)]">Nessun tool registrato.</div>';
+
+      // TAB 4: Recent Human Sessions
+      filteredHuman.sort((a, b) => b.lastStepAtMs - a.lastStepAtMs);
+      const topSessions = filteredHuman.slice(0, 20);
+      document.getElementById('sessions-tbody').innerHTML =
+        topSessions.length > 0
+          ? topSessions
+              .map((s) => {
+                const tok = (s.tokens?.input || 0) + (s.tokens?.output || 0);
+                return (
+                  '<tr>' +
+                  '<td class="py-1.5 px-2 font-mono whitespace-nowrap text-[var(--muted-foreground)]">' +
+                  escapeHtml(s.dateKey || '') +
+                  '</td>' +
+                  '<td class="py-1.5 px-2 font-mono whitespace-nowrap">' +
+                  escapeHtml(s.workspaceName || '-') +
+                  '</td>' +
+                  '<td class="py-1.5 px-2 truncate max-w-[200px]" title="' +
+                  escapeHtml(s.topic) +
+                  '">' +
+                  escapeHtml(s.topic) +
+                  '</td>' +
+                  '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+                  (s.userPromptsCount || 0) +
+                  '</td>' +
+                  '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+                  fmtDuration(s.activeDurationMs || 0) +
+                  '</td>' +
+                  '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+                  fmtTokens(tok) +
+                  '</td></tr>'
+                );
+              })
+              .join('')
+          : '<tr><td colspan="6" class="py-3 text-center text-[var(--muted-foreground)]">Nessuna sessione trovata per questo filtro.</td></tr>';
+    }
+
+    initDashboard();
+  </script>
+</body>
+</html>

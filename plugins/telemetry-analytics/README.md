@@ -1,50 +1,50 @@
-# Telemetry, Usage Analytics & Live ETA (`telemetry-analytics`)
+# Telemetry, Usage Analytics & Local Session Backfill (`telemetry-analytics` v2.0.0)
 
-Plugin di osservabilità, telemetria e stima in-flight dei tempi di completamento (ETA) sull'intera lavorazione per Google Antigravity. Raccoglie in modo deterministico e a basso overhead metriche sull'utilizzo dei plugin, traccia lo stato temporale senza inquinare i box di output dei tool e auto-calibra le stime confrontando il tempo previsto con la durata attiva effettiva.
-
----
-
-## 1. Obiettivo Primario
-
-Nel runtime di Antigravity, i plugin modulari operano come componenti integrati senza un layer nativo di reporting quantitativo. Il plugin `telemetry-analytics` introduce un'infrastruttura completa:
-- **Stima ETA Complessiva con Badge + Semaforo (`【🟢/🟡/🔴 ETA tot ~Ns】`)**: Entro e non oltre il 2° turno di chiamate tool (per lavorazioni >= 15s), e al passaggio al primo tool operativo top-level (`replace_file_content`, `write_to_file`, `run_command`), l'agente inserisce `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` <= 20s, `🟡` 21–60s, `🔴` > 60s) sia in `toolAction` sia in `toolSummary` di un singolo tool di svolta, garantendo risalto cromatico e visibilità fuori dai gruppi collassati (`Explored N files >`).
-- **Zero Log Invasivi nei Tool (`eta-injector.mjs`)**: L'hook `PreInvocation` aggiorna silenziosamente lo stato temporale (`.eta_<conversationId>.json`, al netto delle pause `ask_question`) restituendo `{}` su `stdout` per non iniettare mai testo nei box dei tool.
-- **Auto-Calibrazione dell'Errore di Stima**: Alla chiusura del task (`Stop`), `collector.mjs` confronta l'ETA iniziale dichiarata con il tempo attivo effettivo (anche quando `PostInvocation` ha già avanzato `lastIndex`) e aggiorna la media mobile esponenziale `etaCalibrationFactor` del workspace.
-- **Riconoscimento di Plugin, Skill e Affidabilità Tool**: Identifica le skill attivate, misura le latenze e traccia invocazioni, errori e cache-read ratio ad ogni turno.
+Plugin di osservabilità, monitoraggio dell'utilizzo personale e stima in-flight dei tempi di completamento (ETA) per Google Antigravity. Unisce la raccolta live tramite hook con un motore di **mining e backfill incrementale delle sessioni locali** (`~/.gemini/antigravity/brain/<id>/.system_generated/logs/transcript.jsonl`), estraendo abitudini orarie, tempo di lavoro attivo netto, consumo token/cache, modelli AI, comandi slash, plugin/skill e generando una Dashboard HTML interattiva (`<agent-embed>`).
 
 ---
 
-## 2. Architettura Ibrida a Basso Overhead
+## 1. Funzionalità Principali
+
+1. **Backfill Incrementale dalle Sessioni Locali (`core/session-backfill.mjs`)**:
+   - Scansiona tutte le conversazioni presenti in `~/.gemini/antigravity/brain/` e mantiene un indice incrementale (`~/.gemini/antigravity/analytics/sessions-index.json`) basato su `mtimeMs` e `size` per rianalizzare solo i transcript nuovi o modificati (`< 100ms` a regime).
+   - Distingue automaticamente le **conversazioni umane** dai **subagent** (`invoke_subagent`).
+   - Calcola il **tempo attivo netto** sommando gli intervalli tra step consecutivi ed escludendo le pause inattive `> 15 minuti`.
+   - Ricostruisce la **distribuzione oraria (`00:00–23:00`)** e per **giorno della settimana**, i **modelli AI selezionati** (`<USER_SETTINGS_CHANGE>`), i **comandi slash** (`/plan`, `/skizzo`, `/next-step`, `/memory-sync`, ecc.), la ripartizione per **workspace/progetto** e le skill invocate (supportando sia `read_file` sia `view_file`).
+2. **Dashboard HTML Interattiva (`references/usage-dashboard-template.html`)**:
+   - Genera un widget HTML self-contained incorporabile via `<agent-embed>` con filtri istantanei per **Periodo** (`7g`, `30g`, `Storico`) e **Progetto**, 4 KPI Hero Card e 4 viste a tab (`Tempi & Abitudini`, `Token & Modelli`, `Workflow & Plugin`, `Storico Sessioni`).
+3. **Stima ETA Complessiva con Badge + Semaforo (`【🟢/🟡/🔴 ETA tot ~Ns】`)**:
+   - Entro il 2° turno di chiamate tool (per lavorazioni `>= 15s`), l'agente ancora `【🟢/🟡/🔴 ETA tot ~Ns】` in `toolSummary` di un singolo tool operativo visibile, e `collector.mjs` auto-calibra il fattore `etaCalibrationFactor`.
+
+---
+
+## 2. Architettura (`v2.0.0`)
 
 ```mermaid
 flowchart TD
-    subgraph AntigravityRuntime["Antigravity Runtime Loop"]
+    subgraph BrainDir["Sessioni Locali (~/.gemini/antigravity/brain/)"]
+        Transcript["<conv-id>/.system_generated/logs/transcript.jsonl"]
+    end
+
+    subgraph RuntimeHooks["Antigravity Runtime Hooks"]
         PreInv["Hook PreInvocation"] -->|stdin JSON| EtaInj["scripts/eta-injector.mjs"]
-        EtaInj -->|Stato silenzioso .eta_id.json| Turn["Turno LLM / Checkpoint Tool<br/>(Azione 【🟢/🟡/🔴 ETA tot ~Ns】)"]
-        Turn --> PostInv["Hook PostInvocation / Stop"]
-        PostInv -->|stdin JSON| Collector["scripts/collector.mjs"]
+        PostInv["Hook PostInvocation / Stop"] -->|stdin JSON| Collector["scripts/collector.mjs"]
     end
 
-    subgraph StorageLayer["Persistenza Ibrida Locale"]
-        Collector -->|Append + Rotazione > 5 MB| NDJSON[("~/.gemini/antigravity/analytics/events.ndjson")]
-        Collector -->|Aggiornamento metriche + Calibration| Summary[("~/.gemini/antigravity/analytics/metrics-summary.json")]
-        Summary -.->|Lettura baseline storica| EtaInj
+    subgraph StorageLayer["Persistenza Locale (~/.gemini/antigravity/analytics/)"]
+        Transcript --> Backfill["core/session-backfill.mjs"]
+        Backfill -->|Cache mtime/size| SIndex[("sessions-index.json")]
+        Collector -->|Append + Rotazione 5 MB| NDJSON[("events.ndjson")]
+        Collector -->|Aggiornamento + Calibrazione| Summary[("metrics-summary.json")]
     end
 
-    subgraph ReportingLayer["Visualizzazione & Analisi"]
-        NDJSON --> Report["scripts/report.mjs"]
+    subgraph ReportingLayer["Visualizzazione CLI, Markdown & <agent-embed>"]
+        SIndex --> Report["scripts/report.mjs"]
         Summary --> Report
-        Report --> Skill1["Skill /plugin-analytics (Markdown Report)"]
+        Report --> Skill1["Skill /plugin-analytics (Markdown + HTML Dashboard)"]
         Report --> Skill2["Skill /telemetry-export (CSV / JSON)"]
     end
 ```
-
-### Caratteristiche Architetturali
-1. **Soglia Massima 2° Turno e Ancoraggio Top-Level**: L'ETA dell'intera lavorazione viene emessa entro il 2° turno di tool e ancorata sul primo tool operativo (`replace_file_content`, `write_to_file`, `run_command`) affinché resti sempre visibile in primo piano nella chat.
-2. **Accoppiamento `toolAction` + `toolSummary` con Badge + Semaforo**: Poiché Antigravity sostituisce `toolAction` con `toolSummary` dopo `< 1s` e renderizza testo puro (`textContent`), il badge `【🟢/🟡/🔴 ETA tot ~Ns】` viene applicato a entrambi i campi del singolo tool di svolta, mantenendo puliti tutti gli altri tool finché la stima non varia di >= 15s o >= 30%.
-3. **Esclusione Pause Utente e Messaggi in Coda**: I tempi di attesa su `ask_question` vengono sottratti dall'`Elapsed` e i messaggi utente accodati in corsa non azzerano la stima attiva.
-4. **Governance Anti-Bloat dello Storage (`events.ndjson` <= 5 MB & TTL Cursori `7gg`)**: Su `Stop` (`--finalize`), `collector.mjs` elimina i file `.cursor_*.json` e `.eta_*.json` inattivi da oltre 7 giorni e ruota `events.ndjson` in `events.archive.ndjson` oltre i 5 MB.
-5. **Resilienza e Timeout**: Tutti gli script integrano watchdog rigidi di sicurezza (`WATCHDOG_TIMEOUT_MS`) con `.unref()`.
 
 ---
 
@@ -52,50 +52,46 @@ flowchart TD
 
 ```text
 plugins/telemetry-analytics/
-├── plugin.json                    # Manifest del plugin (SemVer 1.5.0, 3 prompt)
-├── README.md                      # Documentazione tecnica
-├── hooks.json                     # Hook PreInvocation, PostInvocation e Stop
+├── plugin.json                              # Manifest del plugin (SemVer 2.0.0)
+├── README.md                                # Documentazione tecnica
+├── hooks.json                               # Hook PreInvocation, PostInvocation e Stop
+├── core/
+│   └── session-backfill.mjs                 # Motore headless di parsing transcript.jsonl e indice incrementale
+├── references/
+│   └── usage-dashboard-template.html        # Template Dashboard HTML interattiva (<agent-embed>)
 ├── scripts/
-│   ├── eta-injector.mjs           # Tracciatore silenzioso dello stato ETA su PreInvocation
-│   ├── collector.mjs              # Ingestore delta, calibrazione ETA, TTL GC cursori (7gg) e rotazione events.ndjson (5 MB)
-│   └── report.mjs                 # Motore di aggregazione e reporting CLI
+│   ├── eta-injector.mjs                     # Tracciatore silenzioso dello stato ETA su PreInvocation
+│   ├── collector.mjs                        # Ingestore delta live (read_file + view_file, totalSessions, ETA)
+│   └── report.mjs                           # Motore di reporting CLI/Markdown e generatore Dashboard HTML
 ├── rules/
-│   └── AGENTS.md                  # Regole di visibilità ETA sui checkpoint, soglia 2° turno e anti-razionalizzazione
-└── skills/
-    ├── plugin-analytics/
-    │   └── SKILL.md               # Skill per consultare metriche e calibrazione ETA (/plugin-analytics)
-    └── telemetry-export/
-        └── SKILL.md               # Skill per esportare dati grezzi CSV/JSON (/telemetry-export)
+│   └── AGENTS.md                            # Regole di visibilità ETA e sobrietà metrica
+├── skills/
+│   ├── plugin-analytics/
+│   │   └── SKILL.md                         # Skill per monitoraggio utilizzo e dashboard (/plugin-analytics)
+│   └── telemetry-export/
+│       └── SKILL.md                         # Skill per esportare dati grezzi CSV/JSON (/telemetry-export)
+└── tests/
+    └── session-backfill.test.mjs            # Test unitari sul motore di backfill e aggregazione
 ```
 
 ---
 
-## 4. Formato dell'Output ETA Durante le Lavorazioni
-
-Per ogni lavorazione con durata residua >= 15s, l'agente inserisce `【🟢/🟡/🔴 ETA tot ~Ns】` in `toolAction` e `toolSummary` del singolo tool di checkpoint (entro il 2° turno e sul primo tool operativo top-level):
-
-- `Read plugin-analytics SKILL.md 【🟡 ETA tot ~30s】` (2° turno esplorativo, ultimo tool del batch)
-- `Upgrade telemetry-analytics to v1.5.0 【🟢 ETA tot ~15s】` (primo tool operativo top-level, sempre visibile in chat)
-
-Tutti gli altri tool intermedi restano privi di tag temporali e non viene stampata alcuna riga `[ETA: ...]` nel corpo testuale della chat.
-
----
-
-## 5. Comandi CLI Diretti
+## 4. Comandi CLI Diretti
 
 ```bash
-# Report del workspace corrente (include tabella Stime ETA & Calibrazione)
-node plugins/telemetry-analytics/scripts/report.mjs
-
-# Report globale aggregato
+# Report globale completo (esegue il backfill incrementale da ~/.gemini/antigravity/brain/)
 node plugins/telemetry-analytics/scripts/report.mjs --global
 
-# Output JSON per automazioni
-node plugins/telemetry-analytics/scripts/report.mjs --json
+# Report globale filtrato sugli ultimi 7 giorni
+node plugins/telemetry-analytics/scripts/report.mjs --global --days 7
 
-# Esportazione CSV (include colonne EtaEstimatedMs, EtaActualMs)
+# Genera anche la Dashboard HTML interattiva
+node plugins/telemetry-analytics/scripts/report.mjs --global --html ./usage-dashboard.html
+
+# Forza la ricostruzione integrale dell'indice delle sessioni
+node plugins/telemetry-analytics/scripts/report.mjs --global --rebuild
+
+# Esportazione JSON o CSV
+node plugins/telemetry-analytics/scripts/report.mjs --global --json
 node plugins/telemetry-analytics/scripts/report.mjs --csv > export.csv
-
-# Reset dei dati
-node plugins/telemetry-analytics/scripts/report.mjs --reset
 ```

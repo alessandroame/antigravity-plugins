@@ -113,7 +113,8 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
   // Step 2: Run core plugin unit tests
   const testFiles = [
     join(repoRoot, 'plugins', 'skizzo', 'tests', 'triage.test.mjs'),
-    join(repoRoot, 'plugins', 'proactive-mentorship', 'tests', 'session-miner.test.mjs')
+    join(repoRoot, 'plugins', 'proactive-mentorship', 'tests', 'session-miner.test.mjs'),
+    join(repoRoot, 'plugins', 'telemetry-analytics', 'tests', 'session-backfill.test.mjs')
   ].filter((f) => existsSync(f));
 
   if (testFiles.length > 0) {

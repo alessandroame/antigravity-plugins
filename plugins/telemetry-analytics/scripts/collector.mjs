@@ -3,7 +3,7 @@
 /**
  * Telemetry & Usage Analytics Collector
  * Native zero-dependency batch ingestor for Antigravity PostInvocation and Stop hooks.
- * Also tracks multi-step ETA accuracy and computes workspace calibration factors.
+ * Also tracks multi-step ETA accuracy, session counts, and workspace calibration factors.
  */
 
 import {
@@ -72,7 +72,8 @@ function getAnalyticsDir() {
 function normalizePath(p) {
   if (!p) return '';
   return p
-    .replace(/^["']|["']$/g, '')
+    .trim()
+    .replace(/^(?:\\*["'])+|(?:\\*["'])+$/g, '')
     .replace(/\\+/g, '/')
     .replace(/\/+/g, '/')
     .toLowerCase();
@@ -220,6 +221,9 @@ function updateSummaryStore(summaryPath, record, etaOutcome) {
 
   summary.lastUpdated = new Date().toISOString();
   const g = summary.global;
+  if (record.isNewSession) {
+    g.totalSessions = (g.totalSessions || 0) + 1;
+  }
   g.totalInvocations += 1;
   g.totalSteps = (g.totalSteps || 0) + (record.stepCount || 0);
   g.totalDurationMs += record.durationMs;
@@ -232,6 +236,7 @@ function updateSummaryStore(summaryPath, record, etaOutcome) {
   if (!summary.workspaces[wsKey]) {
     summary.workspaces[wsKey] = {
       name: record.workspaceName || 'unknown',
+      totalSessions: 0,
       totalInvocations: 0,
       totalSteps: 0,
       totalDurationMs: 0,
@@ -247,6 +252,9 @@ function updateSummaryStore(summaryPath, record, etaOutcome) {
     };
   }
   const ws = summary.workspaces[wsKey];
+  if (record.isNewSession) {
+    ws.totalSessions = (ws.totalSessions || 0) + 1;
+  }
   ws.totalInvocations += 1;
   ws.totalSteps = (ws.totalSteps || 0) + (record.stepCount || 0);
   ws.totalDurationMs += record.durationMs;
@@ -321,6 +329,7 @@ async function main() {
   mkdirSync(analyticsDir, { recursive: true });
 
   const cursorFile = join(analyticsDir, `.cursor_${conversationId}.json`);
+  const isNewSession = !existsSync(cursorFile);
   const etaStateFile = join(analyticsDir, `.eta_${conversationId}.json`);
   let lastIndex = -1;
   let savedInitialEtaMs = null;
@@ -427,9 +436,10 @@ async function main() {
           }
           toolsMap[tName].calls += 1;
 
-          // Detect skill / plugin
-          if (tName === 'view_file' && tc.args?.AbsolutePath) {
-            const parsed = parseSkillAndPlugin(tc.args.AbsolutePath);
+          // Detect skill / plugin across legacy view_file and modern read_file
+          const rawSkillPath = tc.args?.Path || tc.args?.AbsolutePath;
+          if ((tName === 'view_file' || tName === 'read_file') && rawSkillPath) {
+            const parsed = parseSkillAndPlugin(rawSkillPath);
             if (parsed) {
               const p = parsed.plugin;
               if (!pluginsMap[p]) {
@@ -471,6 +481,7 @@ async function main() {
       const eventRecord = {
         ts: new Date().toISOString(),
         conversationId,
+        isNewSession,
         workspace: workspacePath,
         workspaceName: basename(workspacePath),
         durationMs,
@@ -521,6 +532,7 @@ async function main() {
         const eventRecord = {
           ts: new Date().toISOString(),
           conversationId,
+          isNewSession: false,
           workspace: workspacePath,
           workspaceName: basename(workspacePath),
           durationMs: 0,
