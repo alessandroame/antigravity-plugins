@@ -1,24 +1,19 @@
-# Antigravity Plugin: Skizzo — Dual-Track Technical vs Domain Dialectics (`v1.5.0`)
+# Antigravity Plugin: Skizzo — Dynamic Multi-Domain Dialectics (`v1.7.0`)
 
-Plugin di **Adversarial & Collaborative Dual-Track Engineering** per Google Antigravity. Mette in competizione e collaborazione parallela due subagent isolati con mandati complementari — **Agente Tecnico (`Subagent Alpha — Systems & Technical Purity`)** e **Agente Utente (`Subagent Beta — Domain & User Experience Advocate`)** — con **Filtro Automatico a Priori (`FAST-PASS` vs `DUAL-TRACK` in `< 5ms`)**, auto-routing delle skill specialistiche, **persistenza automatica per l'intera sessione fino al comando di stop**, **Mediatore Interattivo** opzionale (`Subagent Gamma` tramite `/skizzo --mediator`) e restituzione finale **Human-First** in italiano semplice.
+Plugin di **Orchestrazione Competitiva e Collaborativa Multi-Dominio Dinamica** per Google Antigravity. Mette in competizione e collaborazione parallela **da `2` a `4` subagent isolati su misura** (`Alpha`, `Beta`, `Delta`, `Epsilon`) individuando semanticamente tramite LLM i domini coinvolti nella richiesta e ordinandoli per importanza — con **Modalità `Auto-Skizzo Silente` (`AUTO`) di serie**, **Filtro Automatico a Priori (`FAST-PASS` vs `MULTI-TRACK` in `< 5ms`)**, auto-routing delle skill verticali, **Mediatore Interattivo** opzionale (`Subagent Gamma` tramite `/skizzo --mediator`) e restituzione **Human-First**.
 
 ---
 
 ## Obiettivo del Plugin (Goal)
 
-Quando un singolo agente sviluppa una funzionalità, tende a un compromesso implicito fin dalle prime righe di ragionamento:
-1. **Deriva Tecnocentrica**: un'architettura internamente elegante ma che espone complessità, configurazioni manuali o gergo implementativo all'utente finale.
-2. **Deriva Superficiale (UI-First)**: un flusso utente apparentemente comodo ma costruito su accoppiamenti stato-DOM, validazioni fragili e assenza di isolamento headless.
+Quando un singolo agente affronta un problema complesso o multi-disciplinare, tende a schiacciare prospettive diverse in un compromesso implicito fin dalle prime righe. Al tempo stesso, usare sempre e solo 2 ruoli fissi risulta limitante quando la richiesta coinvolge più domini distinti o non riguarda affatto la programmazione.
 
-Al tempo stesso, lanciare sempre 2 subagent anche per correggere un refuso o fare un commit sprecherebbe ~110 secondi a turno. Il plugin `skizzo` (`v1.5.0`) risolve entrambi i problemi tramite un **Filtro Automatico a Priori (`Gate 0`) + Ciclo a 4 Fasi**:
-- **Dormiente a Inizio Nuova Chat (`OFF`)**: non consuma risorse finché non viene attivato.
-- **Persistenza Sticky per Tutta la Sessione (`/skizzo`)**: una volta attivato (`ON`), resta **attivo automaticamente su tutti i messaggi successivi della conversazione** fino alla chiusura della chat o a un comando di stop (`/skizzo stop`, `/skizzo off`, `stop skizzo`, `ferma skizzo`).
-- **Gate 0 — Filtro Automatico a Priori (`FAST-PASS` vs `DUAL-TRACK`, `< 5ms`)**: prima di avviare subagent, valuta se il messaggio richiede una scelta progettuale:
-  - Su **comandi operativi/Git/test/memoria**, **domande di sola lettura** e **micro-correzioni puntuali a scelta unica** (o conferme esecutive come *"fallo"* / *"procedi"*), risponde subito in **`FAST-PASS` (`0` subagent, ~90–120s risparmiati)** mostrando un avviso di 1 riga (`[!NOTE]`) e **restando attivo** per i turni successivi.
-  - Su **nuove funzionalità, piani, flussi utente/input o refactoring multi-file**, avvia in automatico il **Ciclo a 4 Fasi (`DUAL-TRACK`, `2` subagent paralleli)**.
-  - L'utente può sempre forzare i 2 agenti con `/skizzo --force` (o `-f`) o saltarli per 1 turno con `/skizzo --skip`.
-- **Mediatore Interattivo Opzionale (`/skizzo --mediator` o `-m`)**: avvia nella Fase 2 un terzo subagent isolato (`Subagent Gamma`) che contro-interroga `Alpha` e `Beta` tramite `send_message` (max 1 round) e pronuncia il verdetto arbitrale.
-- **Restituzione Human-First (Zero Gergo Fuori da `<details>`)**: si apre con il banner `> [!IMPORTANT] MODALITÀ SKIZZO ATTIVA` seguito da **4 punti in italiano quotidiano** (*Cosa cambia per te*, *Comodità difesa dall'Agente Utente*, *Problema evitato dall'Agente Tecnico*, *Su cosa non erano d'accordo*), confinando la tabella tecnica nel cassetto `<details>`.
+Il plugin `skizzo` (`v1.7.0`) risolve entrambi i problemi tramite un **Gate 0 (`triage.mjs`) + Scoperta e Ranking dei Domini via LLM (`2..4` Agenti)**:
+- **Attivo in Silenzio a Inizio Chat (`SKIZZO = AUTO`, Zero Banner sui Turni Diretti)**: sui task semplici o di sola lettura risponde subito in `FAST-PASS` con `0` subagent e `0 byte` di banner; sui bivi progettuali o multi-prospettiva (`score >= 4`) avvia in automatico i subagent necessari.
+- **Scoperta Semantica e Ordinamento per Importanza (`Max 4` Agenti)**: superato il `FAST-PASS`, l'LLM individua tutti i domini o punti di vista rilevanti, li ordina per importanza decrescente (*Impatto diretto*, *Tensione dialettica*, *Rischio di omissione*) e istanzia solo i **primi `2..4` domini** (`DUAL-TRACK`, `TRI-TRACK` o `QUAD-TRACK`), accorpando o escludendo quelli marginali.
+- **Persistenza Sticky (`/skizzo`) e Override**: attivato esplicitamente con `/skizzo`, abbassa la soglia (`score >= 3`) e mostra la ricevuta `[!NOTE]` sui `FAST-PASS`. L'utente può forzare gli agenti con `--force` o `--tracks 2|3|4`, saltarli con `--skip` o spegnere tutto con `/skizzo stop`.
+- **Mediatore Interattivo Opzionale (`/skizzo --mediator` o `-m`)**: avvia nella Fase 2 `Subagent Gamma` che contro-interroga i domini attivi tramite `send_message` (max 1 round) ed emette il lodo arbitrale.
+- **Restituzione Human-First (Zero Gergo Fuori da `<details>`)**: espone in chiaro cosa cambia per l'utente, il contributo dei domini attivati in ordine di importanza e il conflitto risolto, racchiudendo la matrice multi-dominio in `<details>`.
 
 ---
 
@@ -26,49 +21,44 @@ Al tempo stesso, lanciare sempre 2 subagent anche per correggere un refuso o far
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Protocollo Dual-Track, Auto-Triage & Human-First** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Definisce la persistenza sticky in sessione, il Gate 0 (`FAST-PASS` vs `DUAL-TRACK`), gli override `--force`/`--skip`, i comandi di stop e il formato Human-First. |
-| **`skizzo`** | Skill on-demand (`/skizzo`) | [`skills/skizzo/SKILL.md`](./skills/skizzo/SKILL.md) | Runbook autosufficiente con tabella decisionale `FAST-PASS` vs `DUAL-TRACK`, auto-routing skill, prompt per `Alpha`, `Beta` e `Gamma` e template di consegna. |
-| **Motore Headless di Auto-Triage (`O(1)`)** | Script Node.js | [`scripts/triage.mjs`](./scripts/triage.mjs) | Classificatore deterministico puro (`< 5ms`, zero DOM/storage) che valuta guardie di bypass e segnali di tensione progettuale. |
-| **Suite di Test Unitari Headless** | Test (`node:test`) | [`tests/triage.test.mjs`](./tests/triage.test.mjs) | Verifica gli oracoli tecnici (`Alpha`) e di scenario utente (`Beta`) sul motore di triage automatico. |
-| **Template Dialettico** | Reference ausiliario | [`skills/skizzo/references/dialectic-template.md`](./skills/skizzo/references/dialectic-template.md) | Modelli per il banner `[!NOTE] FAST-PASS`, il banner `[!IMPORTANT] DUAL-TRACK`, i 4 punti umani e la matrice `<details>`. |
+| **Protocollo Multi-Dominio Dinamico & Ranking LLM** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Definisce `SKIZZO = AUTO`, il Gate 0, l'ordinamento dei domini per importanza (`max 4`), gli override e il formato Human-First. |
+| **`skizzo`** | Skill on-demand (`/skizzo`) | [`skills/skizzo/SKILL.md`](./skills/skizzo/SKILL.md) | Runbook autosufficiente con protocollo di scoperta/ranking LLM dei domini, prompt parametrico per `2..4` subagent e template di consegna. |
+| **Motore Headless di Auto-Triage & Ranking (`O(1)`)** | Script Node.js | [`scripts/triage.mjs`](./scripts/triage.mjs) | Classificatore deterministico (`< 5ms`) `classifySkizzoTask` e funzione pura `rankAndCapDomains` per l'ordinamento e il taglio a `max 4` domini. |
+| **Suite di Test Unitari Headless** | Test (`node:test`) | [`tests/triage.test.mjs`](./tests/triage.test.mjs) | Verifica il filtro `FAST-PASS` vs `MULTI-TRACK`, la tenuta su bivi non-software e il ranking/deduplica di `rankAndCapDomains`. |
+| **Template Multi-Dominio** | Reference ausiliario | [`skills/skizzo/references/dialectic-template.md`](./skills/skizzo/references/dialectic-template.md) | Modelli per il banner `[!NOTE] FAST-PASS`, il banner `[!IMPORTANT]` a `2..4` domini e la matrice `<details>`. |
 
 ---
 
-## Architettura del Gate 0 + Ciclo a 4 Fasi (`/skizzo` & `/skizzo --mediator`)
+## Architettura del Gate 0 + Ranking LLM dei Domini (`/skizzo`)
 
 ```mermaid
 flowchart TD
-    CMD["Comando /skizzo [--mediator] [--force] [--skip]"] --> TOGGLE{"Stato Sessione"}
-    TOGGLE -- "Attivazione" --> ON["Stato SKIZZO = ON (Sticky in Sessione)<br/>Titolo: [SKIZZO] o [SKIZZO+MED]"]
-    TOGGLE -- "/skizzo stop | off | stop skizzo" --> OFF["Stato SKIZZO = OFF<br/>Ripristino titolo e flusso standard"]
-    ON --> TASK["Ogni Messaggio della Sessione"]
-    TASK --> GATE0{"Gate 0: Triage a Priori<br/>(triage.mjs < 5ms)"}
-    GATE0 -- "Ops/Git/Test, Sola Lettura,<br/>Micro-Edit o --skip" --> FAST["FAST-PASS (0 Subagent, ~90s risparmiati)<br/>Banner [!NOTE] + SKIZZO resta ON"]
-    GATE0 -- "Bivio Progettuale (Arch/UX/Input)<br/>o --force" --> F1["Fase 1: Auto-Routing Skill Foglia +<br/>invoke_subagent Parallelo"]
-    F1 --> ALPHA["Agente Tecnico (Alpha)<br/>Solidità, Core Puro & Test"]
-    F1 --> BETA["Agente Utente (Beta)<br/>Comodità, Meno Click & Chiarezza"]
-    ALPHA --> WAIT["Barriera di Silenzio:<br/>Attende entrambi prima di scrivere"]
-    BETA --> WAIT
+    MSG["Messaggio Utente (SKIZZO = AUTO di serie o ON Sticky)"] --> GATE0{"Gate 0: Triage a Priori<br/>(triage.mjs < 5ms)"}
+    GATE0 -- "Ops/Git/Test, Sola Lettura,<br/>Micro-Edit o --skip" --> FAST["FAST-PASS (0 Subagent, ~90s risparmiati)<br/>0 byte banner se AUTO, [!NOTE] se ON"]
+    GATE0 -- "Scelta Multi-Prospettiva (score >= 4)<br/>o --force / --tracks 2..4" --> LLM_RANK["Scoperta Domini via LLM &<br/>Ordinamento per Importanza (Max 4)"]
+    LLM_RANK --> F1["Fase 1: Auto-Routing Skill Verticali +<br/>invoke_subagent Parallelo (2..4 Domini)"]
+    F1 --> A["1° Dominio (Alpha)"]
+    F1 --> B["2° Dominio (Beta)"]
+    F1 --> D["3°/4° Dominio Opzionale (Delta / Epsilon)"]
+    A --> WAIT["Barriera di Silenzio:<br/>Zero Polling fino al completamento"]
+    B --> WAIT
+    D --> WAIT
     WAIT --> MED{"Flag --mediator<br/>Attivo?"}
-    MED -- "No (Default)" --> F2A["Fase 2: Confronto Diretto<br/>dell'Orchestratore"]
-    MED -- "Sì (--mediator)" --> GAMMA["Fase 2: invoke_subagent<br/>Mediatore (Gamma)"]
-    GAMMA <-->|"send_message (Max 1 Round)"| ALPHA
-    GAMMA <-->|"send_message (Max 1 Round)"| BETA
-    F2A --> F3["Fase 3: Sintesi + Doppio Controllo"]
+    MED -- "No (Default)" --> F2A["Fase 2: Cross-Critique Multi-Dominio"]
+    MED -- "Sì (--mediator)" --> GAMMA["Fase 2: Subagent Gamma (Mediatore)<br/>send_message (Max 1 Round)"]
+    F2A --> F3["Fase 3 & 4: Sintesi Multi-Oracolo +<br/>Output Human-First e Matrice in details"]
     GAMMA --> F3
-    F3 --> F4["Fase 4: Banner [!IMPORTANT] +<br/>4 Punti Umani Chiari + Dettagli in details"]
 ```
 
 ---
 
 ## Comandi e Prompt di Esempio
 
-- `/skizzo` — Attiva la modalità persistente (`[SKIZZO]`): lancia i 2 agenti sulle scelte di progetto e risponde subito in `FAST-PASS` sulle modifiche dirette.
-- `/skizzo --force <task>` (o `/skizzo -f <task>`, oppure *"forza skizzo"*) — Forza l'avvio dei 2 subagent (`DUAL-TRACK`) anche su un task piccolo.
-- `/skizzo --skip <task>` (oppure *"senza skizzo"* / *"risposta veloce"*) — Esegue il messaggio corrente in `FAST-PASS` (`0` subagent) senza spegnere Skizzo per il resto della sessione.
-- `/skizzo stop` / `/skizzo off` / `stop skizzo` / `ferma skizzo` — Ferma la modalità persistente e ripristina il flusso normale della chat.
-- `/skizzo --mediator` (o `/skizzo -m`) — Attiva la modalità persistente con il terzo agente Mediatore interattivo (`Subagent Gamma`, titolo `[SKIZZO+MED]`).
-- `/skizzo --proto rifattorizza il motore di calcolo tariffe` — Genera 2 prototipi completi in Git Worktrees isolati (`skizzo/alpha-tech` e `skizzo/beta-domain`).
+- `/skizzo` — Attiva la modalità persistente esplicita (`[SKIZZO]`): individua e ordina i domini (`2..4` agenti) sulle scelte di progetto e risponde subito in `FAST-PASS` sulle modifiche dirette.
+- `/skizzo --tracks 3 <task>` (o `--tracks 4`, `--force`) — Forza l'avvio di `N` subagent corrispondenti ai `N` domini più importanti.
+- `/skizzo --skip <task>` (oppure *"senza skizzo"*) — Esegue il messaggio corrente in `FAST-PASS` (`0` subagent).
+- `/skizzo stop` / `/skizzo off` / `stop skizzo` — Disattiva Skizzo per l'intera sessione e rimuove `[SKIZZO]` dal titolo.
+- `/skizzo --mediator` (o `/skizzo -m`) — Attiva il Mediatore interattivo (`Subagent Gamma`, titolo `[SKIZZO+MED]`).
 
 ---
 
