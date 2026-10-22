@@ -241,13 +241,14 @@ export function parseTranscriptMetrics(transcriptPath) {
 export function sanitizeForBlindJudge(rawOutput) {
   if (typeof rawOutput !== 'string') return '';
   return rawOutput
-    .replace(/^>\s*\[!IMPORTANT\]\r?\n>\s*\*\*MODALITÀ SKIZZO ATTIVA[^\r\n]*\r?\n+/gim, '')
-    .replace(/^>\s*\[!IMPORTANT\]\r?\n>\s*\*\*VERDETTO AB-BENCH[^\r\n]*\r?\n+/gim, '')
+    .replace(/^>\s*\[!(?:IMPORTANT|NOTE)\]\r?\n>\s*(?:\*\*)?MODALITÀ SKIZZO ATTIVA[^\r\n]*\r?\n+/gim, '')
+    .replace(/^>\s*\[!IMPORTANT\]\r?\n>\s*(?:\*\*)?VERDETTO AB-BENCH[^\r\n]*\r?\n+/gim, '')
     .replace(/\[[^\]]*\]\(conversation:\/\/[a-zA-Z0-9_-]+\)/g, '[Subagent]')
     .replace(/\bMODALITÀ SKIZZO ATTIVA\b/gi, 'MODALITÀ ANALISI')
     .replace(/\b(?:DUAL|TRI|QUAD|MULTI)-TRACK\b/gi, 'ANALISI STRUTTURATA')
+    .replace(/\bSkill\s+Attive\s*\((?:Alpha|Beta|Gamma|Delta|Epsilon)[^)]*\)/gi, 'Skill Attive')
     .replace(/\b(?:Subagent\s+(?:Alpha|Beta|Gamma|Delta|Epsilon)|Agente\s+(?:Tecnico|Utente)(?:\s*\((?:Alpha|Beta)\))?|Mediatore\s*\(Gamma\))\b/gi, 'Modulo di Analisi')
-    .replace(/\bOracolo\s+(?:Alpha|Beta|Gamma|Delta|Epsilon)\b/gi, 'Suite di Verifica')
+    .replace(/\bOracolo(?:\s+di\s+Verifica)?\s*\(?(?:Alpha|Beta|Gamma|Delta|Epsilon)\)?/gi, 'Suite di Verifica')
     .trim();
 }
 

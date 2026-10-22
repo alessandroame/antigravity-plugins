@@ -1,6 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { classifySkizzoTask, rankAndCapDomains } from '../scripts/triage.mjs';
+import { sanitizeForBlindJudge } from '../../ab-bench/scripts/bench.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TRIAGE_SCRIPT = join(__dirname, '..', 'scripts', 'triage.mjs');
 
 describe('Skizzo Auto-Triage & Dynamic Domain Ranking Engine', () => {
   it('routes operational, git, memory, and read-only prompts to FAST-PASS (score < 0)', () => {
@@ -97,7 +104,7 @@ describe('Skizzo Auto-Triage & Dynamic Domain Ranking Engine', () => {
   });
 
   it('handles malformed, whitespace, or empty inputs deterministically without throwing', () => {
-    for (const bad of ['', '   ', null, undefined]) {
+    for (const bad of ['', '   ', null, undefined, '/skizzo --tracks 5']) {
       const res = classifySkizzoTask(bad);
       assert.equal(res.route, 'FAST-PASS');
       assert.equal(res.score, 0);
@@ -105,7 +112,7 @@ describe('Skizzo Auto-Triage & Dynamic Domain Ranking Engine', () => {
     }
   });
 
-  it('honors explicit --force, --tracks N (setting TRI-TRACK / QUAD-TRACK), and natural language force overrides', () => {
+  it('honors explicit --force, --tracks N (including clamping out-of-range values), and natural language overrides', () => {
     const byFlag = classifySkizzoTask('/skizzo --force cambia il colore del pulsante primario');
     assert.equal(byFlag.route, 'DUAL-TRACK');
     assert.equal(byFlag.trackMode, 'MULTI-TRACK');
@@ -119,12 +126,22 @@ describe('Skizzo Auto-Triage & Dynamic Domain Ranking Engine', () => {
     assert.equal(byTracks3.minTracks, 3);
     assert.equal(byTracks3.maxTracks, 3);
 
-    const byTracks4 = classifySkizzoTask('/skizzo --tracks 4 valuta questo flusso');
-    assert.equal(byTracks4.trackMode, 'QUAD-TRACK');
-    assert.equal(byTracks4.requestedTracks, 4);
+    const byTracks5Clamped = classifySkizzoTask('/skizzo --tracks 5 valuta questo flusso');
+    assert.equal(byTracks5Clamped.route, 'DUAL-TRACK');
+    assert.equal(byTracks5Clamped.trackMode, 'QUAD-TRACK');
+    assert.equal(byTracks5Clamped.requestedTracks, 4);
+    assert.equal(byTracks5Clamped.maxTracks, 4);
 
-    const byNatural = classifySkizzoTask('usa skizzo per decidere il testo di questo bottone');
-    assert.equal(byNatural.route, 'DUAL-TRACK');
+    const byTracks1Clamped = classifySkizzoTask('/skizzo --tracks 1 valuta questo flusso');
+    assert.equal(byTracks1Clamped.route, 'DUAL-TRACK');
+    assert.equal(byTracks1Clamped.trackMode, 'DUAL-TRACK');
+    assert.equal(byTracks1Clamped.requestedTracks, 2);
+    assert.equal(byTracks1Clamped.minTracks, 2);
+
+    const byNatural3 = classifySkizzoTask('valuta questo bottone con 3 agenti');
+    assert.equal(byNatural3.route, 'DUAL-TRACK');
+    assert.equal(byNatural3.trackMode, 'TRI-TRACK');
+    assert.equal(byNatural3.requestedTracks, 3);
   });
 
   it('honors explicit --skip and natural language fast overrides on complex tasks while keeping sticky state ON', () => {
@@ -167,19 +184,52 @@ describe('Skizzo Auto-Triage & Dynamic Domain Ranking Engine', () => {
     assert.equal(ranked.droppedDomains[0].role, 'Sostenibilità Economica');
   });
 
-  it('scales to DUAL-TRACK or TRI-TRACK when 2 or 3 distinct domains are provided, deduplicates roles, and returns FAST-PASS if < 2 domains', () => {
-    const tri = rankAndCapDomains([
-      { role: 'Esperto di Dominio', importance: 9, tension: 8 },
-      { role: 'Esperto di Dominio', importance: 5, tension: 5 },
-      { role: 'Utente Finale', importance: 8, tension: 7 },
-      { role: 'Designer Interfaccia', importance: 7, tension: 6 }
+  it('clamps out-of-range metrics, preserves highest-scoring duplicate, and handles numeric IDs in rankAndCapDomains (Beta Oracle)', () => {
+    const ranked = rankAndCapDomains([
+      { id: 101, role: 'Dominio Duplicato', importance: 2, tension: 2 },
+      { id: 102, role: 'Dominio Duplicato', importance: 99, tension: 99 },
+      { id: null, role: 'Dominio Con Valori Nulli', importance: null, tension: '' },
+      { id: false, role: 'Dominio Con Valori Negativi', importance: -20, tension: -5 }
     ]);
-    assert.equal(tri.trackCount, 3);
-    assert.equal(tri.trackMode, 'TRI-TRACK');
-    assert.equal(tri.droppedDomains.length, 0);
+
+    assert.equal(ranked.trackCount, 3);
+    assert.equal(ranked.trackMode, 'TRI-TRACK');
+    assert.equal(ranked.selectedDomains[0].role, 'Dominio Duplicato');
+    assert.equal(ranked.selectedDomains[0].importance, 10);
+    assert.equal(ranked.selectedDomains[0].tension, 10);
+    assert.equal(ranked.selectedDomains[0].priorityScore, 30);
+
+    assert.equal(ranked.selectedDomains[1].role, 'Dominio Con Valori Nulli');
+    assert.equal(ranked.selectedDomains[1].importance, 5);
+    assert.equal(ranked.selectedDomains[1].tension, 5);
+    assert.equal(ranked.selectedDomains[1].priorityScore, 15);
+
+    assert.equal(ranked.selectedDomains[2].importance, 0);
+    assert.equal(ranked.selectedDomains[2].priorityScore, 0);
 
     const single = rankAndCapDomains([{ role: 'Unico Dominio', importance: 8, tension: 5 }]);
     assert.equal(single.trackCount, 1);
     assert.equal(single.trackMode, 'FAST-PASS');
+  });
+
+  it('executes CLI entrypoint reliably on Windows with --tracks flag and sanitizes unbolded Skizzo banners in bench.mjs (Beta Oracle)', () => {
+    const stdout = execFileSync(process.execPath, [TRIAGE_SCRIPT, '--tracks', '3', 'valuta questo flusso'], {
+      encoding: 'utf-8'
+    });
+    const parsed = JSON.parse(stdout);
+    assert.equal(parsed.trackMode, 'TRI-TRACK');
+    assert.equal(parsed.requestedTracks, 3);
+
+    const rawBanner = [
+      '> [!IMPORTANT]',
+      '> MODALITÀ SKIZZO ATTIVA (TRI-TRACK — 3 Domini per Importanza) — Subagent: [1° Ruolo Alpha](conversation://abc) · [2° Ruolo Beta](conversation://def)',
+      '',
+      'Risposta pulita con Oracolo di Verifica (Delta) e Skill Attive (Alpha - Test).'
+    ].join('\n');
+    const clean = sanitizeForBlindJudge(rawBanner);
+    assert.ok(!clean.includes('MODALITÀ SKIZZO'));
+    assert.ok(!clean.includes('Delta'));
+    assert.ok(!clean.includes('Alpha'));
+    assert.match(clean, /Suite di Verifica/);
   });
 });

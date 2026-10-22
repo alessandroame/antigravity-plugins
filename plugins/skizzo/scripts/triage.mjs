@@ -33,7 +33,8 @@ const MEDIATOR_PATTERNS = [
   /(?:^|\s)-m(?:\s|$)/i
 ];
 
-const TRACKS_FLAG_REGEX = /(?:^|\s)--(?:tracks|agents)\s+([234])\b/i;
+const TRACKS_FLAG_REGEX = /(?:^|\s)--(?:tracks|agents)\s+(\d+)\b/i;
+const NATURAL_TRACKS_REGEX = /\b(?:con|usa|forza|lancia)\s+([234])\s+(?:agenti|subagent\w*|domini)\b/i;
 
 // Guard G1: Pure operational, Git, test runner, sync, memory commands, or direct execution confirmation of an approved plan
 const OPS_GUARD_PATTERNS = [
@@ -85,6 +86,34 @@ const TENSION_OPEN_PATTERNS = [
 ];
 
 /**
+ * Parses a numeric metric in [0..10], returning `defaultVal` when null, undefined, boolean, empty string, or NaN.
+ * @param {unknown} val
+ * @param {number} [defaultVal=5]
+ * @returns {number}
+ */
+function clampMetric(val, defaultVal = 5) {
+  if (val === null || val === undefined || typeof val === 'boolean') return defaultVal;
+  if (typeof val === 'string' && val.trim() === '') return defaultVal;
+  const num = Number(val);
+  if (!Number.isFinite(num)) return defaultVal;
+  return Math.min(10, Math.max(0, num));
+}
+
+/**
+ * Clamps a requested track count into [MIN_TRACKS..MAX_TRACKS], or returns null if invalid/non-positive.
+ * @param {unknown} rawTracks
+ * @returns {2 | 3 | 4 | null}
+ */
+function parseRequestedTracks(rawTracks) {
+  if (rawTracks === null || rawTracks === undefined || typeof rawTracks === 'boolean' || rawTracks === '') {
+    return null;
+  }
+  const num = Number(rawTracks);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return /** @type {2 | 3 | 4} */ (Math.min(MAX_TRACKS, Math.max(MIN_TRACKS, Math.round(num))));
+}
+
+/**
  * Normalizes a raw prompt string by stripping leading `/skizzo` command tokens and flags.
  * @param {unknown} rawPrompt
  * @returns {string}
@@ -93,8 +122,8 @@ export function normalizePromptText(rawPrompt) {
   if (typeof rawPrompt !== 'string') return '';
   return rawPrompt
     .replace(/^\s*\/skizzo\b/i, '')
-    .replace(/(?:^|\s)--(?:tracks|agents)\s+[234]\b/gi, ' ')
-    .replace(/(?:^|\s)--(?:force|skip|fast|always|mediator|no-mediator|proto|implicit)\b/gi, ' ')
+    .replace(/(?:^|\s)--(?:tracks|agents)\s+\d+\b/gi, ' ')
+    .replace(/(?:^|\s)--(?:force|skip|fast|always|mediator|no-mediator|proto|implicit|sticky)\b/gi, ' ')
     .replace(/(?:^|\s)-(?:f|m)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -102,9 +131,10 @@ export function normalizePromptText(rawPrompt) {
 
 /**
  * Ranks LLM-discovered candidate domains by importance and dialectical tension,
- * deduplicates overlapping perspectives, and enforces the hard [2..4] agent cap.
+ * deduplicates overlapping perspectives keeping the highest-scoring entry,
+ * and enforces the hard [2..4] agent cap.
  *
- * @param {Array<{ id?: string, role: string, importance?: number, tension?: number, mandate?: string, oracle?: string, skills?: string[] }>} candidateDomains
+ * @param {Array<{ id?: unknown, role: string, importance?: unknown, tension?: unknown, mandate?: string, oracle?: string, skills?: string[] }>} candidateDomains
  * @param {{ maxTracks?: number, minTracks?: number }} [options]
  * @returns {{
  *   trackCount: number,
@@ -115,23 +145,33 @@ export function normalizePromptText(rawPrompt) {
  */
 export function rankAndCapDomains(candidateDomains, options = {}) {
   const rawList = Array.isArray(candidateDomains) ? candidateDomains : [];
-  const cap = Math.min(MAX_TRACKS, Math.max(MIN_TRACKS, Number(options.maxTracks) || MAX_TRACKS));
+  const minT =
+    options.minTracks !== undefined && Number.isFinite(Number(options.minTracks))
+      ? Math.min(MAX_TRACKS, Math.max(MIN_TRACKS, Math.round(Number(options.minTracks))))
+      : MIN_TRACKS;
+  const maxT =
+    options.maxTracks !== undefined && Number.isFinite(Number(options.maxTracks))
+      ? Math.min(MAX_TRACKS, Math.max(minT, Math.round(Number(options.maxTracks))))
+      : MAX_TRACKS;
 
-  const seenRoles = new Set();
-  const normalized = [];
+  const scored = [];
 
   for (const item of rawList) {
     if (!item || typeof item.role !== 'string' || !item.role.trim()) continue;
     const cleanRole = item.role.trim();
-    const roleKey = (item.id || cleanRole).toLowerCase();
-    if (seenRoles.has(roleKey)) continue;
-    seenRoles.add(roleKey);
+    const idKey =
+      item.id !== null && item.id !== undefined && String(item.id).trim() !== ''
+        ? String(item.id).trim().toLowerCase()
+        : null;
+    const roleKey = cleanRole.toLowerCase();
 
-    const importance = Number.isFinite(Number(item.importance)) ? Number(item.importance) : 5;
-    const tension = Number.isFinite(Number(item.tension)) ? Number(item.tension) : 5;
+    const importance = clampMetric(item.importance, 5);
+    const tension = clampMetric(item.tension, 5);
     const priorityScore = importance * 2 + tension;
 
-    normalized.push({
+    scored.push({
+      idKey,
+      roleKey,
       role: cleanRole,
       importance,
       tension,
@@ -142,22 +182,37 @@ export function rankAndCapDomains(candidateDomains, options = {}) {
     });
   }
 
-  normalized.sort((a, b) => b.priorityScore - a.priorityScore);
+  // Sort by priorityScore descending BEFORE deduplication so the highest-scoring duplicate always wins
+  scored.sort((a, b) => b.priorityScore - a.priorityScore);
 
-  const selected = normalized.slice(0, cap).map((d, idx) => ({
+  const seenIds = new Set();
+  const seenRoles = new Set();
+  const deduplicated = [];
+
+  for (const entry of scored) {
+    if (seenRoles.has(entry.roleKey) || (entry.idKey && seenIds.has(entry.idKey))) {
+      continue;
+    }
+    seenRoles.add(entry.roleKey);
+    if (entry.idKey) seenIds.add(entry.idKey);
+    const { idKey: _idKey, roleKey: _roleKey, ...cleanEntry } = entry;
+    deduplicated.push(cleanEntry);
+  }
+
+  const selected = deduplicated.slice(0, maxT).map((d, idx) => ({
     trackId: TRACK_SLOTS[idx] || `Track-${idx + 1}`,
     rank: idx + 1,
     ...d
   }));
 
-  const dropped = normalized.slice(cap).map((d) => ({
+  const dropped = deduplicated.slice(maxT).map((d) => ({
     role: d.role,
     priorityScore: d.priorityScore
   }));
 
   const trackCount = selected.length;
   const trackMode =
-    trackCount < MIN_TRACKS
+    trackCount < minT
       ? 'FAST-PASS'
       : trackCount === 4
         ? 'QUAD-TRACK'
@@ -182,18 +237,18 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
   const safeRaw = typeof rawPrompt === 'string' ? rawPrompt.trim() : '';
   const cleanText = normalizePromptText(safeRaw);
 
-  const flagTracksMatch = safeRaw.match(TRACKS_FLAG_REGEX);
+  const flagTracksMatch = safeRaw.match(TRACKS_FLAG_REGEX) || safeRaw.match(NATURAL_TRACKS_REGEX);
   const requestedTracks =
-    options.tracks && [2, 3, 4].includes(Number(options.tracks))
-      ? Number(options.tracks)
-      : flagTracksMatch
-        ? Number(flagTracksMatch[1])
-        : null;
+    parseRequestedTracks(options.tracks) ??
+    (flagTracksMatch ? parseRequestedTracks(flagTracksMatch[1]) : null);
 
   const hasExplicitCommand = /(?:^|\s)\/skizzo\b/i.test(safeRaw);
-  const isForced = Boolean(options.force || options.always || requestedTracks) || FORCE_PATTERNS.some((rx) => rx.test(safeRaw));
+  const isForced =
+    Boolean(options.force || options.always || requestedTracks) ||
+    FORCE_PATTERNS.some((rx) => rx.test(safeRaw));
   const explicitTrigger = hasExplicitCommand || isForced;
-  const stickySessionActive = options.stickySessionActive !== undefined ? Boolean(options.stickySessionActive) : explicitTrigger;
+  const stickySessionActive =
+    options.stickySessionActive !== undefined ? Boolean(options.stickySessionActive) : explicitTrigger;
   const isImplicitMode = !explicitTrigger && !stickySessionActive;
   const threshold = isImplicitMode ? 4 : 3;
 
@@ -365,10 +420,9 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
   }
 
   if (score >= threshold) {
-    const finalRoute = score >= 5 && hasMediator ? 'DUAL-TRACK+MEDIATOR' : activeRoute;
     return {
       ...activeBounds,
-      route: finalRoute,
+      route: activeRoute,
       score,
       threshold,
       reason: 'scelta multi-prospettiva con domini in tensione (selezione e ranking ruoli 2..4 delegati all\'LLM)',
@@ -395,16 +449,39 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
 }
 
 // CLI entrypoint for quick inspection: node plugins/skizzo/scripts/triage.mjs "<prompt>"
-const isMain = process.argv[1] && fileURLToPath(import.meta.url).toLowerCase() === process.argv[1].replace(/\\/g, '/').toLowerCase();
+const isMain =
+  process.argv[1] &&
+  fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase() ===
+    process.argv[1].replace(/\\/g, '/').toLowerCase();
+
 if (isMain) {
   const args = process.argv.slice(2);
   const force = args.includes('--force') || args.includes('-f');
   const skip = args.includes('--skip') || args.includes('--fast');
   const mediator = args.includes('--mediator') || args.includes('-m');
-  const stickySessionActive = args.includes('--sticky');
-  const promptArg = args
-    .filter((a) => !['--force', '-f', '--skip', '--fast', '--mediator', '-m', '--sticky'].includes(a))
-    .join(' ');
-  const result = classifySkizzoTask(promptArg, { force, skip, mediator, stickySessionActive });
+  const stickySessionActive = args.includes('--sticky') ? true : undefined;
+
+  let tracks;
+  const promptParts = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (['--force', '-f', '--skip', '--fast', '--mediator', '-m', '--sticky'].includes(arg)) {
+      continue;
+    }
+    if ((arg === '--tracks' || arg === '--agents') && i + 1 < args.length && /^\d+$/.test(args[i + 1])) {
+      tracks = Number(args[i + 1]);
+      i++;
+      continue;
+    }
+    promptParts.push(arg);
+  }
+
+  const result = classifySkizzoTask(promptParts.join(' '), {
+    force,
+    skip,
+    mediator,
+    stickySessionActive,
+    tracks
+  });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

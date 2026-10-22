@@ -12,17 +12,17 @@ description: >-
 
 Mette in competizione e collaborazione parallela **da `2` a `4` subagent su misura** quando una richiesta presenta reali scelte multi-prospettiva (`score >= 4` in modalità implicita `AUTO`, `score >= 3` se attivato con `/skizzo`), mentre risponde **subito in modalità diretta (`FAST-PASS`, `0` subagent)** su comandi operativi, domande di lettura e micro-correzioni puntuali.
 
-### Protocollo di Scoperta, Ordinamento per Importanza e Istanziazione dei Domini (via LLM)
+### Protocollo di Scoperta, Ordinamento per Importanza e Criterio di Arresto (`2 <= N <= 4`)
 Nessun ruolo è cablato a priori: quando il task supera il filtro `FAST-PASS`, l'agente padre usa il proprio ragionamento semantico per determinare **quanti** e **quali** agenti servono:
 1. **Individuazione Aperta dei Domini**: analizza la richiesta e il contesto per estrarre tutte le discipline, le competenze specialistiche o i punti di vista degli stakeholder coinvolti (senza schemi rigidi e senza forzare un ruolo informatico se la decisione non riguarda codice).
-2. **Ordinamento per Importanza e Taglio a `Max 4` (`rankAndCapDomains` — `2 <= N <= 4`)**:
-   - Valuta ciascun dominio candidato secondo tre criteri:
-     - **Impatto Primario (`importance`)**: quanto quel dominio è determinante per la riuscita del task;
-     - **Tensione Dialettica (`tension`)**: quanto la sua prospettiva entra in sano conflitto con le altre (evitando cloni o ruoli ridondanti);
-     - **Rischio di Omissione**: gravità degli errori se quel punto di vista venisse ignorato.
-   - Ordina i domini per priorità decrescente e seleziona **solo i primi `N` (`2`, `3` o al massimo `4`: `Alpha`, `Beta`, `Delta`, `Epsilon`)**, accorpando o scartando i domini secondari oltre il 4° posto per non disperdere il contesto.
-3. **Istanziazione su Misura**: per ciascuno dei `2..4` domini selezionati, definisce al volo **Titolo del Ruolo**, **Mandato Non Negoziabile**, **1–2 Skill verticali** dal catalogo `<skills>` e **Oracolo di Verifica**.
-4. **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, attivo con `--mediator` / `-m`)**: arbitro imparziale che interroga i subagent attivi via `send_message` (max 1 round) ed emette il lodo arbitrale.
+2. **Ordinamento per Importanza (`rankAndCapDomains`)**:
+   - Valuta ciascun dominio candidato secondo tre criteri: **Impatto Primario (`importance`, `0..10`)**, **Tensione Dialettica (`tension`, `0..10`)** e **Rischio di Omissione**.
+   - Ordina i domini per priorità decrescente (`priorityScore = importance * 2 + tension`) eliminando prospettive ridondanti.
+3. **Criterio di Arresto Deterministico (Rasoio di Occam per `2 vs 3 vs 4` Agenti)**:
+   - **Parti da `N = 2` (`DUAL-TRACK`)** con i primi 2 domini più importanti in tensione.
+   - **Aggiungi il `3°` (`TRI-TRACK`) o il `4°` (`QUAD-TRACK`, tetto massimo assoluto)** *solo se* introduce un **vincolo strutturale o un oracolo di verifica ortogonale** non assorbibile dai primi due (o se l'utente lo richiede esplicitamente, es. *"con 3 agenti"* / `--tracks 3`). Scarta o accorpa tutti i domini oltre il 4° posto.
+4. **Istanziazione su Misura**: per ciascuno dei `2..4` domini selezionati (`Alpha`, `Beta`, `Delta`, `Epsilon`), definisce al volo **Titolo del Ruolo**, **Mandato Non Negoziabile**, **1–2 Skill verticali** dal catalogo `<skills>` e **Oracolo di Verifica**.
+5. **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, attivo con `--mediator` / `-m`)**: arbitro imparziale che interroga i subagent attivi via `send_message` (max 1 round) ed emette il lodo arbitrale.
 
 > **Nota di Autosufficienza Telemetrica**: questo runbook contiene tutti i template operativi necessari. Non eseguire `view_file` secondari su `references/dialectic-template.md` durante il flusso standard per evitare doppi conteggi in `collector.mjs`.
 
@@ -36,10 +36,10 @@ Nessun ruolo è cablato a priori: quando il task supera il filtro `FAST-PASS`, l
    - Se `score >= 4`: l'LLM individua i domini, li ordina per importanza (cap a `4`), avvia i `2..4` subagent in parallelo e aggiorna il titolo chat con `[SKIZZO] `.
 2. **Persistenza Sticky Esplicita (`SKIZZO = ON`)**:
    - Quando l'utente invoca `/skizzo`, `/skizzo on`, `/skizzo --mediator` (o `-m`) o `/skizzo <task>`, lo stato passa a `SKIZZO = ON (Sticky)` per i messaggi successivi (soglia `score >= 3`, ricevuta `[!NOTE]` visibile sui `FAST-PASS`).
-3. **Override per Singolo Turno, Numero di Agenti (`--tracks N`) e Stop**:
-   - **Forza Skizzo o Numero Agenti (`--force` / `-f` / `--tracks 2|3|4` / `"forza skizzo"`)**: salta il filtro rapido e avvia obbligatoriamente i subagent per i `N` domini più importanti.
-   - **Salta per 1 Turno (`--skip` / `--fast` / `"senza skizzo"` / `"vai veloce"`)**: esegue il turno corrente in `FAST-PASS` (`0` subagent).
-   - **Stop Completo (`/skizzo stop`, `/skizzo off`, `stop skizzo`, `ferma skizzo`)**: imposta `SKIZZO = OFF` e rimuove `[SKIZZO]` dal titolo.
+3. **Override in Linguaggio Naturale o Flag e Stop**:
+   - **Forza Skizzo o Numero Agenti (*"forza skizzo"*, *"con 3 agenti"*, *"usa 4 domini"*, `--force`, `--tracks 2..4`)**: salta il filtro rapido e avvia i subagent per i `N` domini più importanti (valori fuori scala vengono limitati in `[2..4]`).
+   - **Salta per 1 Turno (*"senza skizzo"*, *"vai veloce"*, `--skip`, `--fast`)**: esegue il turno corrente in `FAST-PASS` (`0` subagent).
+   - **Stop Completo (`stop skizzo`, `ferma skizzo`, `/skizzo stop`, `/skizzo off`)**: imposta `SKIZZO = OFF` e rimuove `[SKIZZO]` dal titolo.
 4. **Aggiornamento Visivo del Titolo Chat (`set-chat-title.mjs` con `--conversation-id` Obbligatorio)**:
    - Leggi `<Conversation ID>` da `<user_information>` ed esegui:
      `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --conversation-id "<Conversation ID>" --title "[SKIZZO] <Titolo>"` (o `[SKIZZO+MED]` con `--mediator`).
@@ -61,7 +61,7 @@ Nessun ruolo è cablato a priori: quando il task supera il filtro `FAST-PASS`, l
 *(Nota: se `silentFastPass: true` in modalità `AUTO` implicita, emettere `0 byte` di banner e rispondere normalmente).*
 ```markdown
 > [!NOTE]
-> **MODALITÀ SKIZZO ATTIVA (`FAST-PASS` — Risposta rapida per [comando operativo | domanda di lettura | modifica puntuale], ~90s risparmiati)** · Resta attiva per i prossimi messaggi · Usa `/skizzo --force` (o `--tracks 3`) per forzare gli agenti.
+> **MODALITÀ SKIZZO ATTIVA (`FAST-PASS` — Risposta rapida per [comando operativo | domanda di lettura | modifica puntuale], ~90s risparmiati)** · Resta attiva per i prossimi messaggi · Scrivi `"forza skizzo"` (o `/skizzo --force`) per forzare gli agenti.
 ```
 
 ---
@@ -89,14 +89,14 @@ Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Is
 
 ---
 
-## 5. Step 2, Step 3 & Step 4: Cross-Critique / Mediatore (`Gamma`) e Consegna "Human-First"
+## 5. Step 2, Step 3 & Step 4: Cross-Critique / Mediatore (`Gamma`) e Consegna "Human-First" (`~600px`)
 
 1. **Cross-Critique / Mediatore**: confronta i report dei `2..4` subagent ordinati per importanza (o invoca `Subagent Gamma` con `--mediator` per contro-interrogarli via `send_message` in max 1 round) e sintetizza una soluzione che soddisfi **tutti gli oracoli attivi**.
-2. **Formato Obbligatorio di Consegna "Human-First"**: apri al **rigo 1** con il banner `[!IMPORTANT]` elencando i domini istanziati in ordine di importanza, seguito dai punti chiave in italiano semplice (zero gergo o LaTeX fuori da `<details>`):
+2. **Formato Obbligatorio di Consegna "Human-First" (Tabella a 4 Colonne Fisse per Riga)**: apri al **rigo 1** con il banner `[!IMPORTANT]` compatto (con link `conversation://` per tutti i `2..4` domini), seguito dai punti chiave in italiano semplice e da una **tabella trasposta per riga a 4 colonne fisse** dentro `<details>` (zero overflow su `~600px`):
 
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK` | `TRI-TRACK` | `QUAD-TRACK` — `N` Domini per Importanza)** — Subagent: [`1° <Ruolo Alpha>`](conversation://<id-alpha>) (Skill: `<skills>`) · [`2° <Ruolo Beta>`](conversation://<id-beta>) (Skill: `<skills>`) [· `3° <Ruolo Delta>` · `4° <Ruolo Epsilon>`]
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK` | `TRI-TRACK` | `QUAD-TRACK` — `N` Domini per Importanza)** — Subagent: [`1° <Ruolo Alpha>`](conversation://<id-alpha>) · [`2° <Ruolo Beta>`](conversation://<id-beta>) [· [`3° <Ruolo Delta>`](conversation://<id-delta>) · [`4° <Ruolo Epsilon>`](conversation://<id-epsilon>)]
 
 [1-2 frasi semplici in italiano quotidiano sul risultato concreto.]
 
@@ -107,13 +107,14 @@ Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Is
 <details>
 <summary><strong>Dettagli Tecnici, Matrice Multi-Dominio Ordinata per Importanza e Verifiche</strong></summary>
 
-| Punto Discusso | `1° <Ruolo Alpha>` | `2° <Ruolo Beta>` | [`3° <Ruolo Delta>` / `4° <Ruolo Epsilon>`] | Sintesi Finale |
-| :--- | :--- | :--- | :--- | :--- |
-| **Skill & Mandato** | `<skills-alpha>` | `<skills-beta>` | [`<skills-delta>`] | **Complementari**: [Sinergia] |
-| **Proposta Chiave** | [Proposta Alpha] | [Proposta Beta] | [Proposta Delta] | **Scelta Unificata**: [Motivazione] |
-| **Oracoli & Test** | [Oracolo Alpha] | [Oracolo Beta] | [Oracolo Delta] | **Verificati**: [Copertura completa] |
+| # Dominio (Per Importanza) | Skill & Mandato | Proposta Chiave | Oracolo & Esito |
+| :--- | :--- | :--- | :--- |
+| **1° `<Ruolo Alpha>`** | `<skills-alpha>` — [Mandato] | [Proposta Alpha] | `PASS` — [Oracolo Alpha] |
+| **2° `<Ruolo Beta>`** | `<skills-beta>` — [Mandato] | [Proposta Beta] | `PASS` — [Oracolo Beta] |
+| **[3° `<Ruolo Delta>`]** | `<skills-delta>` — [Mandato] | [Proposta Delta] | `PASS` — [Oracolo Delta] |
+| **[4° `<Ruolo Epsilon>`]** | `<skills-epsilon>` — [Mandato] | [Proposta Epsilon] | `PASS` — [Oracolo Epsilon] |
 
-- **Domini considerati e criterio di priorità (`Max 4`)**: [Motivazione dell'ordinamento dei domini ed eventuali domini marginali accorpati/esclusi].
+- **Sintesi Unificata & Criterio di Priorità (`Max 4`)**: [Come sono state fuse le proposte e perché sono stati scelti questi `N` domini].
 - **Dietro le quinte (Cross-Critique tra i `N` domini)**: [Sintesi dei punti di attrito risolti].
 - **Verifiche & File Aggiornati**: [Stato oracoli e file toccati].
 

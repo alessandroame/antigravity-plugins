@@ -1,6 +1,6 @@
 # Template di Riferimento Multi-Dominio Dinamico, Auto-Triage & Mediatore (`/skizzo`)
 
-Questo documento fornisce i template di riferimento per il **Banner Esplicito Modalità Skizzo (`[!IMPORTANT]` e `[!NOTE] FAST-PASS`)**, la **Matrice Multi-Dominio Ordinata per Importanza (`2..4` Agenti)**, il **Mediatore Interattivo (`/skizzo --mediator`)** e la variante di prototipazione parallela su Git Worktree (`/skizzo --proto`).
+Questo documento fornisce i template di riferimento per il **Banner Esplicito Modalità Skizzo (`[!IMPORTANT]` e `[!NOTE] FAST-PASS`)**, la **Matrice Multi-Dominio Ordinata per Importanza a 4 Colonne Fisse (`2..4` Agenti)**, il **Mediatore Interattivo (`/skizzo --mediator`)** e la variante di prototipazione parallela su Git Worktree (`/skizzo --proto`).
 
 ---
 
@@ -12,7 +12,7 @@ Questo documento fornisce i template di riferimento per il **Banner Esplicito Mo
 > **MODALITÀ SKIZZO ATTIVA (`MULTI-DOMINIO DINAMICO`)** — Persistente per tutta la sessione fino a `/skizzo stop` o `"stop skizzo"` | Titolo: `[SKIZZO]`
 
 - **Scoperta e Ranking dei Domini via LLM (`2..4` Agenti)**: sulle scelte progettuali o multi-prospettiva, l'LLM individua i domini coinvolti, li ordina per importanza e istanzia da `2` a `4` subagent su misura (`Alpha`, `Beta`, `Delta`, `Epsilon`).
-- **Risposta Rapida sulle Modifiche Dirette (`FAST-PASS`, ~90s risparmiati)**: per piccole correzioni, comandi operativi o domande di sola lettura ti risponde subito senza farti aspettare i subagent, restando attiva per i messaggi successivi (usa `/skizzo --force` o `--tracks 3` per forzare gli agenti).
+- **Risposta Rapida sulle Modifiche Dirette (`FAST-PASS`, ~90s risparmiati)**: per piccole correzioni, comandi operativi o domande di sola lettura ti risponde subito senza farti aspettare i subagent, restando attiva per i messaggi successivi (scrivi `"forza skizzo"` o `/skizzo --force` per forzare gli agenti).
 - **Persistenza Automatica & Stop**: non serve riscrivere `/skizzo` nei prossimi messaggi; la modalità resta attiva fino a fine chat o finché non scrivi `/skizzo stop`, `/skizzo off` o `"stop skizzo"`.
 
 Quale funzionalità o problema vuoi affrontare?
@@ -42,35 +42,36 @@ Quando `SKIZZO = ON` ma il Gate 0 rileva un comando operativo, una domanda di so
 
 ```markdown
 > [!NOTE]
-> **MODALITÀ SKIZZO ATTIVA (`FAST-PASS` — Risposta rapida per modifica puntuale / comando operativo, ~90s risparmiati)** · Resta attiva per i prossimi messaggi · Usa `/skizzo --force` (o `--tracks 3`) se vuoi comunque forzare gli agenti.
+> **MODALITÀ SKIZZO ATTIVA (`FAST-PASS` — Risposta rapida per modifica puntuale / comando operativo, ~90s risparmiati)** · Resta attiva per i prossimi messaggi · Scrivi `"forza skizzo"` (o `/skizzo --force`) per forzare gli agenti.
 
 [Risposta diretta ed esecuzione immediata del task senza attendere subagent.]
 ```
 
 ---
 
-## 3. Template Completo di Consegna Task "Human-First" (`DUAL/TRI/QUAD-TRACK` + `<details>`)
+## 3. Template Completo di Consegna Task "Human-First" (`DUAL/TRI/QUAD-TRACK` + `<details>` a 4 Colonne)
 
 ```markdown
 > [!IMPORTANT]
-> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK` | `TRI-TRACK` | `QUAD-TRACK` — `N` Domini per Importanza)** — Subagent: [`1° <Ruolo Alpha>`](conversation://<id-alpha>) (Skill: `<skills>`) · [`2° <Ruolo Beta>`](conversation://<id-beta>) (Skill: `<skills>`) [· `3° <Ruolo Delta>` · `4° <Ruolo Epsilon>`]
+> **MODALITÀ SKIZZO ATTIVA (`DUAL-TRACK` | `TRI-TRACK` | `QUAD-TRACK` — `N` Domini per Importanza)** — Subagent: [`1° <Ruolo Alpha>`](conversation://<id-alpha>) · [`2° <Ruolo Beta>`](conversation://<id-beta>) [· [`3° <Ruolo Delta>`](conversation://<id-delta>) · [`4° <Ruolo Epsilon>`](conversation://<id-epsilon>)]
 
 [1-2 frasi semplici in italiano quotidiano sul risultato concreto.]
 
 - **Cosa cambia per te**: [1 riga concreta in italiano semplice sul miglioramento pratico].
-- **Contributo dei domini attivati (in ordine di importanza)**: [1 riga sintetica su cosa ha garantito ciascuno dei 2..4 ruoli scesi in campo].
+- **Contributo dei domini attivati (in ordine di importanza)**: [1 riga sintetica su cosa ha garantito ciascuno dei 2..4 ruoli istanziati].
 - **Conflitto risolto tra i ruoli (e perché vince questa sintesi)**: [1 riga sul compromesso superato] — **Controlli**: `Tutti i test/oracoli superati (X/X OK)`.
 
 <details>
 <summary><strong>Dettagli Tecnici, Matrice Multi-Dominio Ordinata per Importanza e Verifiche</strong></summary>
 
-| Punto Discusso | `1° <Ruolo Alpha>` | `2° <Ruolo Beta>` | [`3° <Ruolo Delta>` / `4° <Ruolo Epsilon>`] | Sintesi Finale |
-| :--- | :--- | :--- | :--- | :--- |
-| **Skill & Mandato** | `<skills-alpha>` | `<skills-beta>` | [`<skills-delta>`] | **Complementari**: [Sinergia] |
-| **Proposta Chiave** | [Proposta Alpha] | [Proposta Beta] | [Proposta Delta] | **Scelta Unificata**: [Motivazione] |
-| **Oracoli & Test** | [Oracolo Alpha] | [Oracolo Beta] | [Oracolo Delta] | **Verificati**: [Copertura completa] |
+| # Dominio (Per Importanza) | Skill & Mandato | Proposta Chiave | Oracolo & Esito |
+| :--- | :--- | :--- | :--- |
+| **1° `<Ruolo Alpha>`** | `<skills-alpha>` — [Mandato] | [Proposta Alpha] | `PASS` — [Oracolo Alpha] |
+| **2° `<Ruolo Beta>`** | `<skills-beta>` — [Mandato] | [Proposta Beta] | `PASS` — [Oracolo Beta] |
+| **[3° `<Ruolo Delta>`]** | `<skills-delta>` — [Mandato] | [Proposta Delta] | `PASS` — [Oracolo Delta] |
+| **[4° `<Ruolo Epsilon>`]** | `<skills-epsilon>` — [Mandato] | [Proposta Epsilon] | `PASS` — [Oracolo Epsilon] |
 
-- **Domini considerati e criterio di priorità (`Max 4`)**: [Motivazione dell'ordinamento ed eventuali domini secondari accorpati/esclusi].
+- **Sintesi Unificata & Criterio di Priorità (`Max 4`)**: [Come sono state fuse le proposte e motivazione dell'ordinamento ed eventuali domini secondari accorpati/esclusi].
 - **Dietro le quinte (Cross-Critique / Negoziazione `Gamma`)**: [Sintesi dei punti di attrito risolti].
 - **Verifiche & File Aggiornati**: `Oracolo Alpha: PASS` | `Oracolo Beta: PASS` — [File e metriche].
 
