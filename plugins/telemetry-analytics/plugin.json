@@ -1,11 +1,11 @@
 {
   "name": "telemetry-analytics",
   "displayName": "Telemetry, Usage Analytics & Session Backfill",
-  "description": "Monitora l'utilizzo personale di Antigravity tramite mining incrementale delle sessioni locali (brain/), traccia tempi attivi, abitudini orarie, modelli, token, slash command e plugin, governa la stima ETA e genera una Dashboard HTML interattiva.",
-  "version": "2.0.0",
+  "description": "Monitora l'utilizzo personale di Antigravity tramite mining incrementale delle sessioni locali (brain/), report dei token per singolo prompt (Prompt #1..#N), tempi attivi, abitudini orarie, modelli, slash command, stima ETA e Dashboard HTML interattiva.",
+  "version": "2.1.0",
   "suggestedPrompts": [
-    "Mostra il monitoraggio completo del mio utilizzo di Antigravity con la dashboard interattiva",
-    "Analizza le mie sessioni locali degli ultimi 7 giorni per progetto, fascia oraria e consumo token",
+    "Mostra il monitoraggio completo del mio utilizzo di Antigravity con il report dei token per ogni prompt",
+    "Analizza le mie sessioni locali degli ultimi 7 giorni per progetto, fascia oraria e consumo token per prompt",
     "Esporta la telemetria delle sessioni in formato JSON o CSV"
   ]
 }

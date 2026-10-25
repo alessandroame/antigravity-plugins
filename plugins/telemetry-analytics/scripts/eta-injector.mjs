@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Event-Driven Whole-Task ETA Injector for Antigravity PreInvocation Hook.
- * Stays completely silent ({}) during initial blind exploration or when the work
- * is progressing along the previously announced trajectory. Injects a compact
- * 1-line clock signal ONLY when a whole-task estimate becomes reliable or needs
- * recalibration due to significant drift (>= 15s).
+ * Event-Driven Whole-Task ETA & Per-Prompt Token State Tracker for Antigravity PreInvocation Hook.
+ * Updates .eta_<conversationId>.json with active elapsed time (net of ask_question pauses)
+ * and per-prompt / cumulative session token counters from transcript.jsonl, while always
+ * outputting {} on stdout to avoid polluting Antigravity tool output boxes.
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -19,8 +18,6 @@ const safetyWatchdog = setTimeout(() => {
   process.exit(0);
 }, WATCHDOG_TIMEOUT_MS);
 safetyWatchdog.unref();
-
-const SIGNIFICANT_DRIFT_SEC = 15;
 
 function getAnalyticsDir() {
   const custom = process.env.ANTIGRAVITY_ANALYTICS_DIR;
@@ -54,6 +51,7 @@ function inspectActiveWork(transcriptPath, nowMs) {
     const raw = readFileSync(transcriptPath, 'utf-8');
     const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
 
+    let promptNumber = 0;
     let workStartMs = null;
     let pausedDurationMs = 0;
     let pendingAskQuestionStartMs = null;
@@ -64,6 +62,14 @@ function inspectActiveWork(transcriptPath, nowMs) {
     let lastAnnouncedEtaSec = null;
     let lastAnnouncedAtActiveSec = 0;
     let lastTurnCompleted = true;
+
+    let promptInputTokens = 0;
+    let promptOutputTokens = 0;
+    let promptCacheTokens = 0;
+    let sessionInputTokens = 0;
+    let sessionOutputTokens = 0;
+    let sessionCacheTokens = 0;
+    let lastContextTokens = 0;
 
     for (const line of lines) {
       try {
@@ -77,13 +83,16 @@ function inspectActiveWork(transcriptPath, nowMs) {
           step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
 
         if (isUserStep && validTs) {
-          // Reset only if no active task is running or the previous task completed its final response
+          promptNumber += 1;
           if (workStartMs === null || lastTurnCompleted) {
             workStartMs = stepTs;
             pausedDurationMs = 0;
             pendingAskQuestionStartMs = null;
             executedToolCalls = 0;
             plannerTurns = 0;
+            promptInputTokens = 0;
+            promptOutputTokens = 0;
+            promptCacheTokens = 0;
             firstReliableEtaSec = null;
             firstReliableEtaAtActiveSec = 0;
             lastAnnouncedEtaSec = null;
@@ -95,10 +104,25 @@ function inspectActiveWork(transcriptPath, nowMs) {
 
         if (workStartMs === null) continue;
 
-        // If returning from an ask_question pause, accumulate the user wait time
         if (pendingAskQuestionStartMs !== null && validTs && stepTs >= pendingAskQuestionStartMs) {
           pausedDurationMs += stepTs - pendingAskQuestionStartMs;
           pendingAskQuestionStartMs = null;
+        }
+
+        if (step.type === 'PLANNER_RESPONSE' || step.source === 'MODEL') {
+          const sIn = typeof step.input_tokens === 'number' ? step.input_tokens : 0;
+          const sOut = typeof step.output_tokens === 'number' ? step.output_tokens : 0;
+          const sCache = typeof step.cache_read_tokens === 'number' ? step.cache_read_tokens : 0;
+
+          promptInputTokens += sIn;
+          promptOutputTokens += sOut;
+          promptCacheTokens += sCache;
+          sessionInputTokens += sIn;
+          sessionOutputTokens += sOut;
+          sessionCacheTokens += sCache;
+          if (sIn + sCache > 0) {
+            lastContextTokens = sIn + sCache;
+          }
         }
 
         if (Array.isArray(step.tool_calls) && step.tool_calls.length > 0) {
@@ -143,11 +167,19 @@ function inspectActiveWork(transcriptPath, nowMs) {
     const activeElapsedSec = Math.max(0, Math.round((nowMs - workStartMs - pausedDurationMs) / 1000));
 
     return {
+      promptNumber,
       workStartMs,
       pausedDurationMs,
       activeElapsedSec,
       executedToolCalls,
       plannerTurns,
+      promptInputTokens,
+      promptOutputTokens,
+      promptCacheTokens,
+      sessionInputTokens,
+      sessionOutputTokens,
+      sessionCacheTokens,
+      lastContextTokens,
       firstReliableEtaSec,
       firstReliableEtaAtActiveSec,
       lastAnnouncedEtaSec,
@@ -155,47 +187,6 @@ function inspectActiveWork(transcriptPath, nowMs) {
     };
   } catch {
     return null;
-  }
-}
-
-function loadHistoricalBaselines(analyticsDir, workspacePath) {
-  const defaults = {
-    avgStepSec: 4.5,
-    calibrationFactor: 1.0
-  };
-
-  const summaryPath = join(analyticsDir, 'metrics-summary.json');
-  if (!existsSync(summaryPath)) {
-    return defaults;
-  }
-
-  try {
-    const summary = JSON.parse(readFileSync(summaryPath, 'utf-8'));
-    const normalizedWs = (workspacePath || '').replace(/\\/g, '/').toLowerCase();
-    const wsMatch = Object.entries(summary.workspaces || {}).find(
-      ([k]) => k.replace(/\\/g, '/').toLowerCase() === normalizedWs
-    );
-
-    const source = wsMatch ? wsMatch[1] : summary.global;
-    if (!source) return defaults;
-
-    let avgStepSec = defaults.avgStepSec;
-    const totalToolCalls = Object.values(source.tools || {}).reduce((acc, t) => acc + (t.calls || 0), 0);
-    const totalSteps = Math.max(source.totalSteps || 0, totalToolCalls);
-    const totalDurationMs = source.totalDurationMs || 0;
-    if (totalSteps >= 5 && totalDurationMs > 0) {
-      const computed = totalDurationMs / totalSteps / 1000;
-      avgStepSec = Math.max(1.5, Math.min(12.0, Number(computed.toFixed(1))));
-    }
-
-    let calibrationFactor = defaults.calibrationFactor;
-    if (typeof source.etaCalibrationFactor === 'number' && source.etaCalibrationFactor > 0) {
-      calibrationFactor = Math.max(0.5, Math.min(2.5, Number(source.etaCalibrationFactor.toFixed(2))));
-    }
-
-    return { avgStepSec, calibrationFactor };
-  } catch {
-    return defaults;
   }
 }
 
@@ -216,7 +207,6 @@ async function main() {
 
   const nowMs = Date.now();
   const conversationId = payload.conversationId || 'unknown-session';
-  const workspacePath = payload.workspacePaths?.[0] || process.cwd();
   const transcriptPath = payload.transcriptPath;
   const invocationNum = typeof payload.invocationNum === 'number' ? payload.invocationNum : 1;
 
@@ -226,49 +216,37 @@ async function main() {
   const stateFile = join(analyticsDir, `.eta_${conversationId}.json`);
   const workState = inspectActiveWork(transcriptPath, nowMs);
 
-  // Stay completely silent on Invocation #1 (initial exploration or quick answer)
-  if (invocationNum <= 1 || !workState) {
+  if (!workState) {
     process.stdout.write('{}\n');
     process.exit(0);
-  }
-
-  const {
-    workStartMs,
-    pausedDurationMs,
-    activeElapsedSec,
-    executedToolCalls,
-    plannerTurns,
-    firstReliableEtaSec,
-    firstReliableEtaAtActiveSec,
-    lastAnnouncedEtaSec,
-    lastAnnouncedAtActiveSec
-  } = workState;
-
-  const { avgStepSec, calibrationFactor } = loadHistoricalBaselines(analyticsDir, workspacePath);
-
-  // Read previous state to avoid repeating the same signal when nothing changed
-  let prevState = {};
-  if (existsSync(stateFile)) {
-    try {
-      prevState = JSON.parse(readFileSync(stateFile, 'utf-8'));
-    } catch {
-      prevState = {};
-    }
   }
 
   try {
     writeFileSync(
       stateFile,
       JSON.stringify({
-        promptStartMs: workStartMs,
-        pausedDurationMs,
-        activeElapsedSec,
+        promptNumber: workState.promptNumber,
+        promptStartMs: workState.workStartMs,
+        pausedDurationMs: workState.pausedDurationMs,
+        activeElapsedSec: workState.activeElapsedSec,
         invocationNum,
-        executedToolCalls,
-        initialEtaSec: firstReliableEtaSec,
-        initialEtaAtActiveSec: firstReliableEtaAtActiveSec,
-        lastAnnouncedEtaSec,
-        lastAnnouncedAtActiveSec
+        executedToolCalls: workState.executedToolCalls,
+        plannerTurns: workState.plannerTurns,
+        promptTokens: {
+          input: workState.promptInputTokens,
+          output: workState.promptOutputTokens,
+          cacheRead: workState.promptCacheTokens
+        },
+        sessionTokens: {
+          input: workState.sessionInputTokens,
+          output: workState.sessionOutputTokens,
+          cacheRead: workState.sessionCacheTokens
+        },
+        lastContextTokens: workState.lastContextTokens,
+        initialEtaSec: workState.firstReliableEtaSec,
+        initialEtaAtActiveSec: workState.firstReliableEtaAtActiveSec,
+        lastAnnouncedEtaSec: workState.lastAnnouncedEtaSec,
+        lastAnnouncedAtActiveSec: workState.lastAnnouncedAtActiveSec
       }),
       'utf-8'
     );
@@ -276,8 +254,7 @@ async function main() {
     // Ignore state write failure
   }
 
-  // Always output empty JSON {} so Antigravity never appends [ETA-CLOCK] logs to tool outputs.
-  // The agent uses native Created At / Completed At timestamps and rules/AGENTS.md directly.
+  // Always output empty JSON {} so Antigravity never appends raw logs to tool output boxes
   process.stdout.write('{}\n');
   process.exit(0);
 }

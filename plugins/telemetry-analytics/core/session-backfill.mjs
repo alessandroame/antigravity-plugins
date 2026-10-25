@@ -3,8 +3,8 @@
  * Pure Node.js module with zero DOM/browser dependencies.
  * Scans ~/.gemini/antigravity/brain/<conversationId>/.system_generated/logs/transcript.jsonl,
  * maintains an incremental cache in sessions-index.json (keyed by mtimeMs & size),
- * and aggregates comprehensive usage metrics across sessions, workspaces, models,
- * active time, hourly/weekday habits, tokens, slash commands, plugins/skills, and tools.
+ * and aggregates comprehensive usage metrics across sessions, per-prompt token breakdowns,
+ * workspaces, models, active time, hourly/weekday habits, tokens, slash commands, plugins/skills, and tools.
  */
 
 import {
@@ -20,7 +20,7 @@ import { join, resolve, basename } from 'node:path';
 
 export const MAX_IDLE_GAP_MS = 15 * 60 * 1000; // 15 minutes max idle gap between active steps
 export const MIN_ACTIVE_SESSION_MS = 5000; // 5s floor for single-turn sessions
-export const INDEX_SCHEMA_VERSION = 2;
+export const INDEX_SCHEMA_VERSION = 3;
 
 const SUBAGENT_PROMPT_HEAD_RX =
   /Skill Attive \((?:Alpha|Beta|Gamma|Delta|Epsilon)|\bSei \*\*Subagent|\bAgisci esclusivamente come \*\*Subagent|\bYou have been spawned as a subagent|<subagent_context>|Sfidante [AB]\b|Giudice Cieco\b/i;
@@ -247,7 +247,8 @@ export function parseUserStepContent(rawContent) {
 }
 
 /**
- * Parses a raw transcript.jsonl string into a structured session summary object.
+ * Parses a raw transcript.jsonl string into a structured session summary object,
+ * including the per-prompt token and step breakdown (`promptsBreakdown`).
  * @param {string} rawJsonl
  * @param {string} conversationId
  * @param {number} [fallbackMtimeMs]
@@ -299,6 +300,31 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
   let declaredEtaCount = 0;
   let totalDeclaredEtaMs = 0;
 
+  // Per-prompt tracking state
+  const promptsBreakdown = [];
+  let currentPrompt = null;
+  let prevStepTsInPrompt = null;
+  let pendingAskQuestionInPrompt = false;
+
+  const finalizeCurrentPrompt = () => {
+    if (!currentPrompt) return;
+    if (currentPrompt.plannerTurns > 0 && currentPrompt.durationMs < 1000) {
+      currentPrompt.durationMs = 1000;
+    }
+    const direct = currentPrompt.inputTokens + currentPrompt.outputTokens;
+    const totWithCache = direct + currentPrompt.cacheReadTokens;
+    currentPrompt.totalDirectTokens = direct;
+    currentPrompt.cacheHitPct =
+      totWithCache > 0 ? Number(((currentPrompt.cacheReadTokens / totWithCache) * 100).toFixed(1)) : 0;
+    currentPrompt.cumulativeDirectTokens = inputTokens + outputTokens;
+    currentPrompt.cumulativeCacheTokens = cacheReadTokens;
+    currentPrompt.cumulativeAllTokens = inputTokens + outputTokens + cacheReadTokens;
+    promptsBreakdown.push(currentPrompt);
+    currentPrompt = null;
+    prevStepTsInPrompt = null;
+    pendingAskQuestionInPrompt = false;
+  };
+
   const recordPluginSkill = (pluginName, skillName) => {
     if (!pluginName) return;
     if (!plugins[pluginName]) {
@@ -345,17 +371,42 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
         isSubagent = true;
       }
 
-      if (cleanRequest && !cleanRequest.includes('<SYSTEM_MESSAGE>')) {
-        userPromptsCount += 1;
-        if (stepTs) promptTimestamps.push(stepTs);
-        if (!topic) {
-          topic = cleanRequest.replace(/\s+/g, ' ').slice(0, 90);
-        }
-      }
-
       for (const m of modelChanges) {
         lastModel = m;
         modelsUsed[m] = (modelsUsed[m] || 0) + 1;
+      }
+
+      const isGenuinePrompt = Boolean(cleanRequest && !cleanRequest.includes('<SYSTEM_MESSAGE>'));
+      if (isGenuinePrompt || userPromptsCount === 0) {
+        finalizeCurrentPrompt();
+        userPromptsCount += 1;
+        if (stepTs) promptTimestamps.push(stepTs);
+        const promptLabel = isGenuinePrompt
+          ? cleanRequest.replace(/\s+/g, ' ').slice(0, 85)
+          : '(Conferma / Approvazione)';
+        if (!topic && isGenuinePrompt) {
+          topic = promptLabel;
+        }
+        currentPrompt = {
+          promptNumber: userPromptsCount,
+          timestampMs: stepTs || fallbackMtimeMs,
+          excerpt: promptLabel,
+          model: lastModel || 'Default',
+          plannerTurns: 0,
+          toolCalls: 0,
+          durationMs: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          totalDirectTokens: 0,
+          cacheHitPct: 0,
+          contextTokens: 0,
+          cumulativeDirectTokens: 0,
+          cumulativeCacheTokens: 0,
+          cumulativeAllTokens: 0
+        };
+        prevStepTsInPrompt = stepTs;
+        pendingAskQuestionInPrompt = false;
       }
 
       for (const cmd of cmds) {
@@ -365,19 +416,52 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
           recordPluginSkill(mapped.plugin, mapped.skill);
         }
       }
+      continue;
+    }
+
+    // Accumulate active duration inside current prompt (skipping ask_question wait gaps and > 15m idle gaps)
+    if (currentPrompt && stepTs !== null) {
+      if (prevStepTsInPrompt !== null && stepTs >= prevStepTsInPrompt) {
+        const gap = stepTs - prevStepTsInPrompt;
+        if (!pendingAskQuestionInPrompt && gap > 0 && gap <= MAX_IDLE_GAP_MS) {
+          currentPrompt.durationMs += gap;
+        }
+      }
+      prevStepTsInPrompt = stepTs;
+      if (pendingAskQuestionInPrompt && step.type === 'GENERIC') {
+        pendingAskQuestionInPrompt = false;
+      }
     }
 
     if (step.type === 'PLANNER_RESPONSE' || step.source === 'MODEL') {
+      const sIn = typeof step.input_tokens === 'number' ? step.input_tokens : 0;
+      const sOut = typeof step.output_tokens === 'number' ? step.output_tokens : 0;
+      const sCache = typeof step.cache_read_tokens === 'number' ? step.cache_read_tokens : 0;
+
       if (step.type === 'PLANNER_RESPONSE') {
         plannerTurnsCount += 1;
         if (lastModel) {
           modelsUsed[lastModel] = (modelsUsed[lastModel] || 0) + 1;
         }
+        if (currentPrompt) {
+          currentPrompt.plannerTurns += 1;
+          if (lastModel) currentPrompt.model = lastModel;
+        }
       }
 
-      if (typeof step.input_tokens === 'number') inputTokens += step.input_tokens;
-      if (typeof step.output_tokens === 'number') outputTokens += step.output_tokens;
-      if (typeof step.cache_read_tokens === 'number') cacheReadTokens += step.cache_read_tokens;
+      inputTokens += sIn;
+      outputTokens += sOut;
+      cacheReadTokens += sCache;
+
+      if (currentPrompt) {
+        currentPrompt.inputTokens += sIn;
+        currentPrompt.outputTokens += sOut;
+        currentPrompt.cacheReadTokens += sCache;
+        const stepCtx = sIn + sCache;
+        if (stepCtx > currentPrompt.contextTokens) {
+          currentPrompt.contextTokens = stepCtx;
+        }
+      }
 
       const etaMs = extractDeclaredEtaMs(step);
       if (etaMs) {
@@ -390,13 +474,19 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
     for (const tc of calls) {
       const tName = tc.name;
       toolCallsCount += 1;
+      if (currentPrompt) {
+        currentPrompt.toolCalls += 1;
+      }
       if (!tools[tName]) {
         tools[tName] = { calls: 0, errors: 0 };
       }
       tools[tName].calls += 1;
 
       if (tName === 'invoke_subagent') subagentsSpawnedCount += 1;
-      if (tName === 'ask_question') questionsAskedCount += 1;
+      if (tName === 'ask_question') {
+        questionsAskedCount += 1;
+        pendingAskQuestionInPrompt = true;
+      }
 
       // Extract file path from any file/directory tool
       const rawFilePath =
@@ -416,7 +506,6 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
 
         const wsCandidate = extractWorkspaceCandidateFromPath(rawFilePath);
         if (wsCandidate) {
-          // Give higher weight to project files vs skill files inside antigravity-plugins
           const isSkillRead = Boolean(parsedSkill);
           const weight = isSkillRead ? 1 : 5;
           const prev = workspaceVotes.get(wsCandidate.workspace) || {
@@ -425,7 +514,6 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
             score: 0
           };
           prev.score += weight;
-          // Prefer mixed-case display name (e.g. GlideMind over glidemind)
           if (/[A-Z]/.test(wsCandidate.workspaceName) && !/[A-Z]/.test(prev.workspaceName)) {
             prev.workspaceName = wsCandidate.workspaceName;
           }
@@ -442,6 +530,8 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
       }
     }
   }
+
+  finalizeCurrentPrompt();
 
   if (userPromptsCount === 0) {
     isSubagent = true;
@@ -483,6 +573,9 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
     weekdayMap[wd] = (weekdayMap[wd] || 0) + 1;
   }
 
+  const lastPromptCtx =
+    promptsBreakdown.length > 0 ? promptsBreakdown[promptsBreakdown.length - 1].contextTokens : 0;
+
   return {
     conversationId,
     isSubagent,
@@ -501,11 +594,13 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
     activeDurationMs,
     declaredEtaCount,
     totalDeclaredEtaMs,
+    lastContextTokens: lastPromptCtx,
     tokens: {
       input: inputTokens,
       output: outputTokens,
       cacheRead: cacheReadTokens
     },
+    promptsBreakdown: isSubagent ? [] : promptsBreakdown,
     modelsUsed,
     slashCommands,
     plugins,
@@ -618,9 +713,9 @@ export function syncBrainSessionsIndex(options = {}) {
 }
 
 /**
- * Aggregates indexed sessions with optional filtering by workspace and days window.
+ * Aggregates indexed sessions with optional filtering by workspace, days window, and target sessionId.
  * @param {object} indexData
- * @param {{ workspace?: string | null, days?: number | null, nowMs?: number }} [filters]
+ * @param {{ workspace?: string | null, days?: number | null, sessionId?: string | null, nowMs?: number }} [filters]
  */
 export function aggregateSessionMetrics(indexData, filters = {}) {
   const nowMs = filters.nowMs || Date.now();
@@ -679,8 +774,10 @@ export function aggregateSessionMetrics(indexData, filters = {}) {
         userPromptsCount: s.userPromptsCount,
         plannerTurnsCount: s.plannerTurnsCount,
         activeDurationMs: s.activeDurationMs,
+        lastContextTokens: s.lastContextTokens || 0,
         totalTokens: (s.tokens?.input || 0) + (s.tokens?.output || 0),
-        cacheReadTokens: s.tokens?.cacheRead || 0
+        cacheReadTokens: s.tokens?.cacheRead || 0,
+        promptsBreakdown: Array.isArray(s.promptsBreakdown) ? s.promptsBreakdown : []
       });
     }
 
@@ -790,6 +887,15 @@ export function aggregateSessionMetrics(indexData, filters = {}) {
   recentHumanSessions.sort((a, b) => b.lastStepAtMs - a.lastStepAtMs);
   const dailySeries = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
 
+  let selectedSession = null;
+  if (filters.sessionId) {
+    selectedSession =
+      recentHumanSessions.find((s) => s.conversationId.startsWith(filters.sessionId)) || null;
+  }
+  if (!selectedSession && recentHumanSessions.length > 0) {
+    selectedSession = recentHumanSessions[0];
+  }
+
   const totalTokens = inputTokens + outputTokens;
   const cacheHitPct =
     totalTokens + cacheReadTokens > 0
@@ -830,6 +936,7 @@ export function aggregateSessionMetrics(indexData, filters = {}) {
     slashCommands: slashCommandsMap,
     plugins: pluginsMap,
     tools: toolsMap,
+    selectedSession,
     recentHumanSessions: recentHumanSessions.slice(0, 30)
   };
 }

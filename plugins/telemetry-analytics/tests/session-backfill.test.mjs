@@ -141,6 +141,32 @@ describe('Telemetry Analytics v2.0 — Local Brain Session Backfill Core', () =>
     assert.equal(summary.plugins['laws-of-ux'].skills['laws-of-ux-audit'], 1);
     assert.equal(summary.plugins['skizzo'].skills['skizzo'], 1);
     assert.equal(summary.plugins['cognitive-persistence'].skills['memory-sync'], 1);
+
+    // Per-prompt breakdown (v2.1)
+    assert.equal(summary.promptsBreakdown.length, 2);
+    const p1 = summary.promptsBreakdown[0];
+    assert.equal(p1.promptNumber, 1);
+    assert.equal(p1.plannerTurns, 1);
+    assert.equal(p1.toolCalls, 3);
+    assert.equal(p1.durationMs, 2 * 60 * 1000);
+    assert.equal(p1.inputTokens, 12000);
+    assert.equal(p1.outputTokens, 800);
+    assert.equal(p1.cacheReadTokens, 24000);
+    assert.equal(p1.contextTokens, 36000); // 12000 + 24000
+    assert.equal(p1.cumulativeDirectTokens, 12800);
+    assert.equal(p1.cumulativeCacheTokens, 24000);
+
+    const p2 = summary.promptsBreakdown[1];
+    assert.equal(p2.promptNumber, 2);
+    assert.equal(p2.plannerTurns, 1);
+    assert.equal(p2.toolCalls, 1);
+    assert.equal(p2.durationMs, 3 * 60 * 1000);
+    assert.equal(p2.inputTokens, 8000);
+    assert.equal(p2.outputTokens, 600);
+    assert.equal(p2.cacheReadTokens, 36000);
+    assert.equal(p2.contextTokens, 44000); // 8000 + 36000
+    assert.equal(p2.cumulativeDirectTokens, 21400);
+    assert.equal(p2.cumulativeCacheTokens, 60000);
   });
 
   it('classifies subagent transcripts accurately', () => {

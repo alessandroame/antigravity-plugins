@@ -56,6 +56,7 @@ function parseArgs() {
     global: false,
     workspace: null,
     days: null,
+    sessionId: null,
     rebuild: false,
     noBackfill: false,
     htmlPath: null,
@@ -77,6 +78,8 @@ function parseArgs() {
     } else if (a === '--days' && i + 1 < args.length) {
       const d = parseInt(args[++i], 10);
       if (!Number.isNaN(d) && d > 0) options.days = d;
+    } else if (a === '--session' && i + 1 < args.length) {
+      options.sessionId = args[++i];
     } else if (a === '--html' && i + 1 < args.length) {
       options.htmlPath = resolve(args[++i]);
     }
@@ -217,6 +220,29 @@ function renderMarkdownReport(combined, scopeLabel, syncStats) {
   lines.push(
     `- **Chiamate Tool di Sistema**: **${formatTokens(totalToolCalls)}** chiamate (\`${totalToolErrors}\` errori, tasso di successo **${toolSuccessPct}%**)\n`
   );
+
+  // Per-Prompt Token Breakdown for Selected / Active Session
+  const sel = bf.selectedSession;
+  if (sel && Array.isArray(sel.promptsBreakdown) && sel.promptsBreakdown.length > 0) {
+    const shortId = String(sel.conversationId || '').slice(0, 8);
+    lines.push(
+      `## Dettaglio Token per Singolo Prompt — Sessione \`${shortId}\` (\`${sel.workspaceName || 'Global'}\`)\n`
+    );
+    lines.push(
+      '| # | Prompt (Estratto) | Turni | Tool | Durata Netta | Token Prompt (In / Out / Cache) | Contesto Raggiunto | Totale Sessione (In+Out / Cache) |'
+    );
+    lines.push('| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |');
+    for (const p of sel.promptsBreakdown) {
+      const cleanExcerpt = String(p.excerpt || '')
+        .replace(/\|/g, '\\|')
+        .replace(/\r?\n/g, ' ')
+        .slice(0, 58);
+      lines.push(
+        `| **#${p.promptNumber}** | ${cleanExcerpt} | ${p.plannerTurns} | ${p.toolCalls} | \`${formatDuration(p.durationMs)}\` | \`+${formatTokens(p.inputTokens)}\` / \`+${formatTokens(p.outputTokens)}\` / \`+${formatTokens(p.cacheReadTokens)}\` (${p.cacheHitPct}%) | **\`${formatTokens(p.contextTokens)}\`** | \`${formatTokens(p.cumulativeDirectTokens)}\` + \`${formatTokens(p.cumulativeCacheTokens)}\` cache |`
+      );
+    }
+    lines.push('');
+  }
 
   // Workspaces / Projects Breakdown (when in global mode)
   const wsEntries = Object.values(bf.workspaces || {}).sort((a, b) => b.prompts - a.prompts);
@@ -447,7 +473,8 @@ function main() {
 
   const backfillAgg = aggregateSessionMetrics(indexData, {
     workspace: backfillFilterWorkspace,
-    days: options.days
+    days: options.days,
+    sessionId: options.sessionId
   });
 
   const combined = {

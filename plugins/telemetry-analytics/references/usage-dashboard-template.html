@@ -11,8 +11,8 @@
     <!-- Top Header & Interactive Filters -->
     <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-3 border-b border-[var(--border)]">
       <div>
-        <div class="text-xs font-mono text-[var(--muted-foreground)]">TELEMETRIA &amp; SESSIONI LOCALI (v2.0)</div>
-        <h2 class="text-base font-semibold text-[var(--foreground)]">Monitoraggio Utilizzo Antigravity</h2>
+        <div class="text-xs font-mono text-[var(--muted-foreground)]">TELEMETRIA &amp; SESSIONI LOCALI (v2.1)</div>
+        <h2 class="text-base font-semibold text-[var(--foreground)]">Monitoraggio Utilizzo &amp; Token per Prompt</h2>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -82,13 +82,22 @@
     <!-- Navigation Tabs -->
     <div class="flex flex-wrap gap-1 p-0.5 mb-3 rounded-lg border border-[var(--border)] bg-[var(--background)]" role="tablist" aria-label="Sezioni monitoraggio">
       <button
-        id="tab-habits"
+        id="tab-prompts"
         type="button"
         role="tab"
         aria-selected="true"
+        onclick="switchTab('prompts')"
+        class="flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap">
+        Token per Prompt
+      </button>
+      <button
+        id="tab-habits"
+        type="button"
+        role="tab"
+        aria-selected="false"
         onclick="switchTab('habits')"
-        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap">
-        Tempi &amp; Abitudini
+        class="flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
+        Tempi &amp; Orari
       </button>
       <button
         id="tab-tokens"
@@ -96,7 +105,7 @@
         role="tab"
         aria-selected="false"
         onclick="switchTab('tokens')"
-        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
+        class="flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
         Token &amp; Modelli
       </button>
       <button
@@ -105,7 +114,7 @@
         role="tab"
         aria-selected="false"
         onclick="switchTab('workflow')"
-        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
+        class="flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
         Workflow &amp; Plugin
       </button>
       <button
@@ -114,13 +123,50 @@
         role="tab"
         aria-selected="false"
         onclick="switchTab('sessions')"
-        class="flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
+        class="flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap">
         Storico Sessioni
       </button>
     </div>
 
+    <!-- TAB 0: Dettaglio Token per Singolo Prompt nella Sessione -->
+    <div id="panel-prompts" class="space-y-2">
+      <div class="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+        <div class="flex items-center gap-2 flex-1 min-w-[220px]">
+          <label for="prompt-session-select" class="text-xs font-semibold whitespace-nowrap">Sessione:</label>
+          <select
+            id="prompt-session-select"
+            onchange="selectPromptSession(this.value)"
+            class="flex-1 text-xs rounded border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] px-2 py-1 font-mono truncate focus:outline-none">
+          </select>
+        </div>
+        <div id="prompt-session-summary" class="text-xs font-mono text-[var(--muted-foreground)] whitespace-nowrap">
+          --
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-[var(--border)] bg-[var(--background)] overflow-hidden">
+        <div class="max-h-48 overflow-y-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-[var(--border)] text-[var(--muted-foreground)]">
+                <th class="py-1.5 px-2 font-medium">#</th>
+                <th class="py-1.5 px-2 font-medium">Prompt Utente</th>
+                <th class="py-1.5 px-2 font-medium text-right">Step/Tool</th>
+                <th class="py-1.5 px-2 font-medium text-right">Durata</th>
+                <th class="py-1.5 px-2 font-medium text-right">In / Out</th>
+                <th class="py-1.5 px-2 font-medium text-right">Cache (Hit)</th>
+                <th class="py-1.5 px-2 font-medium text-right">Contesto</th>
+                <th class="py-1.5 px-2 font-medium text-right">Cumulativo</th>
+              </tr>
+            </thead>
+            <tbody id="prompts-tbody" class="divide-y divide-[var(--border)]"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 1: Tempi, Fasce Orarie & Progetti -->
-    <div id="panel-habits" class="space-y-2.5">
+    <div id="panel-habits" class="hidden space-y-2.5">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <!-- Hourly Distribution (00-23) -->
         <div class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
@@ -191,7 +237,7 @@
               <tr class="border-b border-[var(--border)] text-[var(--muted-foreground)]">
                 <th class="py-1.5 px-2 font-medium">Data</th>
                 <th class="py-1.5 px-2 font-medium">Progetto</th>
-                <th class="py-1.5 px-2 font-medium">Topic Sessione</th>
+                <th class="py-1.5 px-2 font-medium">Topic Sessione (Clicca per dettaglio prompt)</th>
                 <th class="py-1.5 px-2 font-medium text-right">Prompt</th>
                 <th class="py-1.5 px-2 font-medium text-right">Durata</th>
                 <th class="py-1.5 px-2 font-medium text-right">Token</th>
@@ -210,7 +256,8 @@
     const state = {
       days: 0,
       workspace: 'ALL',
-      tab: 'habits'
+      tab: 'prompts',
+      selectedSessionId: null
     };
 
     function fmtTokens(n) {
@@ -282,23 +329,124 @@
       renderDashboard();
     }
 
+    function selectPromptSession(convId) {
+      state.selectedSessionId = convId;
+      renderPromptsTable();
+    }
+
+    function openSessionPrompts(convId) {
+      state.selectedSessionId = convId;
+      switchTab('prompts');
+      renderPromptsTable();
+    }
+
     function switchTab(tabName) {
       state.tab = tabName;
-      const tabs = ['habits', 'tokens', 'workflow', 'sessions'];
+      const tabs = ['prompts', 'habits', 'tokens', 'workflow', 'sessions'];
       for (const t of tabs) {
         const btn = document.getElementById('tab-' + t);
         const panel = document.getElementById('panel-' + t);
         if (!btn || !panel) continue;
         if (t === tabName) {
           panel.classList.remove('hidden');
-          btn.className = 'flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap';
+          btn.className = 'flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap';
           btn.setAttribute('aria-selected', 'true');
         } else {
           panel.classList.add('hidden');
-          btn.className = 'flex-1 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap';
+          btn.className = 'flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)] whitespace-nowrap';
           btn.setAttribute('aria-selected', 'false');
         }
       }
+    }
+
+    let currentFilteredHuman = [];
+
+    function renderPromptsTable() {
+      const sel = document.getElementById('prompt-session-select');
+      const summaryEl = document.getElementById('prompt-session-summary');
+      const tbody = document.getElementById('prompts-tbody');
+
+      if (!currentFilteredHuman || currentFilteredHuman.length === 0) {
+        sel.innerHTML = '<option value="">Nessuna sessione disponibile</option>';
+        summaryEl.textContent = '--';
+        tbody.innerHTML = '<tr><td colspan="8" class="py-3 text-center text-[var(--muted-foreground)]">Nessuna sessione umana nel filtro selezionato.</td></tr>';
+        return;
+      }
+
+      const validSelected = currentFilteredHuman.find((s) => s.conversationId === state.selectedSessionId);
+      const targetSession = validSelected || currentFilteredHuman[0];
+      state.selectedSessionId = targetSession.conversationId;
+
+      sel.innerHTML = currentFilteredHuman
+        .slice(0, 40)
+        .map((s) => {
+          const shortId = String(s.conversationId || '').slice(0, 8);
+          const label = '[' + (s.dateKey || '') + ' · ' + (s.workspaceName || '-') + '] ' + (s.topic || '').slice(0, 45) + ' (' + shortId + ')';
+          const selectedAttr = s.conversationId === targetSession.conversationId ? ' selected' : '';
+          return '<option value="' + escapeHtml(s.conversationId) + '"' + selectedAttr + '>' + escapeHtml(label) + '</option>';
+        })
+        .join('');
+
+      const prompts = Array.isArray(targetSession.promptsBreakdown) ? targetSession.promptsBreakdown : [];
+      const sIn = targetSession.tokens?.input || 0;
+      const sOut = targetSession.tokens?.output || 0;
+      const sCache = targetSession.tokens?.cacheRead || 0;
+      const sDir = sIn + sOut;
+      const sHit = sDir + sCache > 0 ? ((sCache / (sDir + sCache)) * 100).toFixed(1) : '0.0';
+
+      summaryEl.textContent =
+        prompts.length +
+        ' prompt · Dir ' +
+        fmtTokens(sDir) +
+        ' · Cache ' +
+        fmtTokens(sCache) +
+        ' (' +
+        sHit +
+        '%) · Ctx ' +
+        fmtTokens(targetSession.lastContextTokens || 0);
+
+      if (prompts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="py-3 text-center text-[var(--muted-foreground)]">Nessun dettaglio prompt registrato per questa sessione.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = prompts
+        .map((p) => {
+          const inOutStr = fmtTokens(p.inputTokens || 0) + ' / ' + fmtTokens(p.outputTokens || 0);
+          const cacheStr = fmtTokens(p.cacheReadTokens || 0) + ' (' + (p.cacheHitPct || 0) + '%)';
+          return (
+            '<tr>' +
+            '<td class="py-1.5 px-2 font-mono font-semibold text-[var(--muted-foreground)] whitespace-nowrap">#' +
+            p.promptNumber +
+            '</td>' +
+            '<td class="py-1.5 px-2 truncate max-w-[180px]" title="' +
+            escapeHtml(p.excerpt) +
+            '">' +
+            escapeHtml(p.excerpt) +
+            '</td>' +
+            '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+            (p.plannerTurns || 0) +
+            's / ' +
+            (p.toolCalls || 0) +
+            't</td>' +
+            '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+            fmtDuration(p.durationMs || 0) +
+            '</td>' +
+            '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+            inOutStr +
+            '</td>' +
+            '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+            cacheStr +
+            '</td>' +
+            '<td class="py-1.5 px-2 font-mono text-right whitespace-nowrap">' +
+            fmtTokens(p.contextTokens || 0) +
+            '</td>' +
+            '<td class="py-1.5 px-2 font-mono font-semibold text-right whitespace-nowrap">' +
+            fmtTokens(p.cumulativeDirectTokens || 0) +
+            '</td></tr>'
+          );
+        })
+        .join('');
     }
 
     function renderDashboard() {
@@ -380,7 +528,9 @@
         }
       }
 
-      // If viewing full history, take max with cumulative liveSummary tokens/tools so rotated logs are preserved
+      filteredHuman.sort((a, b) => b.lastStepAtMs - a.lastStepAtMs);
+      currentFilteredHuman = filteredHuman;
+
       if (state.days === 0 && state.workspace === 'ALL' && liveSummary.global) {
         inTok = Math.max(inTok, liveSummary.global.totalInputTokens || 0);
         outTok = Math.max(outTok, liveSummary.global.totalOutputTokens || 0);
@@ -410,6 +560,9 @@
       document.getElementById('kpi-tools').textContent = fmtTokens(totalToolCalls) + ' call';
       document.getElementById('kpi-tools-sub').textContent =
         toolOkPct + '% OK · ETA ' + etaCalib + 'x';
+
+      // Render Per-Prompt Tab
+      renderPromptsTable();
 
       // Render 24h bars
       const maxHour = Math.max(1, ...hourly);
@@ -441,7 +594,7 @@
         })
         .join('');
 
-      // Render Weekday bars (Mon..Sun order)
+      // Render Weekday bars
       const dayOrder = [
         { idx: 1, label: 'Lun' },
         { idx: 2, label: 'Mar' },
@@ -517,6 +670,10 @@
         {
           label: 'Media Token per Sessione Umana',
           val: humanSessions > 0 ? fmtTokens(Math.round(totDirectTok / humanSessions)) : '0'
+        },
+        {
+          label: 'Media Token per Singolo Prompt',
+          val: totalPrompts > 0 ? fmtTokens(Math.round(totDirectTok / totalPrompts)) : '0'
         }
       ]
         .map(
@@ -546,7 +703,7 @@
                   ' turni</span></div>'
               )
               .join('')
-          : '<div class="text-xs text-[var(--muted-foreground)]">Modello predefinito di sessione (nessun cambio esplicito registrato nel periodo).</div>';
+          : '<div class="text-xs text-[var(--muted-foreground)]">Modello predefinito di sessione.</div>';
 
       // TAB 3: Slash commands, Plugins, Tools
       const sortedSlash = Object.entries(slashMap)
@@ -606,8 +763,7 @@
               .join('')
           : '<div class="text-xs text-[var(--muted-foreground)]">Nessun tool registrato.</div>';
 
-      // TAB 4: Recent Human Sessions
-      filteredHuman.sort((a, b) => b.lastStepAtMs - a.lastStepAtMs);
+      // TAB 4: Recent Human Sessions (clickable rows to inspect per-prompt tokens)
       const topSessions = filteredHuman.slice(0, 20);
       document.getElementById('sessions-tbody').innerHTML =
         topSessions.length > 0
@@ -615,14 +771,16 @@
               .map((s) => {
                 const tok = (s.tokens?.input || 0) + (s.tokens?.output || 0);
                 return (
-                  '<tr>' +
+                  '<tr class="cursor-pointer hover:bg-[var(--card)] transition-colors" onclick="openSessionPrompts(\'' +
+                  escapeHtml(s.conversationId) +
+                  '\')">' +
                   '<td class="py-1.5 px-2 font-mono whitespace-nowrap text-[var(--muted-foreground)]">' +
                   escapeHtml(s.dateKey || '') +
                   '</td>' +
                   '<td class="py-1.5 px-2 font-mono whitespace-nowrap">' +
                   escapeHtml(s.workspaceName || '-') +
                   '</td>' +
-                  '<td class="py-1.5 px-2 truncate max-w-[200px]" title="' +
+                  '<td class="py-1.5 px-2 truncate max-w-[200px] underline decoration-dotted" title="Clicca per vedere i token di ogni prompt: ' +
                   escapeHtml(s.topic) +
                   '">' +
                   escapeHtml(s.topic) +

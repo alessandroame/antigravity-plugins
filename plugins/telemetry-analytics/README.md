@@ -1,24 +1,27 @@
-# Telemetry, Usage Analytics & Local Session Backfill (`telemetry-analytics` v2.0.0)
+# Telemetry, Usage Analytics & Local Session Backfill (`telemetry-analytics` v2.1.0)
 
-Plugin di osservabilità, monitoraggio dell'utilizzo personale e stima in-flight dei tempi di completamento (ETA) per Google Antigravity. Unisce la raccolta live tramite hook con un motore di **mining e backfill incrementale delle sessioni locali** (`~/.gemini/antigravity/brain/<id>/.system_generated/logs/transcript.jsonl`), estraendo abitudini orarie, tempo di lavoro attivo netto, consumo token/cache, modelli AI, comandi slash, plugin/skill e generando una Dashboard HTML interattiva (`<agent-embed>`).
+Plugin di osservabilità, monitoraggio dell'utilizzo personale, rendicontazione dei token per singolo prompt (`Prompt #1..#N`) e stima in-flight dei tempi di completamento (ETA) per Google Antigravity. Unisce la raccolta live tramite hook con un motore di **mining e backfill incrementale delle sessioni locali** (`~/.gemini/antigravity/brain/<id>/.system_generated/logs/transcript.jsonl`), estraendo abitudini orarie, tempo di lavoro attivo netto, consumo token/cache per ogni prompt della sessione, modelli AI, comandi slash, plugin/skill e generando una Dashboard HTML interattiva (`<agent-embed>`).
 
 ---
 
 ## 1. Funzionalità Principali
 
-1. **Backfill Incrementale dalle Sessioni Locali (`core/session-backfill.mjs`)**:
-   - Scansiona tutte le conversazioni presenti in `~/.gemini/antigravity/brain/` e mantiene un indice incrementale (`~/.gemini/antigravity/analytics/sessions-index.json`) basato su `mtimeMs` e `size` per rianalizzare solo i transcript nuovi o modificati (`< 100ms` a regime).
+1. **Report Token per Singolo Prompt (`Prompt #1..#N`) e Riga Finale in Chat**:
+   - In calce a ogni risposta in chat mostra solo la riga compatta a 3 valori: `> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`.
+   - Quando si invoca `/plugin-analytics` (`--session <id>`) e nel tab **`Token per Prompt`** della Dashboard HTML, espone l'analisi completa per ogni prompt: **Token del singolo prompt** (`inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheHitPct`), **Crescita del contesto e cumulativo di sessione** (`contextTokens`, `cumulativeDirectTokens`, `cumulativeCacheTokens`) e **Costo operativo** (`plannerTurns`, `toolCalls`, `durationMs` al netto delle attese su `ask_question` e delle pause `> 15m`).
+2. **Backfill Incrementale dalle Sessioni Locali (`core/session-backfill.mjs`)**:
+   - Scansiona tutte le conversazioni presenti in `~/.gemini/antigravity/brain/` e mantiene un indice incrementale (`~/.gemini/antigravity/analytics/sessions-index.json`, schema `v3`) basato su `mtimeMs` e `size` per rianalizzare solo i transcript nuovi o modificati (`< 100ms` a regime).
    - Distingue automaticamente le **conversazioni umane** dai **subagent** (`invoke_subagent`).
    - Calcola il **tempo attivo netto** sommando gli intervalli tra step consecutivi ed escludendo le pause inattive `> 15 minuti`.
    - Ricostruisce la **distribuzione oraria (`00:00–23:00`)** e per **giorno della settimana**, i **modelli AI selezionati** (`<USER_SETTINGS_CHANGE>`), i **comandi slash** (`/plan`, `/skizzo`, `/next-step`, `/memory-sync`, ecc.), la ripartizione per **workspace/progetto** e le skill invocate (supportando sia `read_file` sia `view_file`).
-2. **Dashboard HTML Interattiva (`references/usage-dashboard-template.html`)**:
-   - Genera un widget HTML self-contained incorporabile via `<agent-embed>` con filtri istantanei per **Periodo** (`7g`, `30g`, `Storico`) e **Progetto**, 4 KPI Hero Card e 4 viste a tab (`Tempi & Abitudini`, `Token & Modelli`, `Workflow & Plugin`, `Storico Sessioni`).
-3. **Stima ETA Complessiva con Badge + Semaforo (`【🟢/🟡/🔴 ETA tot ~Ns】`)**:
+3. **Dashboard HTML Interattiva (`references/usage-dashboard-template.html`)**:
+   - Genera un widget HTML self-contained incorporabile via `<agent-embed>` con filtri istantanei per **Periodo** (`7g`, `30g`, `Storico`) e **Progetto**, 4 KPI Hero Card e 5 viste a tab (`Tempi & Abitudini`, `Token & Modelli`, `Token per Prompt`, `Workflow & Plugin`, `Storico Sessioni`).
+4. **Stima ETA Complessiva con Badge + Semaforo (`【🟢/🟡/🔴 ETA tot ~Ns】`)**:
    - Entro il 2° turno di chiamate tool (per lavorazioni `>= 15s`), l'agente ancora `【🟢/🟡/🔴 ETA tot ~Ns】` in `toolSummary` di un singolo tool operativo visibile, e `collector.mjs` auto-calibra il fattore `etaCalibrationFactor`.
 
 ---
 
-## 2. Architettura (`v2.0.0`)
+## 2. Architettura (`v2.1.0`)
 
 ```mermaid
 flowchart TD
