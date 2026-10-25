@@ -53,14 +53,17 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 
 ---
 
-## 4. Telemetria Ibrida & Visibilità Stime ETA (`telemetry-analytics`)
+## 4. Telemetria Ibrida, Session Backfill & Visibilità Stime ETA (`telemetry-analytics`)
 
-- **Silenzio `PreInvocation` (`eta-injector.mjs`) e Timestamp Nativi**:
-  - *Insidia*: Restituire `ephemeralMessage` in `PreInvocation` stampa log ripetitivi nella UI; calcolare `Elapsed` da `lastUserInputMs` include le pause utente su `ask_question`.
-  - *Regola*: `eta-injector.mjs` deve emettere `{}\n` su `stdout`, sottraendo le pause `ask_question` in `.eta_<id>.json`.
+- **Silenzio `PreInvocation` (`eta-injector.mjs`), Footer Token a 3 Valori e Calcolo Contesto**:
+  - *Insidia*: Restituire `ephemeralMessage` in `PreInvocation` stampa log ripetitivi nella UI; calcolare `Elapsed` da `lastUserInputMs` include le pause utente su `ask_question`; inoltre mostrare 8–9 metriche di token in calce a ogni risposta appesantisce la lettura in chat, mentre nei `PLANNER_RESPONSE` di `transcript.jsonl` `input_tokens` rappresenta solo i token non in cache.
+  - *Regola*: `eta-injector.mjs` deve emettere `{}\n` su `stdout` sottraendo le pause `ask_question` in `.eta_<id>.json`; in `session-backfill.mjs` calcolare il picco della finestra di contesto come `max(input_tokens + cache_read_tokens)` per ogni prompt (`promptsBreakdown[]`, schema `v3`). In chat emettere a fine risposta solo il formato minimale a 3 valori `> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`, riservando il dettaglio esteso a `/plugin-analytics` (`report.mjs --session <id>` e Dashboard HTML).
+- **Classificazione Chat Umane vs Subagent e Supporto `read_file` (`session-backfill.mjs`, `collector.mjs`)**:
+  - *Insidia*: Quando un subagent risponde alla conversazione padre, `transcript.jsonl` del padre riceve un `<SYSTEM_MESSAGE>` con `[Message] ... sender=<id> content=Skill Attive (Alpha...)`; testare i pattern subagent sugli step `> 0` classifica erroneamente la sessione umana padre come subagent. Inoltre il runtime moderno usa `read_file` (`args.Path`, spesso doppiamente quotato) anziché `view_file` (`args.AbsolutePath`).
+  - *Regola*: In `session-backfill.mjs` determinare `isSubagent` esclusivamente sul primo step/prompt (`step 0` / `userPromptsCount === 1`), e in `collector.mjs`/`session-backfill.mjs` estrarre i path delle skill sia da `read_file` (`args.Path`) sia da `view_file` (`args.AbsolutePath`).
 - **Visibilità Persistente dell'ETA (`【🟢/🟡/🔴 ETA tot ~Ns】`), Finalizzazione `Stop` e Rotazione Storage**:
-  - *Insidia*: `toolAction` dura < 1s a schermo, i `view_file` collassano in `Explored N files >`, `· ETA` si confonde nel plain-text (`textContent`), su `Stop` (`--finalize`) `newSteps.length` è `0` e in `analytics/` si accumulano `.cursor_<id>.json` e `events.ndjson` senza limiti.
-  - *Regola*: Emettere il badge ad alto contrasto `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` <= 20s, `🟡` 21–60s, `🔴` > 60s) entro il 2° turno (in `toolAction` + `toolSummary` dell'ultimo `view_file` e del primo tool operativo top-level). In `collector.mjs`, su `isFinalize` processare `etaOutcome` anche a `newSteps` vuoti, eliminare `.cursor_*`/`.eta_*` con `mtime > 7gg` e ruotare `events.ndjson` oltre `5 MB`.
+  - *Insidia*: `toolAction` dura < 1s a schermo, i `read_file` collassano in `Explored N files >`, `· ETA` si confonde nel plain-text (`textContent`), su `Stop` (`--finalize`) `newSteps.length` è `0` e in `analytics/` si accumulano `.cursor_<id>.json` e `events.ndjson` senza limiti.
+  - *Regola*: Emettere il badge ad alto contrasto `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` <= 20s, `🟡` 21–60s, `🔴` > 60s) entro il 2° turno in `toolSummary` del primo tool operativo visibile (`edit_file`, `write_file`, `run_command`). In `collector.mjs`, su `isFinalize` processare `etaOutcome` anche a `newSteps` vuoti, eliminare `.cursor_*`/`.eta_*` con `mtime > 7gg` e ruotare `events.ndjson` oltre `5 MB`.
 
 ---
 

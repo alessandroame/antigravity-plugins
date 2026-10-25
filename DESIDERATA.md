@@ -24,9 +24,9 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `cognitive-persistence` (v1.6.0) | Plugin | `🟢 Completato` | Architettura 3+1, Kanban remoto, auto-distillazione skill `L1..L3` in `/memory-sync` e kit vocale ([README](./plugins/cognitive-persistence/README.md)). |
 | `proactive-mentorship` (v1.2.0) | Plugin | `🟢 Completato` | Coaching AGY, Auto-Apprendimento Continuo `L0..L3` e mining sessioni `session-miner.mjs` ([README](./plugins/proactive-mentorship/README.md)). |
 | `skill-governance` | Plugin | `🟢 Completato` | Two-phase token model, audit dimensionale (A-E) e `skill-collision-check` ([README](./plugins/skill-governance/README.md)). |
-| `telemetry-analytics` (v1.5.0) | Plugin | `🟢 Completato` | ETA sui checkpoint entro 2° turno, calibrazione errore, TTL cursori 7gg e rotazione `events.ndjson` 5 MB ([README](./plugins/telemetry-analytics/README.md)). |
+| `telemetry-analytics` (v2.1.0) | Plugin | `🟢 Completato` | Backfill sessioni `brain/`, token per prompt (footer 3 valori + tabella/dashboard `<agent-embed>`) e stima ETA ([README](./plugins/telemetry-analytics/README.md)). |
 | `code-inspector` | Plugin | `🟢 Completato` | Modello IPO Esteso, `/how-its-made`, widget `<agent-embed>` dual-tab e cassetti `<details>` ([README](./plugins/code-inspector/README.md)). |
-| `skizzo` (v1.6.0) | Plugin | `🟢 Completato` | `Auto-Skizzo Silente` (`AUTO` `0` banner su `FAST-PASS`, `DUAL-TRACK` `score >= 4`), `triage.mjs` e Human-First ([README](./plugins/skizzo/README.md)). |
+| `skizzo` (v1.7.0) | Plugin | `🟢 Completato` | Orchestrazione dinamica `2..4` domini ordinati per importanza via LLM, `Auto-Skizzo Silente` e `triage.mjs` ([README](./plugins/skizzo/README.md)). |
 | `ab-bench` (v1.0.0) | Plugin | `🟢 Completato` | Sfida cieca A/B su 5 Dita (`/ab-bench`, `--skill`, `--stats`), sanitizer anti-bias, Rasoio di Occam e storico 5 MB ([README](./plugins/ab-bench/README.md)). |
 | `human-governor` (v1.0.0) | Plugin | `🟢 Completato` | Guardia WIP (max 2), anti-thrashing, coprifuoco 22:30-07:00, hook `PreInvocation` e `/focus-audit` ([README](./plugins/human-governor/README.md)). |
 | `starter-plugin` | Template | `🟢 Completato` | Blueprint standard per nuovi plugin con manifest SemVer valido ([README](./templates/starter-plugin/README.md)). |

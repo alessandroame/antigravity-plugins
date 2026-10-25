@@ -13,6 +13,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-25 — Evoluzione `telemetry-analytics` v2.0.0–v2.1.0 (Backfill Sessioni Locali `brain/`, Report Token per Prompt e Dashboard HTML)
+- **Tipo**: Osservabilità Personale, Mining Transcript & Contabilità Token per Prompt (`plugins/telemetry-analytics/` v2.1.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md)
+- **Sintesi**:
+  - Creato [`session-backfill.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/core/session-backfill.mjs) (`5/5` test in [`session-backfill.test.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/tests/session-backfill.test.mjs)) per indicizzare incrementalmente `~/.gemini/antigravity/brain/` (`sessions-index.json` schema `v3`, tempi attivi netti, abitudini orarie, modelli, slash command e `promptsBreakdown[]` per singolo prompt) e corretto il supporto `read_file`/`totalSessions` in [`collector.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/scripts/collector.mjs).
+  - Introdotta la Dashboard HTML a 5 tab ([`usage-dashboard-template.html`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/references/usage-dashboard-template.html)), il flag `--session <id>` in [`report.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/scripts/report.mjs) e la regola del footer minimale a 3 valori in [`rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/rules/AGENTS.md) (`> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`).
+
+---
+
 ## 2026-10-22 — Evoluzione `skizzo` v1.7.0 (Orchestrazione Multi-Dominio Dinamica `2..4` Agenti Ordinati per Importanza dall'LLM, Audit `TRI-TRACK` e Regola `Anti-Example Hardcoding`)
 - **Tipo**: Evoluzione Protocollo Multi-Agente, Ranking Dominio-Agnostico & Governance Skill (`plugins/skizzo/` v1.7.0, `plugins/skill-governance/`, `plugins/ab-bench/`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md)
