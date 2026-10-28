@@ -75,4 +75,97 @@ if (fs.existsSync(GLOBAL_CONFIG_FILE)) {
   }
 }
 
-console.log(`\nCompleted: ${syncedPluginNames.length} plugins synchronized in ${GLOBAL_PLUGINS_DIR}`);
+function walkSkillFiles(dir, results = []) {
+  if (!fs.existsSync(dir)) return results;
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, ent.name);
+    if (ent.isDirectory()) walkSkillFiles(full, results);
+    else if (ent.isFile() && ent.name === 'SKILL.md') results.push(full);
+  }
+  return results;
+}
+
+function compactThirdPartyDescription(rawDesc, skillName) {
+  const clean = rawDesc
+    .replace(/[`*_]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const sentences = clean.split(/(?<=\.)\s+/);
+  const firstSentence = (sentences[0] || clean).replace(/:\s+/g, ' - ').replace(/,\s*which\b.*$/i, '.');
+  const useSentence = sentences.find((s) => /\b(use|trigger|activate)\b/i.test(s));
+  const defaultTrigger = `Use this skill when working with ${skillName} workflows.`;
+  let triggerClause = useSentence
+    ? useSentence.replace(/^use (it |this skill )?(whenever|when)/i, 'Use this skill when').replace(/:\s+/g, ' - ')
+    : defaultTrigger;
+  if (!/\buse this skill (when|to)\b/i.test(triggerClause)) {
+    triggerClause = defaultTrigger;
+  }
+  const maxFirstLen = Math.max(80, 242 - triggerClause.length - 1);
+  let lead = firstSentence;
+  if (lead.length > maxFirstLen) {
+    lead = lead.slice(0, maxFirstLen - 1).replace(/[,;:\s]+\S*$/, '') + '.';
+  }
+  let candidate = `${lead.replace(/\.?$/, '.')} ${triggerClause}`.replace(/\s+/g, ' ').trim();
+  if (candidate.length > 245) {
+    const fallbackLead = firstSentence.slice(0, 240 - defaultTrigger.length).replace(/[,;:\s]+\S*$/, '') + '.';
+    candidate = `${fallbackLead} ${defaultTrigger}`;
+  }
+  return candidate;
+}
+
+const canonicalSet = new Set(syncedPluginNames);
+let compactedSkillsCount = 0;
+for (const entry of fs.readdirSync(GLOBAL_PLUGINS_DIR, { withFileTypes: true })) {
+  if (!entry.isDirectory() || canonicalSet.has(entry.name)) continue;
+  const skillFiles = walkSkillFiles(path.join(GLOBAL_PLUGINS_DIR, entry.name));
+  for (const skillFile of skillFiles) {
+    const content = fs.readFileSync(skillFile, 'utf-8');
+    const fmMatch = content.match(/^(---\r?\n)([\s\S]*?)(\r?\n---\r?\n)/);
+    if (!fmMatch) continue;
+    const fmBody = fmMatch[2];
+    const lines = fmBody.split(/\r?\n/);
+    let skillName = path.basename(path.dirname(skillFile));
+    let descStartIdx = -1;
+    let descEndIdx = -1;
+    let descText = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('name:')) {
+        skillName = line.slice(5).trim().replace(/^['"]|['"]$/g, '');
+      } else if (line.startsWith('description:')) {
+        descStartIdx = i;
+        const rest = line.slice(12).trim();
+        if (rest === '>' || rest === '>-' || rest === '|') {
+          const block = [];
+          let j = i + 1;
+          while (j < lines.length && (/^\s+/.test(lines[j]) || lines[j].trim() === '')) {
+            if (lines[j].trim() !== '') block.push(lines[j].trim());
+            j++;
+          }
+          descEndIdx = j - 1;
+          descText = block.join(' ');
+        } else {
+          descEndIdx = i;
+          descText = rest.replace(/^['"]|['"]$/g, '');
+        }
+        break;
+      }
+    }
+
+    if (descStartIdx !== -1 && descText.length > 250) {
+      const compacted = compactThirdPartyDescription(descText, skillName);
+      const updatedLines = [
+        ...lines.slice(0, descStartIdx),
+        `description: ${compacted}`,
+        ...lines.slice(descEndIdx + 1)
+      ];
+      const updatedContent = fmMatch[1] + updatedLines.join('\n') + fmMatch[3] + content.slice(fmMatch[0].length);
+      fs.writeFileSync(skillFile, updatedContent, 'utf-8');
+      compactedSkillsCount++;
+      console.log(`   [OK] Compacted third-party skill description (${descText.length} -> ${compacted.length} chars): ${entry.name}/${skillName}`);
+    }
+  }
+}
+
+console.log(`\nCompleted: ${syncedPluginNames.length} plugins synchronized in ${GLOBAL_PLUGINS_DIR} (${compactedSkillsCount} third-party skill descriptions compacted)`);

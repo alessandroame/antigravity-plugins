@@ -436,18 +436,30 @@ function main() {
   if (args.includes('--all')) {
     const memoryPath = join(root, 'MEMORY.md');
     if (existsSync(memoryPath)) {
-      const memLines = readFileSync(memoryPath, 'utf-8').split(/\r?\n/);
+      const memRaw = readFileSync(memoryPath, 'utf-8');
+      const memLines = memRaw.split(/\r?\n/);
+      const memBytes = Buffer.byteLength(memRaw, 'utf-8');
       if (memLines.length > 200) {
         totalErrors++;
         console.log(`\n[✖ FALLITO] MEMORY.md: ${memLines.length} righe (tetto massimo: 200 righe)`);
       }
+      if (memBytes > 16384) {
+        totalErrors++;
+        console.log(`\n[✖ FALLITO] MEMORY.md: ${memBytes} byte (tetto massimo: 16384 byte / 16 KB)`);
+      }
     }
     const worklogPath = join(root, 'WORKLOG.md');
     if (existsSync(worklogPath)) {
-      const wlLines = readFileSync(worklogPath, 'utf-8').split(/\r?\n/);
+      const wlRaw = readFileSync(worklogPath, 'utf-8');
+      const wlLines = wlRaw.split(/\r?\n/);
+      const wlBytes = Buffer.byteLength(wlRaw, 'utf-8');
       if (wlLines.length > 300) {
         totalErrors++;
         console.log(`\n[✖ FALLITO] WORKLOG.md: ${wlLines.length} righe (tetto massimo rolling window: 300 righe)`);
+      }
+      if (wlBytes > 20480) {
+        totalErrors++;
+        console.log(`\n[✖ FALLITO] WORKLOG.md: ${wlBytes} byte (tetto massimo: 20480 byte / 20 KB)`);
       }
     }
     const desiderataPath = join(root, 'DESIDERATA.md');
