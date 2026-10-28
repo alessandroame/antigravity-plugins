@@ -1,0 +1,359 @@
+{
+  "checksum": "builtin:3af949d54861bfea0020fcda825c1268186f5a4d5f06a2bcdf3424d117219012",
+  "fileCount": 19,
+  "files": {
+    "agy-customizations/docs/hooks.md": {
+      "sha256": "909f1b56602a168695159a444dfbad47978748799c84f54df980bf8c6d7f4b85",
+      "bytes": 13177,
+      "headings": [
+        "# Lifecycle Hooks (`hooks.json`)",
+        "## File Format",
+        "## Hook Spec Fields",
+        "## Supported Event Types",
+        "### The Matcher",
+        "## Hook Handler Fields",
+        "## Input/Output Contract",
+        "### Common Input Fields",
+        "### 1. `PreToolUse` Contract",
+        "### 2. `PostToolUse` Contract",
+        "### 3. `SessionStart` Contract",
+        "### 4. `PreInvocation` Contract",
+        "### 5. `PostInvocation` Contract",
+        "### 6. `Stop` Contract",
+        "## Current Limitations"
+      ],
+      "concepts": [
+        "PostInvocation",
+        "PostToolUse",
+        "PreInvocation",
+        "PreToolUse",
+        "SessionStart",
+        "Stop",
+        "hooks.json",
+        "systemMessage"
+      ]
+    },
+    "agy-customizations/docs/json_configs.md": {
+      "sha256": "c15221be619c411058179fb1da85195894e33502dd074eba64e6a609572488b6",
+      "bytes": 4904,
+      "headings": [
+        "# JSON Configuration Files",
+        "## Configuration Schema",
+        "### Top-Level Fields",
+        "### Path Entry Fields",
+        "## Explicitly Configured Paths",
+        "## Path Resolution Rules",
+        "### Pro-Tip: Team Sharing via VCS"
+      ],
+      "concepts": [
+        "plugins.json",
+        "skills.json"
+      ]
+    },
+    "agy-customizations/docs/mcp_servers.md": {
+      "sha256": "7e34d5924e3574a60b75e8972d121de6923a3e7b9248c3c95434f26823fe18cf",
+      "bytes": 3378,
+      "headings": [
+        "# MCP Servers (`mcp_config.json`)",
+        "## Configuration File (`mcp_config.json`)",
+        "### Location",
+        "## Configuration Schema",
+        "### 1. Stdio Transport (Local)",
+        "### 2. Streamable HTTP Transport (Remote)",
+        "## How the Agent Uses MCP",
+        "## Scoping and Scannability"
+      ],
+      "concepts": [
+        "/mcp",
+        "/sse",
+        "Streamable HTTP",
+        "mcp_config.json"
+      ]
+    },
+    "agy-customizations/docs/plugins.md": {
+      "sha256": "6cf36da8638b106d0c7197aad98d6b25e94ba8affce4ef37a2bd5bf8c8fd6355",
+      "bytes": 4347,
+      "headings": [
+        "# Plugins",
+        "## Directory Structure",
+        "## Manifest (`plugin.json`)",
+        "## How Plugins Work",
+        "## Registering Plugins",
+        "## Turning Plugins On and Off"
+      ],
+      "concepts": [
+        "hooks.json",
+        "plugin.json",
+        "plugins.json"
+      ]
+    },
+    "agy-customizations/docs/rules.md": {
+      "sha256": "063ab1c908fae4798d9a1f5981ed57b7570a860ceb0e5850816aefddf72b8b54",
+      "bytes": 1757,
+      "headings": [
+        "# Workspace Rules",
+        "## Rule Locations",
+        "## Rule Format",
+        "## Rule Merging and Deduplication",
+        "## Size Limits and Context Budget"
+      ],
+      "concepts": [
+        "defaultRulesBudget"
+      ]
+    },
+    "agy-customizations/docs/skills.md": {
+      "sha256": "c4eba3bc9a8775928704d1b7feede20871b25f8d427c6cd6757b7edd54b3ae60",
+      "bytes": 2650,
+      "headings": [
+        "# Workspace Skills",
+        "## Directory Structure",
+        "## Main Instruction File (`SKILL.md`)",
+        "# My Specialized Skill",
+        "## Steps",
+        "### Frontmatter Fields",
+        "## Best Practices for Writing Skills"
+      ],
+      "concepts": []
+    },
+    "agy-customizations/SKILL.md": {
+      "sha256": "79c8885e76ce449e82016b37b53dfcc3ff5afefd90a23ea83b24148f41f33fa1",
+      "bytes": 5465,
+      "headings": [
+        "# Antigravity Customization System Guide",
+        "## Customization Types: Quick Reference",
+        "## Customization Discovery and Locations",
+        "### Discovery Locations",
+        "## Loading Priority and Precedence",
+        "## How Customizations are Applied",
+        "### Progressive Disclosure (Skills and Rules)",
+        "### Deduplication",
+        "## Advanced Management: JSON Configs"
+      ],
+      "concepts": [
+        "agy-customizations",
+        "hooks.json",
+        "mcp_config.json",
+        "plugins.json",
+        "skills.json"
+      ]
+    },
+    "antigravity_guide/references/app.md": {
+      "sha256": "5adba0e3ca6dbf08d7ad1c2b136f88c067e175b454f0179fc7aa3c4783d9f5ab",
+      "bytes": 3852,
+      "headings": [
+        "# Antigravity 2.0 Reference",
+        "## 1. Unified Interface Surfaces",
+        "### Left-hand Sidebar",
+        "### Chat Canvas",
+        "## 2. Agent Settings & Permissions",
+        "### Global Settings",
+        "### Project-Level Settings",
+        "## 3. Further Reading"
+      ],
+      "concepts": []
+    },
+    "antigravity_guide/references/cli.md": {
+      "sha256": "1499e0ac083227b88e74373d46672afccd1ffe31d0a5136bcc352fe72c582d2a",
+      "bytes": 1686,
+      "headings": [
+        "# Antigravity CLI (`agy`) Reference",
+        "## 1. Getting Started",
+        "## 2. CLI Slash Commands",
+        "## 3. Configuration"
+      ],
+      "concepts": [
+        "/exit",
+        "/help",
+        "/quit"
+      ]
+    },
+    "antigravity_guide/references/ide.md": {
+      "sha256": "e3da87b168f25f229a14a4547d7833e8e49191f1a85346f463c01f886a64693d",
+      "bytes": 3399,
+      "headings": [
+        "# Antigravity IDE Reference",
+        "## 1. Core AI Modalities",
+        "### A. Passive: Antigravity Tab (Autocomplete)",
+        "### B. Instructive: Inline Command (<kbd>⌘</kbd>+<kbd>I</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd>)",
+        "### C. Collaborative: Sidebar Chat & Agent",
+        "## 2. Editor UI Integrations",
+        "## 3. Workspace Integration"
+      ],
+      "concepts": []
+    },
+    "antigravity_guide/references/sdk.md": {
+      "sha256": "a20587f3cedf7b8c6f7501f71fc7985d76c64007f7581690f68c0ffdc4357560",
+      "bytes": 3130,
+      "headings": [
+        "# Antigravity Python SDK Reference",
+        "## 1. Installation",
+        "## 2. Quickstart Example",
+        "## 3. Advanced Features",
+        "### A. Streaming Thoughts and Tool Calls",
+        "# Stream reasoning/thinking deltas",
+        "# Stream strongly-typed ToolCall events",
+        "### B. Interactive Loop"
+      ],
+      "concepts": []
+    },
+    "antigravity_guide/SKILL.md": {
+      "sha256": "9fc5f6570e91dd792dab582d4e1cc7e7bd25b303c1583c6f118a07ec6bb3dd1d",
+      "bytes": 3023,
+      "headings": [
+        "# Google Antigravity (AGY) Guide & Sitemap",
+        "## 1. Surfaces Sitemap (Offline Subdocs)",
+        "## 2. Smart Hybrid Retrieval: When to Fetch Live Docs"
+      ],
+      "concepts": [
+        "antigravity-guide"
+      ]
+    },
+    "automation/SKILL.md": {
+      "sha256": "43f296abc2f206dc625669d38035be3b61a46cad1596b27dbf1134d30cf8d36b",
+      "bytes": 12572,
+      "headings": [
+        "# Scheduled Automations",
+        "## Quick Start (5-Turn Creation Flow)",
+        "## Interactive Creation Workflow",
+        "### Turn 1: Ask for the Cadence",
+        "### Turn 2: Confirm the Specific Time / Day",
+        "### Turn 3: Ask What the Task Should Do",
+        "## Step 4: Create `sidecar.json` & Offer a Test Run to Configure Permissions",
+        "### 1. Translate Schedule & Author Self-Contained Run Prompt",
+        "### 2. Announce Automation Creation & Write `<configDir>/sidecars/<sidecar-id>/sidecar.json`",
+        "### 3. Point to the Dashboard (with Automation Name) & Ask to Test-Run for Reliable Permissions",
+        "## Step 5: If the User Chooses to Test-Run the Task Now"
+      ],
+      "concepts": [
+        "/automation",
+        "/google",
+        "access_grants",
+        "sidecar.json"
+      ]
+    },
+    "generative_ui/SKILL.md": {
+      "sha256": "ce3390af7b2db6d46bb8bfe7a9af3afced9fa26700fb8b7945d3a9ab66fd4830",
+      "bytes": 5824,
+      "headings": [
+        "# Generative UI",
+        "## Workflow",
+        "## Constraints & Theming",
+        "## Deciding on Placement (Inline vs. Standalone)",
+        "## Designing Inline Widgets (Cards & Transparency)",
+        "## Sizing Inline Embeds"
+      ],
+      "concepts": [
+        "--border",
+        "--card",
+        "--foreground",
+        "--muted-foreground",
+        "--primary",
+        "100vh",
+        "<agent-embed>",
+        "generative_ui",
+        "h-screen",
+        "min-h-screen"
+      ]
+    },
+    "migrate-workflows/SKILL.md": {
+      "sha256": "ee8b18d875bba52c024c609f8cbdaf5bbf60396e0f826944c38ce191590cb787",
+      "bytes": 6039,
+      "headings": [
+        "# Migrate Workflows to Skills",
+        "## Instructions for the Agent",
+        "### Step 1: Discover Existing Workflows",
+        "### Step 2: Convert Each Workflow to a Skill (Idempotent Execution)",
+        "### Step 3: Verify and Confirm"
+      ],
+      "concepts": []
+    },
+    "permissioned-github/SKILL.md": {
+      "sha256": "5779716732c7a75681aa980c76355ae8b675f881e742b74f93e4be14b4abfc9d",
+      "bytes": 8293,
+      "headings": [
+        "# GitHub Skill",
+        "## How to Interact with GitHub",
+        "## Asking for Permissions",
+        "## Permission Format",
+        "## Examples",
+        "### Example 1: Creating an Issue",
+        "### Example 2: Commenting on a PR",
+        "### Example 3: Closing an Issue",
+        "### Example 4: Approving a PR",
+        "### Example 5: Pushing to an Existing Branch",
+        "### Example 6: Creating a New Branch",
+        "### Example 7: Fetching a Repository",
+        "### Example 8: Cloning a Repository",
+        "### Example 9: Deleting a Branch",
+        "### Example 10: Searching Pull Requests",
+        "### Example 11: Searching Commits",
+        "### Example 12: Searching Code",
+        "### Example 13: Searching Issues",
+        "### Example 14: Running (Dispatching) a Workflow",
+        "### Example 15: Listing, Viewing, or Watching Workflow Runs",
+        "## How and When to Ask for Permissions"
+      ],
+      "concepts": []
+    },
+    "plugin/SKILL.md": {
+      "sha256": "2cd10006e424cea9c5accf3a7a8c73b3fb6bd0a8b159ff2af3d37f1eb36c41e7",
+      "bytes": 16893,
+      "headings": [
+        "# Plugins",
+        "## Quick Start",
+        "## Step 0: Preflight and inventory",
+        "## Step 1: Decide the kind",
+        "## Step 2A: Lifecycle operations",
+        "# Enable:",
+        "# Disable:",
+        "## Step 2B: Decide where the functionality belongs",
+        "### Consolidating loose customizations",
+        "## Step 3: Author the bundle",
+        "## Step 4: Verify and hand back",
+        "## Constraints & Tips"
+      ],
+      "concepts": [
+        "/builtin",
+        "/plugin",
+        "/tmp",
+        "hooks.json",
+        "mcp_config.json",
+        "plugin.json"
+      ]
+    },
+    "run-workflow/SKILL.md": {
+      "sha256": "4a524107cb6173d75a54c2a7de3addeb413d7bdb868c8279682ded74672beb1e",
+      "bytes": 10315,
+      "headings": [
+        "# Dynamic workflows with `run_workflow`",
+        "## Steps",
+        "## Script rules",
+        "## Primitives",
+        "## Agents that keep their context",
+        "## Calling tools from the script",
+        "## Reading earlier conversation steps",
+        "## Behavior to know",
+        "## Example"
+      ],
+      "concepts": [
+        "WaitMsBeforeAsync",
+        "run_workflow"
+      ]
+    },
+    "ui-plugin-navigation/SKILL.md": {
+      "sha256": "79ec8489d201382989061aab44dfd42ad5f586d88621b867bdca90284bd62af5",
+      "bytes": 3811,
+      "headings": [
+        "# UI Plugin Navigation",
+        "## When to surface a pill",
+        "## Step 1: Find UI plugin panes and their views",
+        "## Step 2: Emit the pill link",
+        "## Constraints & Tips"
+      ],
+      "concepts": [
+        "sidecar.json",
+        "sidecar://"
+      ]
+    }
+  }
+}

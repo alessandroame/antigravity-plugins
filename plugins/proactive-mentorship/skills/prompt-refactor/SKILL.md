@@ -35,6 +35,7 @@ Identifica il collo di bottiglia principale dell'utente e seleziona **1 solo com
 | **Confronto critico tra purezza tecnica e UX** | `/skizzo <obiettivo>` | Attivo di serie in `Auto-Skizzo Silente` sui bivi `score >= 4` (forzabile con `--force`). |
 | **Prompt telegrafico di poche parole da strutturare** | `/boost <bozza>` | Espande la richiesta con vincoli, casi limite e criteri di accettazione. |
 | **Task lungo autonomo con test di uscita chiaro** | `/goal <obiettivo e test>` | L'agente itera in autonomia finché tutti i controlli non sono verdi. |
+| **Progetto esteso divisibile tra agenti autonomi** | `/teamwork <obiettivo>` | Coordina un team di agenti autonomi su moduli indipendenti (distinto da `/skizzo` che risolve bivi dialettici nel turno). |
 | **Chat oltre 25-30 turni o cambio di argomento** | `/compact` | Comprime lo storico liberando la finestra di contesto dalle scorie precedenti. |
 | **Dubbio su quale prompt o skill funzioni meglio** | `/ab-bench <compito>` | Esegue una sfida cieca A/B misurando il Test delle 5 Dita e il tempo reale. |
 

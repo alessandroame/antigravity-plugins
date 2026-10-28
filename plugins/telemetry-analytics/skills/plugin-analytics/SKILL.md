@@ -34,7 +34,7 @@ Questa skill esegue il mining incrementale delle sessioni locali in `~/.gemini/a
 
 2. **Registrazione dell'Artefatto e Incorporamento `<agent-embed>`**:
    - L'artefatto generato in `<artifact_dir>/antigravity-usage-dashboard.html` contiene filtri interattivi per periodo (`7g`, `30g`, `Storico`) e per progetto, oltre a 5 tab (`Tempi & Abitudini`, `Token & Modelli`, `Token per Prompt`, `Workflow & Plugin`, `Storico Sessioni`).
-   - Includere nella risposta il widget interattivo:
+   - Includere nella risposta il widget interattivo (conforme ai vincoli della skill nativa `generative_ui`):
      ```html
      <agent-embed src="file:///<artifact_dir>/antigravity-usage-dashboard.html"></agent-embed>
      ```

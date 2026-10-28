@@ -55,7 +55,7 @@ Ricostruire in modo deterministico il funzionamento di una funzionalità softwar
    - Prendi come base [`references/flow-widget-template.html`](./references/flow-widget-template.html) e salva con `write_to_file` (`UserFacing: true`) il file `<artifact_dir>/flow-inspector-<slug>.html`.
    - Compila la **Vista 1 (`Albero Testuale`)** con l'albero monospace a spina verticale (max 65 caratteri/riga, bivi marcati con `◇ BIVIO N:` e rami `├── [NO] ──►` / `└── [SÌ] ──►`).
    - Compila la **Vista 2 (`Grafico a Blocchi`)** con i blocchi verticali per Ingresso, Bivi a 2 colonne (`Ramo [NO]` vs `Ramo [SÌ]`), Step di Processo (`[PURE]`, `[STATE]`, `[I/O]`) e Uscita.
-   - Incorpora il widget nella risposta in chat tramite:
+   - Incorpora il widget nella risposta in chat (seguendo i vincoli di layout e theming della skill nativa `generative_ui`) tramite:
      `<agent-embed src="file:///<artifact_dir>/flow-inspector-<slug>.html"></agent-embed>`
 3. Compila sotto il widget la tabella riassuntiva **Punto di Ingresso -> Processo -> Punto di Uscita** con link cliccabili `file://` ad ogni funzione.
 

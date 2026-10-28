@@ -14,10 +14,10 @@ Questo riferimento fornisce i pattern pronti all'uso per guidare l'utente nell'u
 | **Prompt troppo sintetico**: l'utente scrive 4 parole (*"sistema la validazione form"*) lasciando tutto implicito. | `/boost` | `/boost Sistema la validazione in @[file] gestendo input sporchi e verificando i test.` |
 | **Task lungo o iterativo (es. fix di una suite di test o migrazione)**: serve che l'agente non si fermi finché tutto non passa. | `/goal` | `/goal Porta al 100% di successo la suite [comando test] correggendo le regressioni in @[cartella] senza alterare le API pubbliche.` |
 | **Sessione appesantita (> 25-30 turni) o cambio tema**: l'agente rallenta o confonde dettagli di task precedenti. | `/compact` | `/compact` *(seguito nel turno successivo dal nuovo prompt mirato con `@file`)* |
-| **Correzione ripetuta all'agente**: l'utente segnala per la 2ª volta un errore di stile o di metodo dell'agente. | `/learn` | `/learn Quando modifichi [ambito], rispetta sempre [regola esplicita] e verifica con [comando].` |
+| **Correzione ripetuta all'agente**: l'utente segnala per la 2ª volta un errore di stile o di metodo dell'agente. | `Auto-Learn (L0..L3)` *(sostituisce `/learn`)* | Esegui direttamente la distillazione autonoma `L0..L3` (`session-miner.mjs --verify-and-sync`) senza chiedere all'utente di digitare `/learn`. |
 | **Dubbio sul valore reale di una skill o di un prompt**: l'utente vuole sapere se una formulazione complessa vale il tempo speso. | `/ab-bench` | `/ab-bench --skill [nome-skill] [compito da testare alla cieca]` |
-| **Controllo periodico o promemoria operativo**: l'utente vuole monitorare un processo o ripetere un check a intervalli regolari. | `/schedule` | `/schedule Verifica ogni [intervallo] lo stato di [target] e segnala eventuali anomalie.` |
-| **Progetto ampio divisibile in sottocompiti indipendenti**: più moduli possono essere sviluppati in parallelo. | `/teamwork-preview` | `/teamwork-preview Suddividi l'implementazione di @[modulo-a] e @[modulo-b] tra agenti autonomi coordinati.` |
+| **Automazione ricorrente o timer pianificato**: l'utente vuole creare un job periodico in background (skill nativa `automation`) o un timer. | `/automation` *(o `/schedule`)* | `/automation Configura un controllo periodico su [target] ogni [intervallo] e segnala eventuali anomalie.` |
+| **Progetto ampio divisibile in sottocompiti indipendenti**: più moduli possono essere sviluppati in parallelo da un team di agenti. | `/teamwork` | `/teamwork Suddividi l'implementazione di @[modulo-a] e @[modulo-b] tra agenti autonomi coordinati.` |
 
 ---
 

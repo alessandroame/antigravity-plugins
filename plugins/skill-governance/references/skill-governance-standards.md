@@ -45,6 +45,6 @@ flowchart TD
 
 Quando due skill condividono lo stesso identico `name`, Antigravity applica la seguente scala gerarchica:
 
-$Workspace (.agents/skills) > Plugins del Progetto > Global Config (~/.gemini/config) > Built-in$
+`Workspace (.agents/skills) > Declared Configs > Global Config (~/.gemini/config) > Built-in` *(come definito nella skill nativa `agy-customizations`)*
 
 La risorsa a priorità inferiore subisce **shadowing completo e silente**: non riceverà alcun turno di esecuzione finché il conflitto non viene risolto tramite rinominazione o deprecazione.

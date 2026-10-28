@@ -65,6 +65,8 @@ Identificare tutte le directory di skill presenti nei livelli di configurazione 
    - Confrontare i token chiave delle descrizioni per rilevare cluster semantici sovrapposti.
 4. **Ispezione Script & Tool**:
    - Verificare che eventuali file referenziati nei comandi esistano su disco.
+5. **Analisi Deterministica del Contenuto, Senso d'Uso e Diff Post-Update (`validate.mjs`)**:
+   - Eseguire `node c:/github/antigravity-plugins/scripts/validate.mjs --all --report-builtin-overlaps` per analizzare il contenuto di `rules/AGENTS.md`, `SKILL.md` e `references/*.md` rispetto ai 19 file *Built-in* (`scripts/builtin-baseline.json`), distinguendo tra **Delega Esplicita** (valida), **Duplicazione di Boilerplate (`P1`)** e **Contraddizione Normativa (`P0`)**. Dopo aver verificato un aggiornamento di Antigravity, riallineare l'impronta con `node c:/github/antigravity-plugins/scripts/validate.mjs --update-builtin-baseline`.
 
 ---
 
