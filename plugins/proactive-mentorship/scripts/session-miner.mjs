@@ -115,6 +115,7 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
     join(repoRoot, 'plugins', 'skizzo', 'tests', 'triage.test.mjs'),
     join(repoRoot, 'plugins', 'proactive-mentorship', 'tests', 'session-miner.test.mjs'),
     join(repoRoot, 'plugins', 'telemetry-analytics', 'tests', 'session-backfill.test.mjs'),
+    join(repoRoot, 'plugins', 'pattern-harvester', 'tests', 'pattern-harvester.test.mjs'),
     join(repoRoot, 'tests', 'validate-content-overlap.test.mjs')
   ].filter((f) => existsSync(f));
 

@@ -371,3 +371,21 @@ A seguito dell'audit delle direttive e dei comportamenti richiesti agli agenti n
 - **Sintesi**:
   - Obbligo di emettere la prima stima (`· ETA tot ~Ns`) **entro il 2° turno** scrivendola sia in `toolAction` sia in `toolSummary` dell'ultimo tool di lettura del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`).
   - Corretto `collector.mjs` per registrare `etaOutcome` su `Stop` (`--finalize`) anche quando `newSteps.length === 0` e preservare `lastIndex` in `.cursor_<id>.json`.
+
+
+---
+
+## 2026-10-16 — Governance Anti-Bloat per `DESIDERATA.md`, `NOTES.md` e Storage Telemetria (`events.ndjson` / `.cursor_*`)
+- **Tipo**: Context Engineering & Storage Hygiene (`cognitive-persistence` v1.4.0, `telemetry-analytics` v1.5.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_desiderata-notes-and-telemetry-anti-bloat.md`](file:///.agents/worklog.d/2026-10-16_desiderata-notes-and-telemetry-anti-bloat.md)
+- **Sintesi**:
+  - Codificato in `cognitive-persistence` il tetto di **150 righe** e **160 caratteri** per cella su `DESIDERATA.md` e il tetto di **120 righe** su `NOTES.md`.
+  - Introdotto in `collector.mjs` il TTL Garbage Collection (`7 giorni`) per i file `.cursor_*.json`/`.eta_*.json` e la rotazione di `events.ndjson` oltre **5 MB**.
+
+---
+
+## 2026-10-16 — Governance Anti-Bloat per `MEMORY.md` (In-Place per Dominio) e `WORKLOG.md` (Rolling Window & Pointer Index)
+- **Tipo**: Context Engineering / Governance Memoria (`cognitive-persistence` v1.3.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md`](file:///.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md)
+- **Sintesi**:
+  - Formalizzato il tetto di **200 righe** per `MEMORY.md` e il modello **Rolling Window + Pointer Index** per `WORKLOG.md` (<= 300 righe / max 15 voci da 4–5 righe con link a `.agents/worklog.d/`).

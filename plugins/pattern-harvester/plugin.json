@@ -1,0 +1,11 @@
+{
+  "name": "pattern-harvester",
+  "displayName": "Pattern Harvester & Automation Advisor",
+  "description": "Analizza periodicamente le sessioni di lavoro, le sequenze di tool call, i comandi CLI e le interazioni utente-agente per individuare pattern ricorrenti ad alto ROI e trasformarli in nuove Skill, Regole o Plugin.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Analizza le mie ultime sessioni con /pattern-harvester e mostrami quali sequenze di lavoro conviene trasformare in skill o plugin",
+    "Controlla se ci sono comandi shell o workflow multi-step ripetuti nelle chat recenti non ancora coperti dai plugin attivi",
+    "Genera lo scaffold di una nuova skill o plugin a partire dal pattern ricorrente con il maggior risparmio di tempo"
+  ]
+}

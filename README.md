@@ -32,6 +32,7 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 | **`skizzo`** | Competizione e collaborazione dialettica parallela tra due subagent isolati (Subagent Alpha orientato al tecnicismo/purezza headless vs Subagent Beta orientato al dominio/utente) con Mediatore interattivo opzionale (`Subagent Gamma` via `/skizzo --mediator`) e banner esplicito in output (`/skizzo`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/skizzo`), Template dialettico | [Leggi README](./plugins/skizzo/README.md) |
 | **`ab-bench`** | Confronto empirico alla cieca A/B tra un prompt base e una variante potenziata con plugin o skill (es. `/skizzo`) tramite il Test delle 5 Dita ("Uomo della Pietra"), sanitizer anti-bias, Rasoio di Occam sul tempo e storico locale (`/ab-bench --stats`). | Regola dormiente di default (`rules/AGENTS.md`), Skill (`/ab-bench`), Engine CLI (`scripts/bench.mjs`), Test (`tests/bench.test.mjs`) | [Leggi README](./plugins/ab-bench/README.md) |
 | **`human-governor`** | Tutela cognitiva dell'operatore umano contro il sovraccarico da orchestrazione asincrona: monitora i WIP contemporanei (`max 2`), il context-thrashing tra chat, la micro-gestione e il coprifuoco notturno (`22:30–07:00`), bloccando il turno con `ask_question`. | Regola attiva (`rules/AGENTS.md`), Skill (`/focus-audit`), Hook `PreInvocation` (`governor-hook.mjs`), Core (`evaluator.mjs`), CLI (`status.mjs`) | [Leggi README](./plugins/human-governor/README.md) |
+| **`pattern-harvester`** | Scoperta periodica non intrusiva di pattern ricorrenti nelle lavorazioni e nelle interazioni (`transcript.jsonl`, n-grammi RLE di tool, scheletri CLI e cluster lessicali) con filtro anti-collisione sul catalogo attivo, calcolo ROI KLM/GOMS e generazione di scaffold `SKILL.md` o `plugin.json`. | Regola attiva (`rules/AGENTS.md`), Skill (`/pattern-harvester`), Hook `Stop` (`periodic-harvester-hook.mjs`), Core (`harvester-engine.mjs`), CLI (`pattern-harvester.mjs`) | [Leggi README](./plugins/pattern-harvester/README.md) |
 
 ---
 
@@ -97,6 +98,11 @@ L'ecosistema `antigravity-plugins` applica i principi di **ingegneria del softwa
 - **Cosa fa**: Tramite l'hook `PreInvocation` (`governor-hook.mjs`) scansiona all'inizio del turno utente le conversazioni attive in `~/.gemini/antigravity/brain/` negli ultimi `30` minuti (filtrando solo le sessioni utente `<USER_REQUEST>`), conta i cambi di contesto in `10` minuti, la frequenza di prompt oraria, la durata continua senza pause e il coprifuoco (`22:30–07:00`). Al superamento delle soglie invia una notifica balloon su Windows e inietta `[HUMAN-GOVERNOR ALERT]`, obbligando l'agente a fermarsi con `ask_question` per chiedere all'utente se chiudere i WIP in eccesso, convertire il task in `/goal` o attivare uno snooze consapevole di `30` minuti (`/focus-audit`).
 - **Guida completa**: [`plugins/human-governor/README.md`](./plugins/human-governor/README.md)
 
+### 13. `pattern-harvester`
+- **Goal**: Individuare periodicamente e senza rumore in chat le sequenze di lavoro, le pipeline di comandi shell e le interazioni ricorrenti che meritano di essere automatizzate tramite nuove Skill, Regole o Plugin.
+- **Cosa fa**: Tramite un hook leggero su `Stop` (`periodic-harvester-hook.mjs`, `< 5ms`) avvia in background detached ogni `5` sessioni umane (o `24` ore) il motore headless `harvester-engine.mjs`. Quest'ultimo estrae n-grammi RLE di sequenze tool (`3..5-grammi`), scheletri strutturali di comandi CLI e cluster lessicali per similarità di Jaccard, scarta i flussi già coperti dal catalogo installato, calcola il risparmio netto di tempo su 15 sessioni secondo i parametri KLM/GOMS (`>= 120s` per una Skill, `>= 240s` per un Plugin) e genera lo scaffold pre-validato (`--scaffold <patternId>`) invocabile anche on-demand con `/pattern-harvester`.
+- **Guida completa**: [`plugins/pattern-harvester/README.md`](./plugins/pattern-harvester/README.md)
+
 ---
 
 ## Struttura del Repository
@@ -116,6 +122,7 @@ antigravity-plugins/
 │   ├── execution-guard/               # Anti-freeze, watchdog e circuit breaker salva-token
 │   ├── human-governor/                # Guardia WIP concorrenti (/focus-audit) e coprifuoco
 │   ├── laws-of-ux/                    # Regole ed ergonomia basate sulle 30 Laws of UX
+│   ├── pattern-harvester/             # Scoperta periodica pattern (/pattern-harvester) e scaffold ROI
 │   ├── proactive-mentorship/          # Scrutinio critico e prompt refactoring
 │   ├── skizzo/                        # Dual-Track dialettico Tecnico vs Dominio (/skizzo)
 │   ├── skill-governance/              # Audit, token optimization e collision check

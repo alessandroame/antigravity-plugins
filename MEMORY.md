@@ -27,9 +27,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 
 ## 2. Parsing Transcript, Windows NTFS & Connect-RPC
 
-- **Normalizzazione Percorsi nel Parsing di `transcript.jsonl`**:
-  - *Insidia*: Gli argomenti tool su Windows contengono backslash raddoppiati (`\\\\`) e apici; `.replace(/\\/g, '/')` genera `//` e workspace come `antigravity-plugins` attivano match spuri su `plugins`.
-  - *Regola*: Normalizzare con `p.replace(/^["']|["']$/g, '').replace(/\\+/g, '/').replace(/\/+/g, '/').toLowerCase()` e ancorare le regex con `(?:^|\/)plugins\/`.
+- **Normalizzazione Percorsi e Argomenti Doppiamente Quotati nel Parsing di `transcript.jsonl` (`pattern-harvester`, `telemetry-analytics`)**:
+  - *Insidia*: Gli argomenti tool su Windows contengono backslash raddoppiati (`\\\\`) e valori stringa doppiamente quotati in JSON (`"\"node ...\""`), per cui sostituire `"[^"]*"` con `"<str>"` prima dell'unwrapping collassa l'intero comando in `"<str>"`; inoltre i loop generici `READ:FILE -> EDIT:FILE` generano rumore nel pattern mining se non filtrati su azioni operative e script già presenti in `plugins/*/scripts/`.
+  - *Regola*: Usare `unwrapTranscriptString` prima di normalizzare path e scheletri CLI (`normalizeCommandSkeleton`), richiedere almeno un token operativo strutturato negli n-grammi RLE (`extractToolChainNgrams`) e assegnare `scriptBonus = 0.75` (`ALREADY_COVERED`) quando uno scheletro CLI invoca uno script già censito nel catalogo (`evaluateCatalogOverlap` in `harvester-engine.mjs`).
 - **Rilevamento Conversazione Attiva su NTFS (`transcript.jsonl` mtime)**:
   - *Insidia*: Su NTFS l'`mtime` di `brain/<conversation-id>` non si aggiorna quando viene scritto il file annidato `.system_generated/logs/transcript.jsonl`.
   - *Regola*: In `set-chat-title.mjs`, ordinare le sessioni leggendo `statSync(join(fullPath, '.system_generated', 'logs', 'transcript.jsonl')).mtimeMs`.

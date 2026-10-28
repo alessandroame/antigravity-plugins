@@ -1,0 +1,11 @@
+{
+  "pattern-harvester-hook": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./scripts/periodic-harvester-hook.mjs",
+        "timeout": 8
+      }
+    ]
+  }
+}

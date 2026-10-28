@@ -13,6 +13,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-28 — Progettazione e Implementazione Plugin `pattern-harvester` v1.0.0 (Mining Periodico Pattern Operativi, ROI KLM/GOMS e Scaffolding `/pattern-harvester`)
+- **Tipo**: Nuovo Plugin di Process & Workflow Mining Periodico (`plugins/pattern-harvester/` v1.0.0, `README.md`, `DESIDERATA.md`, `MEMORY.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-28_pattern-harvester-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-28_pattern-harvester-plugin.md)
+- **Sintesi**:
+  - Creato il plugin [`pattern-harvester`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/README.md) con motore headless [`harvester-engine.mjs`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/core/harvester-engine.mjs) (`8/8` test in [`pattern-harvester.test.mjs`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/tests/pattern-harvester.test.mjs)): estrazione a 3 canali (n-grammi RLE di tool call `3..5`, scheletri CLI con `unwrapTranscriptString` e clustering Jaccard su 2-shingle), deduplicazione sul catalogo installato e matrice decisionale ROI KLM/GOMS (`>= 120s` per `NEW_SKILL`, `>= 240s` per `NEW_PLUGIN`).
+  - Configurato il controllo periodico silenzioso sull'evento `Stop` ([`periodic-harvester-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/scripts/periodic-harvester-hook.mjs), `< 5ms`, avvio detached ogni `5` sessioni umane o `24h`), la skill `/pattern-harvester` e il generatore di scaffold `--scaffold <patternId>` conforme a `scripts/validate.mjs`.
+
+---
+
 ## 2026-10-28 — Guardia Portabilità Multi-Macchina (`HARDCODED_USER_PATH`), Shim `pwsh` e Audit `skill-collision-check` Cross-Workspace
 - **Tipo**: Portabilità Multi-Macchina, Validatore Statico `L3` & Igiene Skill Workspace (`scripts/validate.mjs`, `plugins/*`, `c:/github/*`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md)
@@ -21,6 +30,7 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
   - Eseguito `skill-collision-check` su `191` skill locali/globali (`0` collisioni `P0`), specializzando i trigger in `Quiz_VDS-VL`, compattando `14` `description` entro `[80, 250]` char (`Quiz_VDS-VL`, `WeatherNerdWearOs`, `AgentBridge`) e convertendo a `trigger: model_decision` le regole verticali di `ParaMeteo*`.
 
 ---
+
 ## 2026-10-25 — Evoluzione `telemetry-analytics` v2.0.0–v2.1.0 (Backfill Sessioni Locali `brain/`, Report Token per Prompt e Dashboard HTML)
 - **Tipo**: Osservabilità Personale, Mining Transcript & Contabilità Token per Prompt (`plugins/telemetry-analytics/` v2.1.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md)
@@ -94,54 +104,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Dettagli**: [`.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md)
 - **Sintesi**:
   - Espanso `proactive-mentorship` al coaching *just-in-time* sui comandi Antigravity (`/grill-me`, `/plan`, `/compact`, `/goal`, `/learn`, `/skizzo`, `/ab-bench`) e all'Agent Training Ladder (`L0..L3`) con Gate Anti-Disturbo, prontuari in `references/` e guardie `L3` in `scripts/validate.mjs` (`</summary>` e `references/`).
-
----
-
-## 2026-10-17 — Evoluzione Plugin `skizzo` v1.4.0 (Persistenza Sticky di Sessione, Stop Naturale, Output "Human-First") e `validateMarkdownHygiene`
-- **Tipo**: Evoluzione Protocollo Multi-Agente & Validatore Statico (`plugins/skizzo/` v1.4.0, `scripts/validate.mjs`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-17_skizzo-session-persistence.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-session-persistence.md), [`.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_skizzo-skill-declaration.md)
-- **Sintesi**:
-  - Resa la modalità `/skizzo` (`v1.4.0`) **persistente (sticky) per tutti i turni della sessione** anche quando l'utente non ripete `/skizzo` nei messaggi successivi, fino a fine chat o comando di stop (`/skizzo stop`, `/skizzo off`, `stop skizzo`, `ferma skizzo`), con auto-routing di 1–2 skill foglia, silenzio intermedio, formato **Human-First** a 4 punti e guardia `validateMarkdownHygiene`.
-
----
-
-## 2026-10-17 — Creazione Plugin `ab-bench` v1.0.0 (Sfida Cieca A/B su 5 Dita, Sanitizer Anti-Bias e Rasoio di Occam)
-- **Tipo**: Nuovo Plugin di Benchmarking Empirico (`plugins/ab-bench/` v1.0.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-17_ab-bench-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-17_ab-bench-plugin.md)
-- **Sintesi**:
-  - Implementato in modalità `/skizzo` il plugin `ab-bench` (`/ab-bench`, `--skill`, `--stats`) con motore headless [`bench.mjs`](file:///c:/github/antigravity-plugins/plugins/ab-bench/scripts/bench.mjs) (SHA-256 blind X/Y, sanitizer anti-bias, Test delle 5 Dita `0..5`, Rasoio di Occam sul tempo e rotazione storico a `5 MB`) verificato su 12/12 test (`Oracolo Alpha` + `Oracolo Beta`).
-
----
-
-## 2026-10-16 — Creazione ed Evoluzione Plugin `skizzo` v1.1.0 (Dual-Track Tecnico vs Dominio, Mediatore Interattivo `--mediator` e Banner `conversation://`)
-- **Tipo**: Nuovo Plugin & Orchestrazione Multi-Agente Avversariale (`plugins/skizzo/` v1.0.0 -> v1.1.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-16_skizzo-dual-track-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-16_skizzo-dual-track-plugin.md)
-- **Sintesi**:
-  - Implementato il plugin `skizzo` (dormiente di default, toggle `/skizzo` con titolo `[SKIZZO]` / `[SKIZZO+MED]`) che delega ogni task in parallelo a 2 subagent isolati (`Subagent Alpha` Tecnico vs `Subagent Beta` Dominio), con opzione `--mediator` (`Subagent Gamma` che negozia via `send_message` max 1 round sui disaccordi) e banner `[!IMPORTANT]` obbligatorio al rigo 1 con link cliccabili `conversation://<id>`.
-
----
-
-## 2026-10-16 — Formato Ad Alto Contrasto "Badge + Semaforo" (`【🟢/🟡/🔴 ETA tot ~Ns】`) per `toolAction` e `toolSummary`
-- **Tipo**: Telemetria & Ergonomia Visiva In-Flight (`telemetry-analytics` v1.5.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md`](file:///.agents/worklog.d/2026-10-16_eta-badge-semaphore-format.md)
-- **Sintesi**:
-  - Introdotto in [`plugins/telemetry-analytics/rules/AGENTS.md`](file:///plugins/telemetry-analytics/rules/AGENTS.md) il formato `【🟢/🟡/🔴 ETA tot ~Ns】` (`🟢` <= 20s, `🟡` 21–60s, `🔴` > 60s) per dare risalto cromatico e geometrico nei campi plain-text (`textContent`) dei tool, estendendo il parser in `collector.mjs` ed `eta-injector.mjs`.
-
----
-
-## 2026-10-16 — Governance Anti-Bloat per `DESIDERATA.md`, `NOTES.md` e Storage Telemetria (`events.ndjson` / `.cursor_*`)
-- **Tipo**: Context Engineering & Storage Hygiene (`cognitive-persistence` v1.4.0, `telemetry-analytics` v1.5.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-16_desiderata-notes-and-telemetry-anti-bloat.md`](file:///.agents/worklog.d/2026-10-16_desiderata-notes-and-telemetry-anti-bloat.md)
-- **Sintesi**:
-  - Codificato in `cognitive-persistence` il tetto di **150 righe** e **160 caratteri** per cella su `DESIDERATA.md` (split *Backlog Attivo* / *Completate*) e il tetto di **120 righe** su `NOTES.md` (contatore `Ultimo ID Assegnato` nell'header e tabella a 1 riga per le ultime 10 note chiuse, allineando `c:\github\glidemind\NOTES.md`).
-  - Introdotto in `collector.mjs` il TTL Garbage Collection (`7 giorni`) per i file `.cursor_*.json`/`.eta_*.json` e la rotazione di `events.ndjson` oltre **5 MB**, estendendo `scripts/validate.mjs --all`.
-
----
-
-## 2026-10-16 — Governance Anti-Bloat per `MEMORY.md` (In-Place per Dominio) e `WORKLOG.md` (Rolling Window & Pointer Index)
-- **Tipo**: Context Engineering / Governance Memoria (`cognitive-persistence` v1.3.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md`](file:///.agents/worklog.d/2026-10-16_memory-anti-bloat-governance.md)
-- **Sintesi**:
-  - Formalizzato in [`plugins/cognitive-persistence/rules/AGENTS.md`](file:///plugins/cognitive-persistence/rules/AGENTS.md) e [`skills/memory-sync/SKILL.md`](file:///plugins/cognitive-persistence/skills/memory-sync/SKILL.md) il tetto di **200 righe** per `MEMORY.md` (5–8 sezioni di dominio aggiornate *in-place*, formato `Insidia`/`Regola`, archiviazione in `.agents/archive/MEMORY_v<N>_archive.md`).
-  - Formalizzato per `WORKLOG.md` il modello **Rolling Window + Pointer Index** (<= 300 righe / max 15 voci da 4–5 righe con link a `.agents/worklog.d/`, divieto di copia integrale del frammento e rotazione in `.agents/archive/WORKLOG_v<N>_archive.md`) e reso `scripts/sync-to-global.mjs` resiliente a lock `EBUSY` su Windows.
-
