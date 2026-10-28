@@ -1,11 +1,22 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   classifySelfLearningCandidate,
   analyzeSessionTranscripts,
   resolveCatalogRepoRoot,
-  verifyAndSyncGlobalPlugins
+  verifyAndSyncGlobalPlugins,
+  inspectCatalogGitOutboundStatus
 } from '../scripts/session-miner.mjs';
+import {
+  readGitHeadSha,
+  computeCatalogFingerprint
+} from '../../../scripts/sync-to-global.mjs';
+import {
+  evaluateCrossMachineSyncNeed
+} from '../../telemetry-analytics/scripts/eta-injector.mjs';
 
 describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technical & Beta Domain Oracles)', () => {
   it('routes recurring visual/numeric regressions to L3_INVARIANT_GUARD with crossRepoTarget', () => {
@@ -84,5 +95,64 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
     assert.equal(summary.patternCounts.readonlyQuestionWithClause, 1);
     assert.equal(summary.patternCounts.crossRepoSync, 1);
     assert.ok(summary.learningCandidates.length >= 2);
+  });
+
+  it('evaluates cross-machine and cross-workspace sync need via HEAD SHA and TTL', () => {
+    const root = resolveCatalogRepoRoot();
+    const sha = readGitHeadSha(root);
+    assert.match(sha, /^[0-9a-f]{40}$/);
+
+    const fp = computeCatalogFingerprint(root);
+    assert.equal(fp.headSha, sha);
+    assert.ok(fp.fileCount > 10);
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-sync-test-'));
+    const stateFile = path.join(tmpDir, 'plugin-sync-state.json');
+    const nowMs = 1700000000000;
+
+    // 1. Missing state -> immediate sync + pull
+    const d1 = evaluateCrossMachineSyncNeed({ repoRoot: root, stateFile, nowMs });
+    assert.equal(d1.shouldSyncNow, true);
+    assert.equal(d1.shouldSpawnBackgroundPull, true);
+    assert.equal(d1.reason, 'initial-state-missing');
+
+    // 2. Matching HEAD within 30m TTL -> no sync needed
+    fs.writeFileSync(
+      stateFile,
+      JSON.stringify({ headSha: sha, lastCheckAtMs: nowMs - 5 * 60 * 1000 }),
+      'utf-8'
+    );
+    const d2 = evaluateCrossMachineSyncNeed({ repoRoot: root, stateFile, nowMs });
+    assert.equal(d2.shouldSyncNow, false);
+    assert.equal(d2.shouldSpawnBackgroundPull, false);
+    assert.equal(d2.reason, 'up-to-date-within-ttl');
+
+    // 3. Matching HEAD but TTL expired (> 30m) -> spawn background git pull --ff-only
+    fs.writeFileSync(
+      stateFile,
+      JSON.stringify({ headSha: sha, lastCheckAtMs: nowMs - 45 * 60 * 1000 }),
+      'utf-8'
+    );
+    const d3 = evaluateCrossMachineSyncNeed({ repoRoot: root, stateFile, nowMs });
+    assert.equal(d3.shouldSyncNow, false);
+    assert.equal(d3.shouldSpawnBackgroundPull, true);
+    assert.equal(d3.reason, 'ttl-expired-remote-check');
+
+    // 4. Local HEAD SHA changed -> immediate sync
+    fs.writeFileSync(
+      stateFile,
+      JSON.stringify({ headSha: '0000000000000000000000000000000000000000', lastCheckAtMs: nowMs }),
+      'utf-8'
+    );
+    const d4 = evaluateCrossMachineSyncNeed({ repoRoot: root, stateFile, nowMs });
+    assert.equal(d4.shouldSyncNow, true);
+    assert.equal(d4.reason, 'local-head-changed');
+
+    const outbound = inspectCatalogGitOutboundStatus(root);
+    assert.equal(typeof outbound.dirty, 'boolean');
+    assert.equal(typeof outbound.uncommittedCount, 'number');
+    assert.equal(typeof outbound.unpushedCount, 'number');
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });

@@ -145,11 +145,59 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
     output: (syncRes.stdout || '') + (syncRes.stderr || '')
   });
 
+  const gitOutboundStatus = inspectCatalogGitOutboundStatus(repoRoot);
+
   return {
     ok: syncRes.status === 0,
     repoRoot,
+    gitOutboundStatus,
     steps
   };
+}
+
+/**
+ * Checks whether `antigravity-plugins` has uncommitted plugin modifications or unpushed commits
+ * so changes made while working inside another repository (e.g. GlideMind) are not stranded on Machine A.
+ * @param {string} [customRoot]
+ * @returns {{ dirty: boolean, uncommittedCount: number, unpushedCount: number, needsPushToOrigin: boolean }}
+ */
+export function inspectCatalogGitOutboundStatus(customRoot) {
+  const repoRoot = resolveCatalogRepoRoot(customRoot);
+  try {
+    const porcelain = spawnSync('git', ['status', '--porcelain'], {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true
+    });
+    const uncommittedLines = (porcelain.stdout || '')
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const ahead = spawnSync('git', ['rev-list', '--count', '@{u}..HEAD'], {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true
+    });
+    const unpushedCount =
+      ahead.status === 0 ? parseInt((ahead.stdout || '0').trim(), 10) || 0 : 0;
+
+    return {
+      dirty: uncommittedLines.length > 0,
+      uncommittedCount: uncommittedLines.length,
+      unpushedCount,
+      needsPushToOrigin: uncommittedLines.length > 0 || unpushedCount > 0
+    };
+  } catch {
+    return {
+      dirty: false,
+      uncommittedCount: 0,
+      unpushedCount: 0,
+      needsPushToOrigin: false
+    };
+  }
 }
 
 /**
@@ -393,7 +441,17 @@ const isMain =
 if (isMain) {
   if (process.argv.includes('--verify-and-sync')) {
     const res = verifyAndSyncGlobalPlugins();
-    process.stdout.write(`${JSON.stringify({ ok: res.ok, repoRoot: res.repoRoot }, null, 2)}\n`);
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          ok: res.ok,
+          repoRoot: res.repoRoot,
+          gitOutboundStatus: res.gitOutboundStatus
+        },
+        null,
+        2
+      )}\n`
+    );
     if (!res.ok) {
       for (const s of res.steps) {
         if (s.status !== 0) process.stderr.write(`[FAIL ${s.step}]\n${s.output}\n`);
