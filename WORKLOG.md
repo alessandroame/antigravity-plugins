@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-28 — Guardia Portabilità Multi-Macchina (`HARDCODED_USER_PATH`), Shim `pwsh` e Audit `skill-collision-check` Cross-Workspace
+- **Tipo**: Portabilità Multi-Macchina, Validatore Statico `L3` & Igiene Skill Workspace (`scripts/validate.mjs`, `plugins/*`, `c:/github/*`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md)
+- **Sintesi**:
+  - Rimossi i puntamenti hardcoded `C:/Users/aless/` in 4 file dei plugin e in `GlideMind/.agents/rules/constraints.md` a favore del percorso canonico `c:/github/antigravity-plugins/plugins/...`, codificando la guardia statica `HARDCODED_USER_PATH` (`L3`) in [`scripts/validate.mjs`](file:///c:/github/antigravity-plugins/scripts/validate.mjs#L82-L100) e lo shim `pwsh.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps`.
+  - Eseguito `skill-collision-check` su `191` skill locali/globali (`0` collisioni `P0`), specializzando i trigger in `Quiz_VDS-VL`, compattando `14` `description` entro `[80, 250]` char (`Quiz_VDS-VL`, `WeatherNerdWearOs`, `AgentBridge`) e convertendo a `trigger: model_decision` le regole verticali di `ParaMeteo*`.
+
+---
 ## 2026-10-25 — Evoluzione `telemetry-analytics` v2.0.0–v2.1.0 (Backfill Sessioni Locali `brain/`, Report Token per Prompt e Dashboard HTML)
 - **Tipo**: Osservabilità Personale, Mining Transcript & Contabilità Token per Prompt (`plugins/telemetry-analytics/` v2.1.0)
 - **Dettagli**: [`.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md)
@@ -137,11 +145,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
   - Formalizzato in [`plugins/cognitive-persistence/rules/AGENTS.md`](file:///plugins/cognitive-persistence/rules/AGENTS.md) e [`skills/memory-sync/SKILL.md`](file:///plugins/cognitive-persistence/skills/memory-sync/SKILL.md) il tetto di **200 righe** per `MEMORY.md` (5–8 sezioni di dominio aggiornate *in-place*, formato `Insidia`/`Regola`, archiviazione in `.agents/archive/MEMORY_v<N>_archive.md`).
   - Formalizzato per `WORKLOG.md` il modello **Rolling Window + Pointer Index** (<= 300 righe / max 15 voci da 4–5 righe con link a `.agents/worklog.d/`, divieto di copia integrale del frammento e rotazione in `.agents/archive/WORKLOG_v<N>_archive.md`) e reso `scripts/sync-to-global.mjs` resiliente a lock `EBUSY` su Windows.
 
----
-
-## 2026-10-16 — Visibilità Persistente dell'ETA sui Checkpoint (`toolAction` + `toolSummary`), Soglia Max 2° Turno e Fix Finalizzazione `Stop`
-- **Tipo**: Telemetria & UX In-Flight (`telemetry-analytics` v1.4.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-16_eta-persistent-checkpoint-visibility.md`](file:///.agents/worklog.d/2026-10-16_eta-persistent-checkpoint-visibility.md)
-- **Sintesi**:
-  - Obbligo di emettere la prima stima (`· ETA tot ~Ns`) **entro il 2° turno** scrivendola sia in `toolAction` sia in `toolSummary` dell'ultimo tool di lettura del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`).
-  - Corretto `collector.mjs` per registrare `etaOutcome` su `Stop` (`--finalize`) anche quando `newSteps.length === 0` e preservare `lastIndex` in `.cursor_<id>.json`.

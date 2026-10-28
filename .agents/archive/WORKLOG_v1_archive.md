@@ -362,3 +362,12 @@ A seguito dell'audit delle direttive e dei comportamenti richiesti agli agenti n
 - Eseguito `npm run sync`: aggiornati fisicamente tutti i plugin in `~/.gemini/config/plugins/`.
 - Allineata la matrice di stato [DESIDERATA.md](file:///c:/github/antigravity-plugins/DESIDERATA.md) e redatto il frammento di worklog.
 
+
+---
+
+## 2026-10-16 — Visibilità Persistente dell'ETA sui Checkpoint (`toolAction` + `toolSummary`), Soglia Max 2° Turno e Fix Finalizzazione `Stop`
+- **Tipo**: Telemetria & UX In-Flight (`telemetry-analytics` v1.4.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-16_eta-persistent-checkpoint-visibility.md`](file:///.agents/worklog.d/2026-10-16_eta-persistent-checkpoint-visibility.md)
+- **Sintesi**:
+  - Obbligo di emettere la prima stima (`· ETA tot ~Ns`) **entro il 2° turno** scrivendola sia in `toolAction` sia in `toolSummary` dell'ultimo tool di lettura del batch e del **primo tool operativo top-level** (`replace_file_content`, `write_to_file`, `run_command`).
+  - Corretto `collector.mjs` per registrare `etaOutcome` su `Stop` (`--finalize`) anche quando `newSteps.length === 0` e preservare `lastIndex` in `.cursor_<id>.json`.

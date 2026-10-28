@@ -79,6 +79,7 @@ const MULTI_TICK_SPAN = /(`{2,})([^\r\n]+?)\1/g;
 const SINGLE_TICK_SPAN = /`((?:\\`|[^`\r\n])+)`/g;
 const ESCAPED_BACKTICK_IN_SPAN = /\\`/;
 const BOLD_INSIDE_SINGLE_SPAN = /\*\*[^*\r\n]+\*\*/;
+const HARDCODED_USER_PATH = /[cC]:[\\/]+Users[\\/]+(?!<)[a-zA-Z0-9._-]+[\\/]/;
 const INLINE_LATEX_FORMULA = /(?<!\\)\$(?!\s)([^$\r\n]*?(?:\\(?:le|ge|neq|times|to|rightarrow|approx|text|sim|pm|cdot)\b|[_^]|\b(?:<=|>=)\b)[^$\r\n]*?)(?<!\s)\$/;
 
 function validateMarkdownHygiene(content, relPath) {
@@ -92,6 +93,11 @@ function validateMarkdownHygiene(content, relPath) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lineNum = i + 1;
+
+    const userPathMatch = line.match(HARDCODED_USER_PATH);
+    if (userPathMatch) {
+      hygieneErrors.push(`${relPath}:${lineNum}: percorso utente hardcoded '${userPathMatch[0]}' non portabile tra macchine. Usa 'c:/github/antigravity-plugins/...'`);
+    }
 
     const fenceMatch = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
     if (fenceMatch) {

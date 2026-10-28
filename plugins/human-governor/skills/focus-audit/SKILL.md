@@ -17,7 +17,7 @@ Questa procedura ispeziona la telemetria comportamentale dell'operatore umano e 
 Eseguire lo script di stato per leggere le sessioni WIP attive negli ultimi 30 minuti, i cambi di chat e la configurazione corrente:
 
 ```powershell
-node "C:/Users/aless/.gemini/config/plugins/human-governor/scripts/status.mjs" --json
+node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --json
 ```
 
 - **Verifica**: l'output JSON deve contenere `status` (`OK`, `WARN`, `CRITICAL`), `metrics`, `activeConversations` e `violations`.
@@ -30,16 +30,16 @@ Se l'utente chiede di modificare le soglie o silenziare temporaneamente gli avvi
 
 ```powershell
 # Impostare il limite massimo di WIP contemporanei (1..10, default 2)
-node "C:/Users/aless/.gemini/config/plugins/human-governor/scripts/status.mjs" --max-wip 2
+node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --max-wip 2
 
 # Impostare la fascia di coprifuoco notturno (formato HH:MM-HH:MM)
-node "C:/Users/aless/.gemini/config/plugins/human-governor/scripts/status.mjs" --curfew 22:30-07:00
+node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --curfew 22:30-07:00
 
 # Silenziare gli avvisi per N minuti (0 per riattivare subito)
-node "C:/Users/aless/.gemini/config/plugins/human-governor/scripts/status.mjs" --snooze 30
+node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --snooze 30
 
 # Attivare o disattivare il banner di notifica desktop di Windows
-node "C:/Users/aless/.gemini/config/plugins/human-governor/scripts/status.mjs" --toast on
+node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --toast on
 ```
 
 ---

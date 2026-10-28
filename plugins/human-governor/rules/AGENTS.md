@@ -10,7 +10,7 @@ L'hook `PreInvocation` (`scripts/governor-hook.mjs`) monitora le sole conversazi
 2. **Opzioni Standard**:
    - `(Recommended) Parcheggia questo task: chiudo o consolido prima gli altri WIP con /take-note o /memory-sync` -> salva 1 riga in `NOTES.md` e fermati.
    - `Converti questa richiesta in un task autonomo (/goal) così non devo fare da babysitter passo-passo` -> esegui fino a verifica finale senza micro-conferme.
-   - `Procedi comunque (Modalità Pirla Consapevole): esegui il task e silencia l'avviso per 30 minuti` -> esegui `node C:/Users/aless/.gemini/config/plugins/human-governor/scripts/status.mjs --snooze 30` e procedi.
+   - `Procedi comunque (Modalità Pirla Consapevole): esegui il task e silencia l'avviso per 30 minuti` -> esegui `node c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs --snooze 30` e procedi.
 
 ## 2. Soglie Predefinite (`/focus-audit`)
 - **`maxConcurrentWip`**: `2` sessioni umane attive negli ultimi `30m` (`CRITICAL` da `4+`).
