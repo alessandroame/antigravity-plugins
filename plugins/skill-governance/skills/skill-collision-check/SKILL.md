@@ -47,6 +47,11 @@ Identificare tutte le directory di skill presenti nei livelli di configurazione 
 - **Definizione**: File `SKILL.md` che contengono comandi o script di supporto che non esistono sul disco o puntano a percorsi assoluti hardcoded riferiti ad altre macchine.
 - **Risoluzione**: Convertire i percorsi assoluti in percorsi relativi al repository.
 
+### Anomalia 5: Sovrapposizione Funzionale Post-Update con Antigravity Nativo (P1)
+- **Definizione**: Una regola (`AGENTS.md`) o skill custom replica, contraddice o sovrascrive meccanismi divenuti nativi dopo un aggiornamento di Antigravity (es. *Reactive Wakeup* sui task in background, vincoli CSS di `generative_ui`, o comandi slash integrati come `/learn`, `/boost`, `/teamwork`, `/schedule`).
+- **Impatto**: Esecuzione doppia della stessa logica, avvisi ridondanti in chat, conflitti con le direttive dei tool nativi e spreco di token nel system prompt a ogni turno.
+- **Risoluzione**: Rimuovere dalle regole custom il boilerplate ormai garantito dal motore nativo, delegare alle skill *Built-in* (`agy-customizations`, `plugin`, `generative_ui`, `automation`) le funzioni standard e confinare il plugin al solo valore aggiunto differenziale.
+
 ---
 
 ## 3. Flusso Operativo di Ispezione

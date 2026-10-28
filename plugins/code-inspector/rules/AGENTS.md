@@ -15,5 +15,5 @@ Definisce gli standard per la ricostruzione e verifica a livello di codice delle
 ## 2. Widget Interattivo (`<agent-embed>`) e Cassetti Codice (`<details>`)
 1. **Artefatto HTML a 2 Tab (`role="tablist"`)**: generare `<artifact_dir>/flow-inspector-<slug>.html` (`UserFacing: true`) da `references/flow-widget-template.html` ed esporlo con `<agent-embed src="file:///<artifact_dir>/flow-inspector-<slug>.html"></agent-embed>`:
    - **Tab 1 — `Albero Testuale` (default)**: albero monospace verticale (`<= 65` char/riga) con `◇ BIVIO` e rami `├── [NO] ──►` / `└── [SÌ] ──►`.
-   - **Tab 2 — `Grafico a Blocchi`**: card con variabili tema (`--card`, `--foreground`, `--border`, `--primary`), bivi `grid-cols-2` e badge `[PURE]`/`[STATE]`/`[I/O]`. Usare `tailwindcss.min.js`, `<body class="bg-transparent ...">`, font `>= 12px` e **mai** `100vh`/`h-screen`/`min-h-screen`.
+   - **Tab 2 — `Grafico a Blocchi`**: card con variabili tema, bivi `grid-cols-2` e badge `[PURE]`/`[STATE]`/`[I/O]`, seguendo i vincoli di layout e theming della skill nativa `generative_ui`.
 2. **Verifica Numeri di Riga ed Estratti Chirurgici**: eseguire sempre `read_file` prima di citare `#Lxx-Lyy`; estrarre solo le **10–35 righe** pertinenti dentro `<details>`, lasciando **una riga vuota obbligatoria** dopo `</summary>`.

@@ -8,7 +8,7 @@ Il frontmatter YAML (`name` e `description`) di ogni skill attiva viene iniettat
 2. **Sicurezza YAML Strict**: vietato usare `: ` in una `description` inline non quotata; usare il blocco folded `>-` o racchiudere tra virgolette.
 3. **Trigger Direttivo Esplicito**: includere sempre *"Use this skill when..."*, *"Use this skill to..."* o *"Utilizza questa skill quando..."* indicando comandi slash, tool o file target.
 
-## 2. Divulgazione Progressiva, Generalità e Prevenzione Collisioni
-1. **Corpo `SKILL.md` `<= 200` Righe**: strutturato come runbook sequenziale (Step 1..N); spostare schemi in `references/`, template in `examples/` e script in `scripts/`.
-2. **Univocità `kebab-case` e Semantica**: evitare collisioni di `name` (shadowing silenzioso Workspace > Plugins > Global > Built-in) e trigger sovrapposti. Dichiarare output verificabile e timeout per comandi asincroni.
+## 2. Divulgazione Progressiva, Generalità e Prevenzione Collisioni con Built-in
+1. **Corpo `SKILL.md` `<= 200` Righe e Delega alle Skill Native**: strutturare come runbook sequenziale (Step 1..N) spostando dettagli in `references/`, `examples/` e `scripts/`. Per l'architettura base di Antigravity (discovery, `plugin.json`, `hooks.json`) delegare alle skill native `agy-customizations` e `plugin` senza duplicarne le istruzioni.
+2. **Univocità `kebab-case`, Precedenza e Controllo Post-Update**: evitare collisioni di `name` (shadowing silenzioso `Workspace > Plugins > Global > Built-in`) e sovrapposizioni con nuovi comandi slash o garanzie native introdotte dagli aggiornamenti di Antigravity (`skill-collision-check`).
 3. **Astrazione Generica e Divieto di Overfitting sugli Esempi (`Anti-Example Hardcoding`)**: quando l'utente spiega un requisito generale facendo esempi concreti (*"es. se deve fare X o Y"*), non cablare mai gli esempi specifici dell'utente come elenchi fissi o regex nelle skill/regole/script; codificare sempre il meccanismo astratto delegando al ragionamento dell'LLM l'identificazione dei casi specifici, l'ordinamento per importanza e l'istanziazione dinamica entro i limiti strutturali.

@@ -7,7 +7,37 @@
  */
 
 import { readdirSync, existsSync, readFileSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, resolve, extname } from 'node:path';
+
+function loadBuiltinSkillNames() {
+  const names = new Set([
+    'agy-customizations',
+    'antigravity-guide',
+    'automation',
+    'generative_ui',
+    'migrate-workflows',
+    'permissioned-github',
+    'plugin',
+    'run-workflow',
+    'ui-plugin-navigation'
+  ]);
+  const builtinRoot = join(homedir(), '.gemini', 'antigravity', 'builtin', 'skills');
+  if (existsSync(builtinRoot) && statSync(builtinRoot).isDirectory()) {
+    for (const ent of readdirSync(builtinRoot, { withFileTypes: true })) {
+      if (!ent.isDirectory()) continue;
+      const sf = join(builtinRoot, ent.name, 'SKILL.md');
+      if (existsSync(sf)) {
+        const m = readFileSync(sf, 'utf-8').match(/^name:\s*(.+)$/m);
+        if (m) names.add(m[1].trim().replace(/^['"]|['"]$/g, ''));
+      }
+    }
+  }
+  return names;
+}
+
+const BUILTIN_SKILL_NAMES = loadBuiltinSkillNames();
+const SEEN_SKILL_NAMES = new Map();
 
 const ALLOWED_TOP_LEVEL_FIELDS = new Set([
   'name',
@@ -338,7 +368,15 @@ function validatePlugin(pluginDir, existingNames) {
             if (fm._unquotedColonError) {
               errors.push(`skills/${ent.name}/SKILL.md: frontmatter contiene ': ' non quotato su riga inline (invalida il parser YAML strict di Antigravity)`);
             }
-            if (!fm.name) errors.push(`skills/${ent.name}/SKILL.md: "name" mancante nel frontmatter`);
+            if (!fm.name) {
+              errors.push(`skills/${ent.name}/SKILL.md: "name" mancante nel frontmatter`);
+            } else if (BUILTIN_SKILL_NAMES.has(fm.name)) {
+              errors.push(`skills/${ent.name}/SKILL.md: collisione P0 (shadowing) con skill Built-in Antigravity '${fm.name}'`);
+            } else if (SEEN_SKILL_NAMES.has(fm.name) && dirName !== 'plugin-template') {
+              errors.push(`skills/${ent.name}/SKILL.md: collisione P0 con skill omonima '${fm.name}' in '${SEEN_SKILL_NAMES.get(fm.name)}'`);
+            } else if (dirName !== 'plugin-template') {
+              SEEN_SKILL_NAMES.set(fm.name, dirName);
+            }
             if (!fm.description) {
               errors.push(`skills/${ent.name}/SKILL.md: "description" mancante nel frontmatter`);
             } else {

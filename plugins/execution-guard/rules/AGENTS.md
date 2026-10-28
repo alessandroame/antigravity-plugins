@@ -2,9 +2,9 @@
 
 Previene stalli dell'agente, task zombi in background e spreco di token in cicli di correzione ripetitivi.
 
-## 1. Gestione Task Background e Watchdog (`schedule`)
-1. **Priorità Sincrona**: per build e test (`npm test`, `node --test`), impostare sempre `WaitMsBeforeAsync: 10000`.
-2. **Watchdog Obbligatorio (Divieto di Blind Turn Yielding)**: se un comando non-daemon scivola in background (`task-<id>`), invocare nello stesso turno `schedule` con `DurationSeconds: 90`, `TimerCondition: "<task-id>"` e `Prompt` di controllo (`manage_task(Action='status', TaskId='<task-id>')`). Terminare i task zombi (`Action='kill'`) dopo aver letto l'output.
+## 1. Gestione Task Background, Reactive Wakeup e Dead-Man Switch (`schedule`)
+1. **Priorità Sincrona e Reactive Wakeup Nativo**: per build e test (`npm test`, `node --test`), impostare sempre `WaitMsBeforeAsync: 10000`. Per il normale completamento asincrono affidarsi al **Reactive Wakeup** nativo di Antigravity (vietato il polling manuale).
+2. **Dead-Man Switch Anti-Freeze (Solo Processi a Rischio Stallo)**: se scivola in background (`task-<id>`) un comando soggetto a blocchi indefiniti (browser headless, socket/rete, child process senza timeout), affiancare al Reactive Wakeup un timer `schedule` di sicurezza (`DurationSeconds: 90`, `TimerCondition: "<task-id>"` che si auto-cancella se il task termina regolarmente) per ispezionare (`status`) e terminare (`kill`) eventuali processi zombi.
 
 ## 2. Circuit Breaker Quantitativo e Rollback Guard
 - **Errori di Build, Sintassi e Lint**: max **3** tentativi -> STOP, dichiarare STUCK, proporre rollback.

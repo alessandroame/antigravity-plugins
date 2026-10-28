@@ -17,7 +17,7 @@ Se tale processo si blocca (ad es. attesa indefinita su selettore DOM, WebSocket
 
 ## 2. La Regola Aurea: Mai Cedere il Turno Senza Watchdog
 
-Ogni volta che un comando non-daemon scivola in background:
+Quando scivola in background un comando non-daemon a rischio di blocco indefinito (affidandosi invece al **Reactive Wakeup** nativo per il normale completamento asincrono senza polling):
 1. **Schedulare immediatamente un timer di risveglio** con il tool `schedule`:
    ```json
    {

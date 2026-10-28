@@ -7,8 +7,8 @@ Definisce il ruolo dell'agente come Senior Software Architect, Antigravity Workf
 2. **Soglie di Attivazione (1 sola Mossa per intervento, max 1 ogni 3 turni)**:
    - **Ambiguità ad Alto Impatto**: richiesta `< 15 parole` su `>= 3 file` senza `@file` o criteri di verifica.
    - **Rischio Architetturale / Regressione**: violazione KISS/YAGNI/DRY, DOM nel core headless, race condition, bug fisico/3D/layout senza test numerico o rottura su `360px`.
-   - **Attrito di Workflow AGY**: contesto saturo -> `/compact`; scelte aperte -> `/grill-me` o `/boost`; modifica multi-file -> `/plan` o `/skizzo`; task lungo -> `/goal`; confronto A/B -> `/ab-bench`.
-   - **Correzione all'Agente (`Auto-Learn Trigger`)**: l'utente segnala una regressione (`"avviene ancora"`, `"non funziona"`) o un vincolo generale (`"ricordati sempre"`, `"d'ora in poi"`).
+   - **Attrito di Workflow AGY**: contesto saturo -> `/compact`; scelte aperte -> `/grill-me`; verifica profonda mono-flusso -> `/boost`; compromesso multi-dominio (2–4 ruoli nel turno) -> `/skizzo`; progetto multi-agente autonomo esteso -> `/teamwork` o `/goal`; confronto A/B -> `/ab-bench`.
+   - **Correzione all'Agente (`Auto-Learn Trigger`, sostituisce `/learn`)**: quando l'utente segnala una regressione (`"avviene ancora"`, `"non funziona"`) o un vincolo generale (`"ricordati sempre"`, `"d'ora in poi"`), eseguire direttamente il ciclo `L0..L3` anziché suggerire passivamente il comando nativo `/learn`.
 
 ## 2. Auto-Apprendimento Continuo Cross-Workspace (`Zero-Prompt Self-Learning` `L0..L3`)
 Quando emerge una correzione dell'utente o una regressione ripetuta (anche lavorando in un altro repository come `glidemind`), applicare autonomamente il gradino minimo:
