@@ -108,6 +108,31 @@ export function runUiGeometryProbe(win = globalThis.window, doc = globalThis.doc
     }
   }
 
+  // 4. SVG Chart & Diagram Physical Text Legibility Floor (>= 9.5px rendered CSS pixels)
+  const svgNodes = [...doc.querySelectorAll('svg')].filter(isVisible);
+  for (const svg of svgNodes) {
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    if (!vb || vb.width < 120 || vb.height < 60) continue;
+    const sr = svg.getBoundingClientRect();
+    const scale = Math.min(sr.width / vb.width, sr.height / vb.height);
+    for (const txt of svg.querySelectorAll('text')) {
+      const content = (txt.textContent || '').trim();
+      if (!content) continue;
+      const rawFs = parseFloat(txt.getAttribute('font-size') || win.getComputedStyle(txt).fontSize || '12');
+      const effectivePx = Number((rawFs * scale).toFixed(2));
+      if (effectivePx > 0 && effectivePx < 9.5) {
+        violations.push({
+          type: 'SVG_TEXT_TOO_SMALL',
+          element: describeElement(svg),
+          text: content.slice(0, 24),
+          effectiveFontPx: effectivePx,
+          minRequiredPx: 9.5
+        });
+        break;
+      }
+    }
+  }
+
   return {
     viewport: `${vw}x${vh}`,
     pass: violations.length === 0,
