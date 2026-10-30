@@ -97,4 +97,43 @@ describe('Gate 4 Live Browser UI Geometry Probe', () => {
     assert.ok(types.includes('CONTROL_COVERED_BY_OVERLAY'));
     assert.ok(types.includes('PRIMARY_CANVAS_SUFFOCATED'));
   });
+
+  it('does not emit false-positive overlay violations for scrolled-out pills in horizontal pan-x carousels', () => {
+    const carouselTrack = {
+      tagName: 'DIV',
+      parentElement: null,
+      _style: { display: 'flex', visibility: 'visible', opacity: '1', overflowX: 'auto', overflowY: 'hidden' },
+      getBoundingClientRect: () => ({ left: 12, top: 60, width: 336, height: 52, right: 348, bottom: 112 })
+    };
+    const visiblePill = {
+      ...createMockElement({
+        id: 'pill-boiler',
+        rect: { left: 16, top: 64, width: 140, height: 44, right: 156, bottom: 108 }
+      }),
+      parentElement: carouselTrack
+    };
+    const offscreenCarouselPill = {
+      ...createMockElement({
+        id: 'pill-tendalino',
+        rect: { left: 390, top: 64, width: 130, height: 44, right: 520, bottom: 108 }
+      }),
+      parentElement: carouselTrack
+    };
+
+    const mockWin = {
+      innerWidth: 360,
+      innerHeight: 800,
+      getComputedStyle: (el) => el._style
+    };
+    const mockDoc = {
+      body: {},
+      documentElement: { scrollWidth: 360 },
+      querySelectorAll: (sel) => (sel.includes('canvas') ? [] : [visiblePill, offscreenCarouselPill]),
+      elementFromPoint: () => visiblePill
+    };
+
+    const report = runUiGeometryProbe(mockWin, mockDoc);
+    assert.equal(report.pass, true);
+    assert.equal(report.violationCount, 0);
+  });
 });

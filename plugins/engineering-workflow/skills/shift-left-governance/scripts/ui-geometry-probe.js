@@ -66,9 +66,35 @@ export function runUiGeometryProbe(win = globalThis.window, doc = globalThis.doc
       });
     }
 
-    const cx = Math.min(Math.max(r.left + r.width / 2, 1), vw - 1);
-    const cy = Math.min(Math.max(r.top + r.height / 2, 1), vh - 1);
-    if (r.top >= 0 && r.bottom <= vh && typeof doc.elementFromPoint === 'function') {
+    let visLeft = Math.max(0, r.left);
+    let visTop = Math.max(0, r.top);
+    let visRight = Math.min(vw, typeof r.right === 'number' ? r.right : r.left + r.width);
+    let visBottom = Math.min(vh, typeof r.bottom === 'number' ? r.bottom : r.top + r.height);
+
+    let ancestor = el.parentElement;
+    while (ancestor && ancestor !== doc.body && ancestor !== doc.documentElement) {
+      const aStyle = win.getComputedStyle(ancestor);
+      const clipsX = ['auto', 'scroll', 'hidden', 'clip'].includes(aStyle.overflowX);
+      const clipsY = ['auto', 'scroll', 'hidden', 'clip'].includes(aStyle.overflowY);
+      if (clipsX || clipsY) {
+        const ar = ancestor.getBoundingClientRect();
+        const arRight = typeof ar.right === 'number' ? ar.right : ar.left + ar.width;
+        const arBottom = typeof ar.bottom === 'number' ? ar.bottom : ar.top + ar.height;
+        if (clipsX) {
+          visLeft = Math.max(visLeft, ar.left);
+          visRight = Math.min(visRight, arRight);
+        }
+        if (clipsY) {
+          visTop = Math.max(visTop, ar.top);
+          visBottom = Math.min(visBottom, arBottom);
+        }
+      }
+      ancestor = ancestor.parentElement;
+    }
+
+    if (visRight - visLeft >= 8 && visBottom - visTop >= 8 && typeof doc.elementFromPoint === 'function') {
+      const cx = (visLeft + visRight) / 2;
+      const cy = (visTop + visBottom) / 2;
       const topEl = doc.elementFromPoint(cx, cy);
       if (topEl && topEl !== el && !el.contains(topEl) && !topEl.contains(el)) {
         violations.push({
