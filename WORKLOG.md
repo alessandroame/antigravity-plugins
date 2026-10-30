@@ -22,6 +22,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-30 — Plugin Supervisore Sempre Attivo `mapek` v1.0.0 (Human-Gated MAPE-K, Subagent `L2c` `agents/*.md`) e Protocollo Semantic Drill-Down (`L0 -> L1 -> L2`)
+- **Tipo**: Nuovo Plugin di Supervisione Processi, Validazione `L2c` & Ergonomia Output (`plugins/mapek/` v1.0.0, `plugins/engineering-sobriety/`, `scripts/validate.mjs`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-30_mapek-supervisor-and-semantic-drill-down.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-30_mapek-supervisor-and-semantic-drill-down.md)
+- **Sintesi**:
+  - Creato il supervisore sempre attivo [`mapek`](file:///c:/github/antigravity-plugins/plugins/mapek/README.md) (`Stop` + `PreInvocation` hook a `0` rumore, 5 detector di traiettoria in [`trajectory-analyzer.mjs`](file:///c:/github/antigravity-plugins/plugins/mapek/core/trajectory-analyzer.mjs), router `L3/L2c/L2b/L2a/PRUNE` in [`primitive-router.mjs`](file:///c:/github/antigravity-plugins/plugins/mapek/core/primitive-router.mjs), consenso umano obbligatorio `--confirm-user-approval` e audit post-10-sessioni in [`mastery-ledger.mjs`](file:///c:/github/antigravity-plugins/plugins/mapek/core/mastery-ledger.mjs)), applicando la prima decisione approvata `agents/autonomous-verification-runner.md` (`87/87` test verdi).
+  - Codificato lo standard globale **Semantic Drill-Down (`L0 -> L1 -> L2`)** in [`engineering-sobriety/rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/engineering-sobriety/rules/AGENTS.md) ed esteso [`scripts/validate.mjs`](file:///c:/github/antigravity-plugins/scripts/validate.mjs) alla validazione CommonMark dei `<details>` annidati e dei subagent `plugins/*/agents/*.md`.
+
+---
+
 ## 2026-10-28 — Progettazione e Implementazione Plugin `pattern-harvester` v1.0.0 (Mining Periodico Pattern Operativi, ROI KLM/GOMS e Scaffolding `/pattern-harvester`)
 - **Tipo**: Nuovo Plugin di Process & Workflow Mining Periodico (`plugins/pattern-harvester/` v1.0.0, `README.md`, `DESIDERATA.md`, `MEMORY.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-28_pattern-harvester-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-28_pattern-harvester-plugin.md)

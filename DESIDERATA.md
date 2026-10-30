@@ -30,6 +30,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `ab-bench` (v1.0.0) | Plugin | `🟢 Completato` | Sfida cieca A/B su 5 Dita (`/ab-bench`, `--skill`, `--stats`), sanitizer anti-bias, Rasoio di Occam e storico 5 MB ([README](./plugins/ab-bench/README.md)). |
 | `human-governor` (v1.0.0) | Plugin | `🟢 Completato` | Guardia WIP (max 2), anti-thrashing, coprifuoco 22:30-07:00, hook `PreInvocation` e `/focus-audit` ([README](./plugins/human-governor/README.md)). |
 | `pattern-harvester` (v1.0.0) | Plugin | `🟢 Completato` | Mining periodico pattern (RLE tool n-gram, CLI skeleton, ROI KLM e scaffold `/pattern-harvester`) ([README](./plugins/pattern-harvester/README.md)). |
+| `mapek` (v1.0.0) | Plugin | `🟢 Completato` | Supervisore sempre attivo a consenso umano, Agenti `L2c` (`agents/*.md`), Mastery EMA e Drill-Down ([README](./plugins/mapek/README.md)). |
 | `starter-plugin` | Template | `🟢 Completato` | Blueprint standard per nuovi plugin con manifest SemVer valido ([README](./templates/starter-plugin/README.md)). |
 | Validatore statico (`scripts/validate.mjs`) | Tooling | `🟢 Completato` | Verifica manifest, SemVer, regole, frontmatter skill, igiene Markdown/LaTeX e tetti righe dei 4 file cognitivi. |
 | Sync fisico globale (`scripts/sync-to-global.mjs`) | Tooling | `🟢 Completato` | Clona i plugin in `~/.gemini/config/plugins/` (resiliente a `EBUSY`) e aggiorna `config.json`. |

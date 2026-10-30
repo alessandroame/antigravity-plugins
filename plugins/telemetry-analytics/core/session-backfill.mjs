@@ -39,7 +39,9 @@ const KNOWN_SLASH_TO_PLUGIN_SKILL = {
   '/validate-plugins': { plugin: 'workspace', skill: 'validate-plugins' },
   '/install-plugin': { plugin: 'workspace', skill: 'install-plugin' },
   '/tone-audit': { plugin: 'engineering-sobriety', skill: 'tone-audit' },
-  '/prompt-refactor': { plugin: 'proactive-mentorship', skill: 'prompt-refactor' }
+  '/prompt-refactor': { plugin: 'proactive-mentorship', skill: 'prompt-refactor' },
+  '/pattern-harvester': { plugin: 'pattern-harvester', skill: 'pattern-harvester' },
+  '/mapek': { plugin: 'mapek', skill: 'mapek' }
 };
 
 const EXCLUDED_SLASH_TOKENS = new Set([

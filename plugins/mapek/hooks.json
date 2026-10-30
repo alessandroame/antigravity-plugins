@@ -1,0 +1,18 @@
+{
+  "mapek-always-on-supervisor": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/mapek-pre-hook.mjs",
+        "timeout": 6
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./scripts/mapek-stop-hook.mjs",
+        "timeout": 6
+      }
+    ]
+  }
+}

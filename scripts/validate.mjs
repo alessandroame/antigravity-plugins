@@ -40,6 +40,7 @@ function loadBuiltinSkillNames() {
 }
 
 const BUILTIN_SKILL_NAMES = loadBuiltinSkillNames();
+const BUILTIN_SUBAGENT_NAMES = new Set(['self', 'research', 'image-generator']);
 
 const ALLOWED_TOP_LEVEL_FIELDS = new Set([
   'name',
@@ -226,7 +227,10 @@ export function parseFrontmatter(markdown) {
       const colonIdx = line.indexOf(':');
       const key = line.slice(0, colonIdx).trim();
       const rawVal = line.slice(colonIdx + 1).trim();
-      if (rawVal === '>-' || rawVal === '>' || rawVal === '|') {
+      if (rawVal === '') {
+        currentKey = key;
+        result[key] = [];
+      } else if (rawVal === '>-' || rawVal === '>' || rawVal === '|') {
         currentKey = key;
       } else {
         currentKey = null;
@@ -237,7 +241,14 @@ export function parseFrontmatter(markdown) {
         result[key] = rawVal.replace(/^['"]|['"]$/g, '');
       }
     } else if (currentKey && /^\s+/.test(line)) {
-      blockLines.push(line.trim());
+      if (Array.isArray(result[currentKey])) {
+        const item = line.trim();
+        if (/^-\s+/.test(item)) {
+          result[currentKey].push(item.replace(/^-\s+/, '').replace(/^['"]|['"]$/g, '').trim());
+        }
+      } else {
+        blockLines.push(line.trim());
+      }
     }
   }
   if (currentKey && blockLines.length > 0) {
@@ -260,6 +271,7 @@ export function validateMarkdownHygiene(content, relPath) {
   let fenceChar = '';
   let fenceLen = 0;
   let inspectFence = false;
+  let detailsDepth = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -314,6 +326,30 @@ export function validateMarkdownHygiene(content, relPath) {
     }
 
     const lineWithoutCode = lineWithoutMultiTicks.replace(SINGLE_TICK_SPAN, '');
+    if (/^ {4,}<\/?(?:details|summary)\b/i.test(lineWithoutCode)) {
+      hygieneErrors.push(
+        `${relPath}:${lineNum}: tag HTML <details>/<summary> indentato di >= 4 spazi (CommonMark lo trasforma in blocco codice). Usa 0..2 spazi`
+      );
+    }
+    if (/^\s*<details(?:\s|>|$)/i.test(lineWithoutCode) && !/<\/details>/i.test(lineWithoutCode)) {
+      detailsDepth += 1;
+      if (detailsDepth > 2) {
+        hygieneErrors.push(
+          `${relPath}:${lineNum}: profondità <details> annidati (${detailsDepth}) oltre il limite massimo di 2 livelli (L1 -> L2)`
+        );
+      }
+      if (detailsDepth === 2 && i > 0 && lines[i - 1].trim() !== '') {
+        hygieneErrors.push(
+          `${relPath}:${lineNum}: riga vuota obbligatoria mancante prima di <details> annidato (L2)`
+        );
+      }
+    } else if (/^\s*<\/details>\s*$/i.test(lineWithoutCode)) {
+      if (detailsDepth === 0) {
+        hygieneErrors.push(`${relPath}:${lineNum}: tag </details> senza corrispondente apertura <details>`);
+      } else {
+        detailsDepth -= 1;
+      }
+    }
     const latexMatch = lineWithoutCode.match(INLINE_LATEX_FORMULA);
     if (latexMatch) {
       const rawFormula = latexMatch[0];
@@ -342,10 +378,14 @@ export function validateMarkdownHygiene(content, relPath) {
     }
   }
 
+  if (!inFence && detailsDepth > 0) {
+    hygieneErrors.push(`${relPath}:${lines.length}: ${detailsDepth} blocco/hi <details> non chiusi a fine file`);
+  }
+
   return hygieneErrors;
 }
 
-export function validatePlugin(pluginDir, existingNames = new Set(), seenSkillNames = new Map()) {
+export function validatePlugin(pluginDir, existingNames = new Set(), seenSkillNames = new Map(), seenAgentNames = new Map()) {
   const errors = [];
   const warnings = [];
   const dirName = pluginDir.split(/[\\/]/).pop();
@@ -555,6 +595,50 @@ export function validatePlugin(pluginDir, existingNames = new Set(), seenSkillNa
     }
   }
 
+  // 4b. agents/ (L2c declarative subagents)
+  const agentsDir = join(pluginDir, 'agents');
+  if (existsSync(agentsDir) && statSync(agentsDir).isDirectory()) {
+    for (const agEnt of readdirSync(agentsDir, { withFileTypes: true })) {
+      if (!agEnt.isFile() || !agEnt.name.endsWith('.md')) continue;
+      const agPath = join(agentsDir, agEnt.name);
+      const agContent = readFileSync(agPath, 'utf-8');
+      const relAg = `agents/${agEnt.name}`;
+      const agLines = agContent.split(/\r?\n/).length;
+      if (agLines > 180) {
+        errors.push(`${relAg}: supera il tetto di 180 righe per persona subagent (${agLines} righe)`);
+      }
+      errors.push(...validateMarkdownHygiene(agContent, relAg));
+      errors.push(...validateContentAndSense(agContent, relAg, pluginHasGenerativeUiDelegation));
+      for (const c of extractTechnicalConcepts(agContent)) pluginConcepts.add(c);
+
+      const agFm = parseFrontmatter(agContent);
+      if (!agFm) {
+        errors.push(`${relAg}: frontmatter YAML mancante o malformato`);
+      } else {
+        if (agFm._unquotedColonError) {
+          errors.push(`${relAg}: frontmatter contiene ': ' non quotato su riga inline`);
+        }
+        if (!agFm.name || typeof agFm.name !== 'string') {
+          errors.push(`${relAg}: "name" mancante nel frontmatter`);
+        } else if (!/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(agFm.name)) {
+          errors.push(`${relAg}: "name" ('${agFm.name}') deve essere in kebab-case o snake_case minuscolo`);
+        } else if (BUILTIN_SUBAGENT_NAMES.has(agFm.name)) {
+          errors.push(`${relAg}: collisione P0 con subagent Built-in Antigravity '${agFm.name}'`);
+        } else if (seenAgentNames.has(agFm.name) && dirName !== 'plugin-template') {
+          errors.push(`${relAg}: collisione P0 con subagent omonimo '${agFm.name}' in '${seenAgentNames.get(agFm.name)}'`);
+        } else if (dirName !== 'plugin-template') {
+          seenAgentNames.set(agFm.name, dirName);
+        }
+        if (!agFm.description || typeof agFm.description !== 'string' || agFm.description.trim().length < 30) {
+          errors.push(`${relAg}: "description" mancante o troppo breve (< 30 char)`);
+        }
+        if (agFm.tools !== undefined && (!Array.isArray(agFm.tools) || agFm.tools.length === 0)) {
+          errors.push(`${relAg}: "tools" deve essere una lista YAML non vuota di strumenti consentiti`);
+        }
+      }
+    }
+  }
+
   // 5. mcp_config.json
   const mcpPath = join(pluginDir, 'mcp_config.json');
   if (existsSync(mcpPath)) {
@@ -720,13 +804,14 @@ function main() {
 
   const existingNames = new Set();
   const seenSkillNames = new Map();
+  const seenAgentNames = new Map();
   const pluginResults = [];
   let totalErrors = 0;
   let totalWarnings = 0;
   let totalRulesBytes = 0;
 
   for (const dir of pluginDirs) {
-    const res = validatePlugin(dir, existingNames, seenSkillNames);
+    const res = validatePlugin(dir, existingNames, seenSkillNames, seenAgentNames);
     pluginResults.push(res);
     totalErrors += res.errors.length;
     totalWarnings += res.warnings.length;

@@ -13,9 +13,10 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Frontmatter Obbligatorio delle Skill (`skills/<name>/SKILL.md`) e Igiene Catalogo Globale**:
   - *Insidia*: Skill prive di `name`/`description` non vengono indicizzate; d'altra parte lasciare decine di skill inutilizzate in `~/.gemini/config/skills/` o `description > 250` char nei plugin di terze parti brucia migliaia di token ad ogni turno.
   - *Regola*: Includere sempre `name` (`kebab-case`) e `description` (`80–250` caratteri con trigger `Use this skill when...`), e archiviare fuori da `~/.gemini/config/skills/` le skill di domini non attivi.
-- **Vincoli Manifest (`plugin.json`)**:
+- **Vincoli Manifest (`plugin.json`), Supervisore `mapek` (`Human-Gated`) e Subagent `L2c` (`agents/*.md`)**:
+  - *Insidia*: Auto-applicare in background regole/agenti dedotti dai log modifica il comportamento alle spalle dell'utente; in `validate.mjs` un campo frontmatter con lista (`tools:\n  - read_file`) senza supporto array diventa `""`, e scrivere `plugins/*/` dentro `/** ... */` chiude il commento JSDoc causando `SyntaxError`.
   - *Insidia*: Più di 3 elementi in `suggestedPrompts` o `version` non SemVer rompono la validazione e la UI di avvio rapido.
-  - *Regola*: Usare sempre versione `X.Y.Z` e massimo 3 `suggestedPrompts`.
+  - *Regola*: Usare sempre versione `X.Y.Z`, max 3 `suggestedPrompts`, consenso obbligatorio `--confirm-user-approval` in `mapek.mjs` (con audit ROI post-10-sessioni in `process-ledger.json`), validazione `plugins/*/agents/*.md` in `scripts/validate.mjs` ed evitare `*/` nei commenti blocco JS.
 - **Divieto di Directory Junctions su Windows, Auto-Sync Multi-Macchina Cross-Workspace (`HARDCODED_USER_PATH`) & Shim `pwsh`**:
   - *Insidia*: Il file scanner del Language Server su Windows ignora le NTFS Junctions (`d----l`), i path assoluti `C:/Users/<utente>/` in regole/skill rompono i comandi passando da una macchina all'altra (`aless` vs `aame`), dimenticare `git pull` + `npm run sync` quando si apre un altro progetto (`glidemind`) disallinea i plugin e l'assenza di `pwsh.exe` in `%PATH%` blocca `run_command`.
   - *Regola*: [`scripts/sync-to-global.mjs`](file:///c:/github/antigravity-plugins/scripts/sync-to-global.mjs) installa `.git/hooks/post-merge`, salva `plugin-sync-state.json` (`headSha` + fingerprint) ed è invocato in background (`--auto-pull --if-needed --quiet`, TTL `30m`) da [`eta-injector.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/scripts/eta-injector.mjs) su qualunque workspace. Usare il percorso canonico `c:/github/antigravity-plugins/plugins/...` (`HARDCODED_USER_PATH` in `scripts/validate.mjs`) e mantenere `%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.cmd`.
@@ -41,9 +42,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 
 ## 3. Ergonomia Chat (~600px), Collaudo Visivo UI & Flussi
 
-- **Riga Vuota Obbligatoria dopo `</summary>` e Igiene Code Span / LaTeX in GFM**:
+- **Piramide `Semantic Drill-Down` (`L0 -> L1 -> L2`), Riga Vuota dopo `</summary>` e Igiene CommonMark/LaTeX**:
   - *Insidia*: Incollare codice subito dopo `</summary>` disattiva il parser Markdown; annidare backtick escapati (`` `(Skill: \`...\`)` ``), asterischi dentro code span singoli (`` `**...**` ``) o formule LaTeX (`$\le ...$`) rompe il rendering e il font in chat.
-  - *Regola*: Lasciare sempre una riga vuota dopo `</summary>`, usare un backtick singolo per ogni token separato e testo Unicode/ASCII normale (`<=`, `>=`, `->`, `x`), verificato da `validateMarkdownHygiene` in `scripts/validate.mjs`.
+  - *Regola*: Sopra le 8 righe usare `L0` auto-sufficiente (zero sigle opache) + `2..4` cassetti `L1` (`Tema — Conclusione in 1 frase`) + eventuale prova `L2` (max profondità `2`, `0..2` spazi prima di `<details>`, riga vuota dopo `</summary>` e prima di `<details>` `L2`), testo Unicode (`<=`, `>=`, `->`) e backtick singoli puliti (`validateMarkdownHygiene` in `scripts/validate.mjs`).
 - **Divieto di `flowchart LR` e Selettore Dual-Tab (`code-inspector`)**:
   - *Insidia*: Nella colonna di chat (~600px), i grafi `flowchart LR` con >= 4 nodi scalano il testo a dimensioni illeggibili.
   - *Regola*: Usare il widget `<agent-embed>` dual-tab (`Albero Testuale` a spina verticale max 65 char + `Grafico a Blocchi`) o `flowchart TD` con etichette <= 28 char.

@@ -1,0 +1,11 @@
+{
+  "name": "mapek",
+  "displayName": "MAPE-K Process Supervisor & Adaptive Coach",
+  "description": "Supervisore sempre attivo dei processi di interazione Umano-AI (Monitor, Analyze, Plan, Gate Umano, Execute, Knowledge): individua attriti ricorrenti tra sessioni, sintetizza Controlli, Agenti isolati, Skill o Regole, comunica le decisioni in Drill-Down e chiede sempre conferma prima di agire.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Mostrami il rapporto del supervisore di processo (/mapek) in formato Drill-Down con lo stato di padronanza e le eventuali decisioni in attesa",
+    "Verifica se ci sono regole o personalizzazioni attive che nelle ultime 10 sessioni non hanno ridotto gli errori e conviene rimuovere",
+    "Analizza i miei processi recenti tra i vari progetti per capire dove sto perdendo più tempo o token nell'interazione con l'AI"
+  ]
+}
