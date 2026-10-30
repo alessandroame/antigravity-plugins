@@ -1,11 +1,11 @@
 {
   "name": "engineering-workflow",
   "displayName": "Engineering Workflow, Trace Debugging & Shift-Left Gates",
-  "description": "Governa il controllo di versione chirurgico, il trace debugging deterministico, il core headless, gli invarianti numerici anti-regressione e il collaudo visivo browser (ui-geometry-probe.js + Ricevuta a 4 Misure).",
-  "version": "1.2.0",
+  "description": "Governa Git chirurgico, trace debugging, core headless, triage avversariale del diff (/review-diff), guardia integrità test, runner headless UI multi-viewport e verifica automatica delle ricevute sul transcript (Stop hook).",
+  "version": "1.3.0",
   "suggestedPrompts": [
-    "Localizza la causa radice di questo bug iniettando checkpoint [DEBUG-TRACE #X] prima di modificare il codice",
-    "Esegui la sonda ui-geometry-probe.js nel browser (360x800 e 1280x800) e genera la Ricevuta Oggettiva a 4 Misure",
-    "Aggiungi un test unitario d'invariante numerico/geometrico nel core headless per bloccare questa regressione"
+    "Esegui /review-diff sul repository corrente per filtrare il rumore del diff e verificare l'integrità dei test",
+    "Esegui ui-smoke-runner.mjs sui flussi multi-viewport e genera la Ricevuta Oggettiva a 4 Misure",
+    "Localizza la causa radice di questo bug iniettando checkpoint [DEBUG-TRACE #X] prima di modificare il codice"
   ]
 }

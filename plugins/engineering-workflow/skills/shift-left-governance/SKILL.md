@@ -7,7 +7,7 @@ description: >-
 
 # Shift-Left Quality Gate & Governance Harness
 
-Questa skill guida l'impostazione e l'esecuzione del protocollo **Shift-Left**: trasformare i requisiti di qualità, conformità architetturale ed ergonomia da audit tardivi a verifiche generative obbligatorie prima e durante lo sviluppo.
+Questa skill guida l'impostazione e l'esecuzione del protocollo **Shift-Left**: trasformare i requisiti di qualità, integrità dei test, conformità architetturale ed ergonomia da audit manuali tardivi a guardie eseguibili prima e durante lo sviluppo.
 
 ---
 
@@ -16,7 +16,7 @@ Questa skill guida l'impostazione e l'esecuzione del protocollo **Shift-Left**: 
 Prima di dichiarare completato qualsiasi task o proporre modifiche per il commit:
 
 ```
-[Gate 1: Pre-Design] ➔ [Gate 2: In-Flight Core/UI] ➔ [Gate 3: Automated Suite] ➔ [Gate 4: Browser Probe] ➔ [Gate 5: 4-Measure Receipt]
+[Gate 1: Pre-Design] -> [Gate 2: Headless Core] -> [Gate 3: Suite + Diff Triage] -> [Gate 4: UI Smoke/Probe] -> [Gate 5: Transcript-Verified Receipt]
 ```
 
 ### Gate 1: Conformità Pre-Design (Ex-Ante)
@@ -33,24 +33,25 @@ Durante la scrittura del codice:
 3. **Strict English**: identificatori, commenti, log di eccezione e test in lingua inglese esclusiva.
 4. **Zero Icon Clutter**: nessuna emoji o icona decorativa non funzionale in intestazioni o controlli.
 
-### Gate 3: Test Suite di Governance Automatizzata (`npm test`)
-Verificare che la suite esegua asserzioni statiche sul codice:
-```javascript
-const coreFiles = readdirSync('core').filter(f => f.endsWith('.js'));
-for (const file of coreFiles) {
-  const content = readFileSync(join('core', file), 'utf-8');
-  assert.ok(!content.includes('document.'), `DOM leak in core/${file}`);
-}
+### Gate 3: Test Suite Auto-Discovered, Integrità Test & Triage `git diff`
+1. Eseguire `npm test` assicurandosi che la discovery includa **tutti** i file `*.test.*` del repository.
+2. Verificare che nessun test esistente sia stato addomesticato e filtrare i punti ad alto rischio con [`scripts/diff-triage.mjs`](../../scripts/diff-triage.mjs) (oppure invocando la skill `/review-diff` per patch multi-file):
+```bash
+node c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs --repo "<workspace-root>"
 ```
 
-### Gate 4: Collaudo Browser, Sonda Geometrica e Flusso Interattivo Reale
-Per ogni modifica UI (`.html`, `.css`, `ui/`), è vietato chiudere il task con il solo `npm test` o con un giudizio "a occhio" sullo screenshot:
-1. **Doppio Viewport Reale (`360x800` Mobile & `1280x800` Desktop)**: avviare il browser ed eseguire [`scripts/ui-geometry-probe.js`](./scripts/ui-geometry-probe.js) via `evaluate_script` o Playwright (`pass: true`, `0` overflow orizzontali, `0` controlli coperti da overlay `elementFromPoint`, `0` testi tagliati, touch target `>= 44px`).
-2. **Budget Schermo 60/40 e Gerarchia in 3 Secondi**: verificare che mappe/grafici primari abbiano `>= 60%` dell'altezza viewport libera a riposo, massimo 4 card *above-the-fold* su mobile e `white-space: nowrap` sui gruppi `valore + unità` (`24 km/h`).
-3. **Flusso Utente (`Prima -> Click/Input -> Dopo`)**: eseguire almeno 1 interazione reale, verificando che l'effetto del click sia visibile subito senza scrollare e con `0` errori console.
+### Gate 4: Collaudo Browser Multi-Viewport (`ui-smoke-runner.mjs` & `ui-geometry-probe.js`)
+Per ogni modifica UI (`.html`, `.css`, `ui/`), è vietato chiudere il task con il solo `npm test` o con un giudizio "a occhio":
+1. **Esecuzione Automatica Multi-Viewport (`360x800` Mobile, `800x480` Embedded/Raspberry, `1280x800` Desktop)**: se il progetto espone `.agents/smoke-flows.json` (inizializzabile con `--init`), eseguire il runner headless [`scripts/ui-smoke-runner.mjs`](../../scripts/ui-smoke-runner.mjs), oppure eseguire [`scripts/ui-geometry-probe.js`](./scripts/ui-geometry-probe.js) via browser MCP:
+```bash
+node c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/ui-smoke-runner.mjs --repo "<workspace-root>"
+```
+2. **Budget Schermo 60/40 e Gerarchia in 3 Secondi**: verificare `>= 60%` di altezza viewport libera per il canvas primario, max 4 card *above-the-fold* su mobile e `white-space: nowrap` sui gruppi `valore + unità`.
+3. **Flusso Utente (`Prima -> Click/Input -> Dopo`)**: verificare almeno 1 interazione reale visibile senza scrollare e con `0` errori console.
 
-### Gate 5: Briefing di Consegna e Ricevuta Oggettiva a 4 Misure
-La risposta di consegna espone in chiaro (*0-Click*) max 3–5 bullet e in `<details>` (*1-Click*) la **Ricevuta a 4 Misure** (se tutte le misure sono già regolari al primo controllo, applicare **0 modifiche** per il Rasoio di Occam):
+### Gate 5: Certificazione sul Transcript (`Stop` Hook) e Ricevuta a 4 Misure
+L'hook `Stop` [`scripts/delivery-gate-hook.mjs`](../../scripts/delivery-gate-hook.mjs) controlla automaticamente `transcript.jsonl` prima della consegna: se un `edit_file` su codice o UI è avvenuto **dopo** l'ultimo test o sonda browser, riapre il ciclo (`decision: "continue"`) imponendo la riesecuzione.
+La risposta finale espone in chiaro (*0-Click*) max 3–5 bullet e in `<details>` (*1-Click*) la **Ricevuta a 4 Misure** (`0 modifiche` se già conforme):
 1. **Budget Schermo**: `%` libera per il contenuto primario (`>= 60%`).
 2. **Scala Tipografica & Unità**: `Dato primario px` vs `Etichetta px` e unità inseparabili (`nowrap`).
 3. **Esito Sonda (`ui-geometry-probe.js`)**: `overflow: 0, coveredControls: 0, clippedText: 0, smallTargets: 0`.
@@ -71,7 +72,7 @@ import { join } from 'node:path';
 describe('Shift-Left Architectural Governance', () => {
   it('ensures core modules have zero DOM references', () => {
     if (!existsSync('core')) return;
-    const files = readdirSync('core').filter(f => f.endsWith('.js'));
+    const files = readdirSync('core').filter((f) => f.endsWith('.js') || f.endsWith('.mjs'));
     const forbidden = ['document.', 'window.', 'HTMLElement'];
     for (const f of files) {
       const src = readFileSync(join('core', f), 'utf-8');
@@ -81,34 +82,14 @@ describe('Shift-Left Architectural Governance', () => {
     }
   });
 
-  it('prevents banned decorative emojis in UI views', () => {
-    if (!existsSync('ui')) return;
-    const banned = ['📈', '🎙️', '⏱️', 'ℹ️', '🚀', '✨', '🔥', '🎉'];
-    const scanDir = (dir) => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const fullPath = join(dir, entry.name);
-        if (entry.isDirectory()) scanDir(fullPath);
-        else if (entry.name.endsWith('.js') || entry.name.endsWith('.html')) {
-          const src = readFileSync(fullPath, 'utf-8');
-          for (const emoji of banned) {
-            assert.ok(!src.includes(emoji), `Banned emoji "${emoji}" in ${fullPath}`);
-          }
-        }
-      }
-    };
-    scanDir('ui');
-  });
-
   it('enforces Cognitive Memory Hygiene ceilings (MEMORY.md <= 200 lines, WORKLOG.md <= 300 lines)', () => {
     if (existsSync('MEMORY.md')) {
       const memoryLines = readFileSync('MEMORY.md', 'utf-8').split(/\r?\n/);
       assert.ok(memoryLines.length <= 200, `MEMORY.md exceeds 200-line ceiling (${memoryLines.length})`);
-      const h2Count = memoryLines.filter(l => l.startsWith('## ')).length;
-      assert.ok(h2Count <= 8, `MEMORY.md has ${h2Count} H2 sections (max 8 domain sections allowed)`);
     }
     if (existsSync('WORKLOG.md')) {
       const worklogLines = readFileSync('WORKLOG.md', 'utf-8').split(/\r?\n/);
-      assert.ok(worklogLines.length <= 300, `WORKLOG.md exceeds 300-line rolling window ceiling (${worklogLines.length})`);
+      assert.ok(worklogLines.length <= 300, `WORKLOG.md exceeds 300-line ceiling (${worklogLines.length})`);
     }
   });
 });

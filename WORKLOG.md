@@ -13,6 +13,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-10-30 — Automazione Pre-Review Cieca (`/review-diff`), Guardia Integrità Test, Runner UI Multi-Viewport e Gate `Stop` sul Transcript (`engineering-workflow` v1.3.0)
+- **Tipo**: Guardie Eseguibili `L3`, Hook `Stop` & Pre-Review Avversariale (`plugins/engineering-workflow/` v1.3.0, `scripts/run-all-tests.mjs`, `package.json`, `session-miner.mjs`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-30_review-and-delivery-automation-gates.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-30_review-and-delivery-automation-gates.md)
+- **Sintesi**:
+  - Creato [`review-guard-engine.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/core/review-guard-engine.mjs) (`8/8` test in [`review-guard.test.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/tests/review-guard.test.mjs)) e [`run-all-tests.mjs`](file:///c:/github/antigravity-plugins/scripts/run-all-tests.mjs), unificando `npm test` e [`session-miner.mjs`](file:///c:/github/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs) con auto-discovery di tutte le `10` suite `*.test.mjs` più guardia contro manomissione test e faux-test in [`diff-triage.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs) (`/review-diff`).
+  - Attivato l'hook `Stop` [`delivery-gate-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/delivery-gate-hook.mjs) (verifica sul transcript che test e sonda UI siano successivi all'ultimo `edit_file`, circuit breaker 1-retry) e il runner headless multi-viewport [`ui-smoke-runner.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/ui-smoke-runner.mjs) (`.agents/smoke-flows.json`).
+
+---
+
 ## 2026-10-28 — Progettazione e Implementazione Plugin `pattern-harvester` v1.0.0 (Mining Periodico Pattern Operativi, ROI KLM/GOMS e Scaffolding `/pattern-harvester`)
 - **Tipo**: Nuovo Plugin di Process & Workflow Mining Periodico (`plugins/pattern-harvester/` v1.0.0, `README.md`, `DESIDERATA.md`, `MEMORY.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-28_pattern-harvester-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-28_pattern-harvester-plugin.md)

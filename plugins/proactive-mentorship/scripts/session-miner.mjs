@@ -17,6 +17,7 @@ import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { discoverRepositoryTestFiles } from '../../engineering-workflow/core/review-guard-engine.mjs';
 
 const SUBAGENT_MARKERS_RX =
   /Skill Attive \((?:Alpha|Beta|Gamma)\)|Sei \*\*Subagent|Agisci esclusivamente come \*\*Subagent|Sfidante [AB]|Giudice Cieco/i;
@@ -110,20 +111,14 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
     return { ok: false, repoRoot, steps };
   }
 
-  // Step 2: Run core plugin unit tests
-  const testFiles = [
-    join(repoRoot, 'plugins', 'skizzo', 'tests', 'triage.test.mjs'),
-    join(repoRoot, 'plugins', 'proactive-mentorship', 'tests', 'session-miner.test.mjs'),
-    join(repoRoot, 'plugins', 'telemetry-analytics', 'tests', 'session-backfill.test.mjs'),
-    join(repoRoot, 'plugins', 'pattern-harvester', 'tests', 'pattern-harvester.test.mjs'),
-    join(repoRoot, 'tests', 'validate-content-overlap.test.mjs')
-  ].filter((f) => existsSync(f));
+  // Step 2: Run all auto-discovered repository and plugin unit tests (zero hardcoded lists)
+  const testFiles = discoverRepositoryTestFiles(repoRoot);
 
   if (testFiles.length > 0) {
     const testRes = spawnSync(process.execPath, ['--test', ...testFiles], {
       cwd: repoRoot,
       encoding: 'utf-8',
-      timeout: 20000
+      timeout: 25000
     });
     steps.push({
       step: 'unit_tests',

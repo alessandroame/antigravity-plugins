@@ -1,0 +1,11 @@
+{
+  "engineering-delivery-gate": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./scripts/delivery-gate-hook.mjs",
+        "timeout": 8
+      }
+    ]
+  }
+}

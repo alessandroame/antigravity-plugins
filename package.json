@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "validate": "node scripts/validate.mjs --all",
-    "test": "node scripts/validate.mjs --all",
+    "test": "node scripts/run-all-tests.mjs",
     "sync": "node scripts/sync-to-global.mjs"
   },
   "keywords": [

@@ -1,17 +1,16 @@
-# Antigravity Plugin: Engineering Workflow & Trace Debugging
+# Antigravity Plugin: Engineering Workflow, Blind Diff Review & Shift-Left Delivery Gates (`v1.3.0`)
 
-Plugin per Google Antigravity che impone standard professionali di **version control governance con Git**, **isolamento dei task multi-sessione** e **risoluzione scientifica dei difetti con breadcrumb trace**.
+Plugin per Google Antigravity che automatizza la **governance Git chirurgica**, la **localizzazione deterministica dei guasti**, l'**integrità della suite di test**, il **triage avversariale dei diff (`/review-diff`)**, il **collaudo UI multi-viewport headless** e la **certificazione meccanica delle ricevute sul transcript (`Stop` hook)**.
 
 ---
 
-## Obiettivo del Plugin (Goal)
+## Obiettivo del Plugin
 
-Nello sviluppo autonomo condotto da agenti AI emergono frequentemente tre rischi operativi:
-1. **Inquinamento del version control**: l'uso indiscriminato di comandi massivi (`git add .`, `git add -A`) impegna file di dump, file di scratch o modifiche spurie, compromettendo la cronologia del repository.
-2. **Collisioni tra sessioni concorrenti**: cambiare branch con `git checkout -b` direttamente nella cartella di lavoro principale modifica i file condivisi sul disco, corrompendo il lavoro di altre sessioni parallele o dell'utente.
-3. **Debugging a tentativi (Shotgun Debugging)**: di fronte a un errore, l'agente tende a modificare righe casuali per congettura, introducendo nuovo debito tecnico anziché identificare la causa radice.
-
-Il plugin `engineering-workflow` elimina questi rischi subordinando ogni operazione di Git a regole chirurgiche rigorose e imponendo la metodologia di **Deterministic Trace-Based Fault Localization**.
+Rimuovere il collo di bottiglia di review e collaudo manuale generato dall'uso intensivo di agenti AI tramite quattro difese eseguibili:
+1. **Integrità dei test e guardia anti-addomesticamento**: auto-discovery di tutte le suite `*.test.*` e rilevamento automatico su `git diff` di asserzioni preesistenti cancellate/alterate o di *faux-test* tautologici (`assert.ok(true)`).
+2. **Pre-review avversariale cieca (`/review-diff`)**: filtraggio del rumore meccanico del diff (-60..80% di righe da leggere) e ispezione in sola lettura tramite subagent isolato `Blind Diff Critic`.
+3. **Collaudo UI multi-viewport riproducibile (`ui-smoke-runner.mjs`)**: esecuzione headless automatica dei flussi salvati in `.agents/smoke-flows.json` (`360x800` Mobile, `800x480` Embedded/Raspberry, `1280x800` Desktop) con iniezione di `ui-geometry-probe.js` prima e dopo ogni azione.
+4. **Certificazione della consegna sul transcript (`delivery-gate-hook.mjs`)**: hook `Stop` che intercetta modifiche `edit_file`/`write_file` effettuate *dopo* l'ultimo test o prive di verifica UI, forzando un giro di verifica automatica (`decision: "continue"`, circuit breaker 1-retry) prima di disturbare l'operatore umano.
 
 ---
 
@@ -19,118 +18,40 @@ Il plugin `engineering-workflow` elimina questi rischi subordinando ogni operazi
 
 | Componente | Tipo | Percorso | Funzione |
 | :--- | :--- | :--- | :--- |
-| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Vieta `git add .`, impone Conventional Commits in inglese, prescrive isolamento headless del core, standard storage ad adapter e protocollo Shift-Left. |
-| **`worktree-lifecycle`** | Skill on-demand | [`skills/worktree-lifecycle/SKILL.md`](./skills/worktree-lifecycle/SKILL.md) | Guida completa a 5 fasi per creare rami di lavoro paralleli su cartelle separate, verificare le modifiche ed eseguire il teardown pulito. |
-| **`trace-debugging`** | Skill on-demand | [`skills/trace-debugging/SKILL.md`](./skills/trace-debugging/SKILL.md) | Procedura di localizzazione guasti tramite iniezione log `[DEBUG-TRACE #X]`, rilevamento del Last Known Good Checkpoint e bonifica post-fix. |
-| **`shift-left-governance`** | Skill on-demand | [`skills/shift-left-governance/SKILL.md`](./skills/shift-left-governance/SKILL.md) | Protocollo a 5 gate e template di test suite automatizzata per prevenire difetti architetturali prima della consegna del codice. |
+| **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Impone Git chirurgico, core headless in inglese, 5 Gate Shift-Left, divieto di addomesticare test e verifica pre-consegna. |
+| **Delivery Gate Hook** | Hook `Stop` | [`hooks.json`](./hooks.json) / [`scripts/delivery-gate-hook.mjs`](./scripts/delivery-gate-hook.mjs) | Verifica su `transcript.jsonl` che test e sonda UI siano successivi all'ultimo `edit_file` del turno. |
+| **Core Review Engine** | Headless Core | [`core/review-guard-engine.mjs`](./core/review-guard-engine.mjs) | Motore Node.js puro (0 DOM) per parsing `git diff`, test-tamper guard, faux-test guard, transcript gate e ricevuta a 4 misure. |
+| **Diff Triage CLI** | Script `L3` | [`scripts/diff-triage.mjs`](./scripts/diff-triage.mjs) | Scansiona `git diff` estraendo solo mutazioni di stato, I/O, sink critici e allarmi di manomissione test. |
+| **UI Smoke Runner** | Script `L3` | [`scripts/ui-smoke-runner.mjs`](./scripts/ui-smoke-runner.mjs) | Esegue flussi dichiarativi Playwright multi-viewport iniettando `ui-geometry-probe.js` e producendo la Ricevuta a 4 Misure. |
+| **`review-diff`** | Skill on-demand | [`skills/review-diff/SKILL.md`](./skills/review-diff/SKILL.md) | Workflow `/review-diff` con `diff-triage.mjs` e subagent `Blind Diff Critic` in sola lettura. |
+| **`shift-left-governance`** | Skill on-demand | [`skills/shift-left-governance/SKILL.md`](./skills/shift-left-governance/SKILL.md) | Protocollo a 5 gate con `ui-geometry-probe.js` e template di governance architetturale. |
+| **`trace-debugging`** | Skill on-demand | [`skills/trace-debugging/SKILL.md`](./skills/trace-debugging/SKILL.md) | Localizzazione deterministica dei guasti tramite breadcrumb `[DEBUG-TRACE #X]`. |
+| **`worktree-lifecycle`** | Skill on-demand | [`skills/worktree-lifecycle/SKILL.md`](./skills/worktree-lifecycle/SKILL.md) | Gestione di Git Worktrees isolati per sessioni parallele senza collisioni sul disco. |
 
 ---
 
-## Standard di Version Control Governance
+## Comandi Operativi Rapidi
 
-### 1. Staging Chirurgico Obbligatorio
-- **Divieto categorico**: `git add .`, `git add -A`, `git commit -a`.
-- I file devono essere aggiunti selettivamente specificando il percorso esatto:
-  ```bash
-  git add src/core/parser.js tests/parser.test.js
-  ```
-- Prima di qualsiasi operazione di staging o commit, verificare lo stato con `git status --porcelain` per escludere file temporanei.
-
-### 2. Conventional Commits in Lingua Inglese
-I messaggi di commit devono rispettare rigorosamente il formato standard:
-- `feat(<scope>): concise description of new feature`
-- `fix(<scope>): concise description of bug fix`
-- `refactor(<scope>): internal architectural refactor without behavior changes`
-- `test(<scope>): addition or update of automated test suites`
-- `docs(<scope>): documentation, ADRs, or rule updates`
-- `chore(<scope>): build, dependencies, or tooling adjustments`
-
-### 3. Divieto di Commit o Merge Autonomo su `main`
-L'agente non impegna né unisce modifiche sul branch principale senza l'esplicito benestare dell'utente. Il ciclo corretto prevede:
-1. Sviluppo e verifica nel ramo/worktree isolato.
-2. Presentazione del resoconto delle modifiche e delle istruzioni di collaudo.
-3. Attesa della conferma positiva dell'utente.
-4. Solo su richiesta esplicita: staging chirurgico, commit e merge.
-
----
-
-## Metodologie Operative
-
-### A. Isolamento con Git Worktrees (`worktree-lifecycle`)
-
-```mermaid
-flowchart LR
-    A["Pre-flight Guard<br/>(Verifica stato pulito)"] --> B["Creazione Worktree<br/>(Cartella separata)"]
-    B --> C["Sviluppo & Test<br/>(Esecuzione isolata)"]
-    C --> D["Approvazione Utente<br/>(Staging chirurgico & Commit)"]
-    D --> E["Teardown Pulito<br/>(Merge & Rimozione worktree)"]
-```
-
-Comando per isolare una lavorazione senza interferire con il repository principale:
 ```bash
-git worktree add ../<repo>-<feature> -b feature/<feature>
+# 1. Triage deterministico del diff e controllo integrita test su qualunque repo
+node c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs --repo "<workspace>"
+
+# 2. Inizializzazione ed esecuzione flussi smoke UI multi-viewport (Mobile + Embedded + Desktop)
+node c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/ui-smoke-runner.mjs --repo "<workspace>" --init
+node c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/ui-smoke-runner.mjs --repo "<workspace>"
+
+# 3. Verifica manuale di certificazione consegna su un transcript specifico
+node c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/delivery-gate-hook.mjs --check --transcript "<transcript.jsonl>"
 ```
 
 ---
 
-### B. Deterministic Trace-Based Fault Localization (`trace-debugging`)
-
-Quando un test fallisce o un comportamento diverge, è vietato tirare a indovinare:
+## Flusso Automatico di Garanzia Pre-Consegna
 
 ```mermaid
 flowchart TD
-    A["Anomalia Rilevata"] --> B["1. Trace Instrumentation<br/>(Iniezione log: DEBUG-TRACE #1..#N)"]
-    B --> C["2. Execution & Capture<br/>(Esecuzione scenario per catturare la sequenza)"]
-    C --> D["3. Fault Localization<br/>(Identificazione Last Known Good Checkpoint)"]
-    D --> E["4. Targeted Resolution<br/>(Risoluzione limitata al segmento isolato)"]
-    E --> F["5. Trace Cleanup<br/>(Rimozione totale di DEBUG-TRACE e verifica finale)"]
+    A["Modifica Codice o UI"] --> B["Gate 3: Suite Auto-Discovered + diff-triage.mjs"]
+    B --> C["Gate 4: ui-smoke-runner.mjs / ui-geometry-probe.js"]
+    C --> D["Stop Hook: delivery-gate-hook.mjs"]
+    D --> E["Consegna Certificata + Ricevuta a 4 Misure"]
 ```
-
-Esempio di iniezione traccia:
-```javascript
-console.log('[DEBUG-TRACE #1] Ricezione payload evento', { payload });
-console.log('[DEBUG-TRACE #2] Validazione precondizioni superata', { valid });
-console.log('[DEBUG-TRACE #3] Risultato trasformazione pura', { result });
-console.log('[DEBUG-TRACE #4] Persistenza su storage completata', { id });
-```
-La causa radice si trova necessariamente tra l'ultimo checkpoint che emette valori corretti e il primo checkpoint assente o inconsistente.
-
----
-
-## Prompt di Esempio
-
-- *"Inizializza un Git Worktree per sviluppare la nuova feature di autenticazione in modo isolato."*
-- *"Applica il trace-debugging su questa funzione per localizzare il punto esatto in cui lo stato diverge."*
-- *"Prepara lo staging chirurgico dei file modificati e formula il messaggio Conventional Commit per la mia approvazione."*
-
----
-
-## Modalità di Installazione
-
-### 1. Installazione nel Singolo Workspace (Consigliata)
-```bash
-# Linux/macOS
-mkdir -p <percorso-progetto>/.agents/plugins
-cp -r plugins/engineering-workflow <percorso-progetto>/.agents/plugins/
-
-# Windows (PowerShell)
-New-Item -ItemType Directory -Force -Path "<percorso-progetto>\.agents\plugins"
-Copy-Item -Recurse plugins/engineering-workflow "<percorso-progetto>\.agents\plugins\"
-```
-
-Directory Junction su Windows:
-```powershell
-New-Item -ItemType Junction -Path "<percorso-progetto>\.agents\plugins\engineering-workflow" -Target "c:\github\antigravity-plugins\plugins\engineering-workflow"
-```
-
-### 2. Installazione Globale (Per tutti i progetti)
-```powershell
-Copy-Item -Recurse plugins/engineering-workflow "$env:USERPROFILE\.gemini\config\plugins\"
-```
-
----
-
-## Sinergia con gli Altri Plugin
-
-- **`cognitive-persistence`**: i frammenti ADR in `.agents/worklog.d/` vengono redatti all'interno del worktree prima della rimozione del branch.
-- **`execution-guard`**: collabora nel proteggere l'ambiente durante l'esecuzione dei test nel worktree, prevenendo comandi zombi e regressioni non rilevate.

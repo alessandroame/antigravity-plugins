@@ -20,7 +20,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `engineering-sobriety` | Plugin | `🟢 Completato` | Regole anti-hype, bonifica lessicale, zero emoji decorative e skill `tone-audit` ([README](./plugins/engineering-sobriety/README.md)). |
 | `laws-of-ux` (v1.1.0) | Plugin | `🟢 Completato` | 30 leggi UX, Budget 60/40, Gerarchia 3s, Ricevuta Visiva a 4 Misure e `ux-outdoor-and-field-ergonomics` ([README](./plugins/laws-of-ux/README.md)). |
 | `execution-guard` | Plugin | `🟢 Completato` | Watchdog anti-freeze, circuit breaker, timeout script e guardia mock API ([README](./plugins/execution-guard/README.md)). |
-| `engineering-workflow` (v1.2.0) | Plugin | `🟢 Completato` | Git chirurgico, headless core, invarianti numerici `L3` e Gate 4 `ui-geometry-probe.js` ([README](./plugins/engineering-workflow/README.md)). |
+| `engineering-workflow` (v1.3.0) | Plugin | `🟢 Completato` | Git chirurgico, `/review-diff`, guardia test, `ui-smoke-runner.mjs` e hook `delivery-gate-hook.mjs` ([README](./plugins/engineering-workflow/README.md)). |
 | `cognitive-persistence` (v1.6.0) | Plugin | `🟢 Completato` | Architettura 3+1, Kanban remoto, auto-distillazione skill `L1..L3` in `/memory-sync` e kit vocale ([README](./plugins/cognitive-persistence/README.md)). |
 | `proactive-mentorship` (v1.2.0) | Plugin | `🟢 Completato` | Coaching AGY, Auto-Apprendimento Continuo `L0..L3` e mining sessioni `session-miner.mjs` ([README](./plugins/proactive-mentorship/README.md)). |
 | `skill-governance` | Plugin | `🟢 Completato` | Two-phase token model, audit dimensionale (A-E) e `skill-collision-check` ([README](./plugins/skill-governance/README.md)). |
