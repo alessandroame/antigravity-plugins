@@ -13,7 +13,7 @@ Fornire il comando unificato per **mostrare le note raccolte** in `NOTES.md` (in
 
 ## 2. Modalità di Invocazione
 
-- **`/review-notes` (o `/review-notes list`)**: Mostra il cruscotto riepilogativo di tutte le note in stato `📥 Da Analizzare` e presenta un selettore interattivo (`ask_question`) per scegliere su quale nota (o tutte) avviare subito il task di analisi.
+- **`/review-notes` (o `/review-notes list`)**: Mostra il cruscotto riepilogativo di tutte le note in stato `📥 Da Analizzare` e, se sono presenti 2 o più note, presenta un selettore interattivo (`ask_question`) per scegliere su quale nota (o tutte) avviare subito il task di analisi (se c'è 1 sola nota aperta, la analizza subito senza domande superflue).
 - **`/review-notes NOTE-XXX` (es. `/review-notes NOTE-001` o `/review-notes 1`)**: Mostra i dettagli della nota specificata e avvia immediatamente il task di analisi approfondita sul codice.
 - **`/review-notes all` (o `/review-notes --all`)**: Mostra il riepilogo ed esegue in sequenza l'analisi approfondita di tutte le note aperte in `NOTES.md`.
 
@@ -32,9 +32,11 @@ Fornire il comando unificato per **mostrare le note raccolte** in `NOTES.md` (in
 4. **Mostra sempre all'utente la Tabella Cruscotto delle Note Aperte**:
    | ID | Titolo Sintetico | Data Cattura | Lavorazione Attiva alla Cattura | Ambito Presunto |
    | :--- | :--- | :---: | :--- | :--- |
-5. Se l'utente ha invocato `/review-notes` senza specificare quale nota analizzare, usa il tool `ask_question` per chiedergli quale nota vuole sottoporre subito al task di analisi:
-   - Opzione 1: `(Recommended) Analizza tutte le note aperte in sequenza`
-   - Opzioni successive: `Analizza [NOTE-XXX]: <Titolo Sintetico>` per ciascuna nota aperta.
+5. **Selezione Nota (Solo se `>= 2` Note Aperte)**:
+   - Se in `NOTES.md` è presente **1 sola nota aperta**, **NON invocare `ask_question`** allo Step 1 (evitando la scelta tautologica tra *"Analizza tutte"* e l'unica nota aperta) e procedi direttamente allo Step 2 e Step 3 su quella nota.
+   - Se invece sono presenti **`>= 2` note aperte** e l'utente non ha specificato quale analizzare, usa `ask_question` in italiano semplice:
+     - Opzione 1: `(Recommended) Analizza tutte le N note aperte una dopo l'altra`
+     - Opzioni successive: `Analizza solo: "<Titolo Sintetico>"` per ciascuna nota aperta.
 
 ### Step 2: Ridenominazione Automatica della Chat
 Appena selezionata la nota (o il gruppo di note) da analizzare, aggiorna il titolo della conversazione tramite lo script Connect-RPC del plugin:
@@ -61,7 +63,7 @@ Per ciascuna nota selezionata, esegui un'ispezione rigorosa articolata in 4 punt
    - **Proposta Ingegneristica & UX**: soluzione raccomandata, file esatti da toccare (`Touch-Set`) e casi limite gestiti.
 
 ### Step 4: Decisione Operativa, Sidecar Touch-Set e Consolidamento Anti-Bloat (`NOTES.md` -> `DESIDERATA.md`)
-Al termine dell'analisi, chiedi all'utente tramite `ask_question` come consolidare la nota analizzata:
+Al termine dell'analisi, chiedi all'utente tramite `ask_question` (in italiano chiaro e senza sigle tecniche) come consolidare la nota analizzata:
 1. **Promuovi in `DESIDERATA.md` (`🔴 Prioritario`, `🔴 Pianificato` o `⚪ Pianificato`) e Certifica il Touch-Set**:
    - Aggiungi la nuova riga formale (`[TASK-XX]`) nella sezione `## 1. Backlog Attivo & Funzionalità Pianificate` di `DESIDERATA.md` mantenendo la cella `Note / Specifica` **<= 160 caratteri** (senza inserire lunghi percorsi `@file` nella cella di `DESIDERATA.md`).
    - **Salvataggio Touch-Set nel Sidecar (`.agents/board-state.json`)**: registra i file esatti individuati nello Step 3 eseguendo:
