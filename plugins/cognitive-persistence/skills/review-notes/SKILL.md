@@ -1,79 +1,88 @@
 ---
 name: review-notes
-description: Mostra le annotazioni aperte in NOTES.md ed esegue l'analisi approfondita sul codice per promuoverle in DESIDERATA.md. Use this skill when the user runs /review-notes or asks to list and analyze saved notes.
+description: Mostra le note aperte in NOTES.md ed esegue la review tecnica e UX in sola lettura sul codice attendendo conferma utente prima di toccare backlog o file. Use this skill when the user runs /review-notes or asks to review saved notes.
 ---
 
-# Review Notes: Cruscotto Note ed Esecuzione Task di Analisi Approfondita
+# Review Notes: Cruscotto Note e Revisione Tecnica/UX in Sola Lettura
 
-## 1. Obiettivo
+## 1. Obiettivo e Invariante di Sola Lettura
 
-Fornire il comando unificato per **mostrare le note raccolte** in `NOTES.md` (incluse le idee inviate da smartphone o via voce tramite Gemini Live / Google AI Studio) ed **eseguire il task di analisi tecnica e UX approfondita** a lavorazione ferma, riconciliando ogni osservazione con lo stato reale del codice sorgente prima di promuoverla in `DESIDERATA.md` e certificare il `Touch-Set` per lo scodamento parallelo.
+Fornire il comando di **revisione controllata** delle osservazioni raccolte in `NOTES.md` (incluse le idee inviate da mobile o via voce), riconciliando ogni nota con lo stato reale del codice sorgente prima di decidere se promuoverla in `DESIDERATA.md`, lasciarla aperta, scartarla o implementarla.
+
+> **Invariante di Sola Lettura (`READ-ONLY` fino allo Step 4)**: durante gli **Step 1, 2 e 3** è **tassativamente vietato** invocare `edit_file` o `write_file` su codice sorgente, test, `DESIDERATA.md` o `NOTES.md`, così come avviare implementazioni o refactoring. Qualsiasi scrittura su file di progetto è consentita **esclusivamente dopo** la risposta esplicita dell'utente a `ask_question` nello **Step 4**.
 
 ---
 
 ## 2. Modalità di Invocazione
 
-- **`/review-notes` (o `/review-notes list`)**: Mostra il cruscotto riepilogativo di tutte le note in stato `📥 Da Analizzare` e, se sono presenti 2 o più note, presenta un selettore interattivo (`ask_question`) per scegliere su quale nota (o tutte) avviare subito il task di analisi (se c'è 1 sola nota aperta, la analizza subito senza domande superflue).
-- **`/review-notes NOTE-XXX` (es. `/review-notes NOTE-001` o `/review-notes 1`)**: Mostra i dettagli della nota specificata e avvia immediatamente il task di analisi approfondita sul codice.
-- **`/review-notes all` (o `/review-notes --all`)**: Mostra il riepilogo ed esegue in sequenza l'analisi approfondita di tutte le note aperte in `NOTES.md`.
+- **`/review-notes list`**: Modalità **solo cruscotto passivo** (`0` scritture, `0` sync remoti, `0` cambio titolo chat). Legge `NOTES.md` e `DESIDERATA.md`, mostra la tabella delle note aperte in `📥 Da Analizzare` e **si ferma subito**.
+- **`/review-notes`**: Esegue il sync sicuro dell'inbox remota (`gh-board-sync.mjs`), mostra il cruscotto delle note `📥 Da Analizzare` e:
+  - se sono presenti **`>= 2` note aperte**, chiede con `ask_question` quale nota sottoporre a review (o se fermarsi al solo elenco);
+  - se è presente **`1` sola nota aperta**, esegue direttamente la review **in sola lettura** (Step 3), espone la scheda di analisi e **si ferma obbligatoriamente su `ask_question` allo Step 4** attendendo la decisione dell'utente.
+- **`/review-notes NOTE-XXX` (es. `/review-notes NOTE-001` o `/review-notes 1`)**: Esegue la review **in sola lettura** sulla nota indicata, espone la scheda di analisi e **si ferma obbligatoriamente su `ask_question` allo Step 4**.
+- **`/review-notes all` (o `/review-notes --all`)**: Esegue la review **in sola lettura** su tutte le note aperte presentando le relative schede in un unico report e **si ferma obbligatoriamente su `ask_question` allo Step 4** prima di toccare qualsiasi file.
 
 ---
 
 ## 3. Flusso Operativo Passo-Passo
 
-### Step 1: Sync Remoto Protetto e Visualizzazione Cruscotto (`NOTES.md` + `DESIDERATA.md`)
-1. **Importazione Sicura da Kanban Mobile/Vocale (`gh-board-sync.mjs`)**:
-   - Esegui `node plugins/cognitive-persistence/scripts/gh-board-sync.mjs` (o `node ~/.gemini/config/plugins/cognitive-persistence/scripts/gh-board-sync.mjs`).
-   - Lo script verifica l'autore proprietario (`verifyTrustedTaskOrigin` `[P0-SEC]`), degrada a `LOCAL_ONLY` in `< 3s` se offline e calcola con `planSafeInboxImport` quante Issue `status:inbox` importare in `NOTES.md` senza mai superare il tetto di **115/120 righe** (lasciando le eccedenti su GitHub per il giro successivo).
-2. Leggi `NOTES.md` e `DESIDERATA.md` alla radice del workspace.
-   - Se `NOTES.md` non esiste o non contiene voci sotto `## 📥 Da Analizzare (Open)`, notifica: *"Nessuna nota aperta in `NOTES.md`. Usa `/take-note <testo>` per annotare pensieri durante l'uso dell'app."* e termina.
-3. Verifica se in `DESIDERATA.md` esiste ancora un task `🟡 In Lavorazione`:
-   - Se presente, segnala in testa: *"Attenzione: risulta ancora in corso il task `[Nome Task]`. L'analisi terrà conto delle modifiche parziali."*
-4. **Mostra sempre all'utente la Tabella Cruscotto delle Note Aperte**:
+### Step 1: Visualizzazione Cruscotto (`NOTES.md` + `DESIDERATA.md`) e Selezione
+1. **Sync Remoto Protetto (Saltare se invocato `/review-notes list`)**:
+   - Se il comando **non** è `/review-notes list`, esegui `node c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/gh-board-sync.mjs` (oppure `node plugins/cognitive-persistence/scripts/gh-board-sync.mjs`).
+   - Lo script verifica l'autore proprietario (`verifyTrustedTaskOrigin`), degrada a `LOCAL_ONLY` in `< 3s` se offline e importa le sole Issue `status:inbox` che rispettano il tetto di **115/120 righe** di `NOTES.md`.
+2. Leggi `NOTES.md` e `DESIDERATA.md` alla radice del workspace:
+   - Se `NOTES.md` non esiste o non contiene voci sotto `## 📥 Da Analizzare (Open)`, notifica: *"Nessuna nota aperta in `NOTES.md`. Usa `/take-note <testo>` per annotare osservazioni durante l'uso dell'app."* e termina.
+   - Se in `DESIDERATA.md` esiste un task `🟡 In Lavorazione`, segnala in testa: *"Attenzione: risulta ancora aperto il task `[Nome Task]`. La review terrà conto delle modifiche in corso."*
+3. **Mostra sempre la Tabella Cruscotto delle Note Aperte**:
    | ID | Titolo Sintetico | Data Cattura | Lavorazione Attiva alla Cattura | Ambito Presunto |
    | :--- | :--- | :---: | :--- | :--- |
-5. **Selezione Nota (Solo se `>= 2` Note Aperte)**:
-   - Se in `NOTES.md` è presente **1 sola nota aperta**, **NON invocare `ask_question`** allo Step 1 (evitando la scelta tautologica tra *"Analizza tutte"* e l'unica nota aperta) e procedi direttamente allo Step 2 e Step 3 su quella nota.
-   - Se invece sono presenti **`>= 2` note aperte** e l'utente non ha specificato quale analizzare, usa `ask_question` in italiano semplice:
-     - Opzione 1: `(Recommended) Analizza tutte le N note aperte una dopo l'altra`
-     - Opzioni successive: `Analizza solo: "<Titolo Sintetico>"` per ciascuna nota aperta.
+4. **Uscita Anticipata su `list` o Selezione Nota (`>= 2` Note)**:
+   - Se l'utente ha invocato **`/review-notes list`**, **fermati qui** senza avviare lo Step 2 né lo Step 3.
+   - Se sono presenti **`>= 2` note aperte** e l'utente non ha specificato `NOTE-XXX` o `all`, invoca `ask_question` in italiano chiaro:
+     - `(Recommended) Esegui la review in sola lettura di tutte le N note aperte`
+     - `Esegui la review solo di: "<Titolo Sintetico>"` (una voce per ciascuna nota aperta)
+     - `Fermati qui: volevo solo consultare l'elenco delle note aperte`
+   - Se l'utente sceglie *"Fermati qui"*, termina senza modificare nulla.
 
 ### Step 2: Ridenominazione Automatica della Chat
-Appena selezionata la nota (o il gruppo di note) da analizzare, aggiorna il titolo della conversazione tramite lo script Connect-RPC del plugin:
+Solo quando inizia effettivamente la review (Step 3), aggiorna il titolo della conversazione:
 ```bash
-node plugins/cognitive-persistence/scripts/set-chat-title.mjs --title "[Review Notes] Analisi <NOTE-ID / Note di Progetto>"
+node c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/set-chat-title.mjs --title "[Review Notes] Revisione <NOTE-ID / Note di Progetto>"
 ```
-*(Se il plugin è invocato dalla configurazione globale utente, usa `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --title "..."`)*.
 
-### Step 3: Esecuzione del Task di Analisi Approfondita sul Codice
-Per ciascuna nota selezionata, esegui un'ispezione rigorosa articolata in 4 punti:
+### Step 3: Ispezione Approfondita sul Codice (`SOLA LETTURA — ZERO MODIFICHE`)
+> **Guardia Step 3**: usa esclusivamente strumenti di lettura e ricerca (`read_file`, `grep_search`, `find_by_name`). Vietato modificare codice, test, `NOTES.md` o `DESIDERATA.md`.
+
+Per ciascuna nota selezionata, esegui l'analisi in 4 punti:
 1. **Riconciliazione Delta Post-Lavorazione**:
-   - Controlla `WORKLOG.md` e `DESIDERATA.md` rispetto al campo `Lavorazione Attiva al Momento della Nota`.
-   - Verifica se le lavorazioni completate dopo la cattura della nota hanno già modificato, risolto parzialmente o sostituito i componenti citati.
+   - Confronta `WORKLOG.md` e `DESIDERATA.md` con il campo `Lavorazione Attiva al Momento della Nota` per verificare se interventi successivi hanno già risolto, alterato o reso obsoleto il punto segnalato.
 2. **Ispezione Chirurgica del Codice Sorgente**:
-   - Usa `grep_search` e `view_file` per individuare i moduli, le funzioni e i selettori CSS esatti coinvolti dalla nota.
-   - Verifica i vincoli architetturali in `MEMORY.md` (es. Headless Core, disaccoppiamento DOM, zero regressioni).
+   - Individua moduli, funzioni e selettori CSS esatti coinvolti dalla nota e verifica i vincoli stabili in `MEMORY.md` (es. Headless Core, disaccoppiamento DOM, invarianti di dominio).
 3. **Scrutinio UX & Architetturale (`laws-of-ux` & `proactive-mentorship`)**:
-   - Valuta l'idea dell'utente rispetto a ergonomia touch (>= 48px), carico cognitivo (Hick's Law, Progressive Disclosure) e pulizia visiva.
-   - Se la soluzione ipotizzata a caldo nella nota presenta controindicazioni su mobile/outdoor, proponi l'alternativa tecnica superiore.
-4. **Output della Scheda di Analisi**:
-   Presenta per la nota una scheda strutturata:
-   - **Nota Originale (`[NOTE-XXX]`)**: citazione del pensiero registrato.
-   - **Stato Attuale nel Codice & Delta**: link cliccabili ai file (`[File.js](file:///...#L10-L25)`) e impatto delle ultime lavorazioni.
-   - **Proposta Ingegneristica & UX**: soluzione raccomandata, file esatti da toccare (`Touch-Set`) e casi limite gestiti.
+   - Valuta l'osservazione rispetto a ergonomia touch (`>= 48px`), carico cognitivo (Hick's Law, Progressive Disclosure), tenuta su `360px` e complessità; se l'idea annotata a caldo ha controindicazioni, proponi un'alternativa più pulita.
+4. **Output della Scheda di Review**:
+   - **Nota Originale (`[NOTE-XXX]`)**: sintesi fedele dell'osservazione registrata.
+   - **Stato Reale nel Codice & Delta**: link cliccabili (`[File.js](file:///...#L10-L25)`) e stato attuale post-ultime lavorazioni.
+   - **Valutazione & Proposta Tecnica/UX**: approccio consigliato, perimetro dei file da toccare (`Touch-Set`), rischi/casi limite ed eventuale motivo per scartarla se già risolta.
 
-### Step 4: Decisione Operativa, Sidecar Touch-Set e Consolidamento Anti-Bloat (`NOTES.md` -> `DESIDERATA.md`)
-Al termine dell'analisi, chiedi all'utente tramite `ask_question` (in italiano chiaro e senza sigle tecniche) come consolidare la nota analizzata:
-1. **Promuovi in `DESIDERATA.md` (`🔴 Prioritario`, `🔴 Pianificato` o `⚪ Pianificato`) e Certifica il Touch-Set**:
-   - Aggiungi la nuova riga formale (`[TASK-XX]`) nella sezione `## 1. Backlog Attivo & Funzionalità Pianificate` di `DESIDERATA.md` mantenendo la cella `Note / Specifica` **<= 160 caratteri** (senza inserire lunghi percorsi `@file` nella cella di `DESIDERATA.md`).
-   - **Salvataggio Touch-Set nel Sidecar (`.agents/board-state.json`)**: registra i file esatti individuati nello Step 3 eseguendo:
-     `node plugins/cognitive-persistence/scripts/gh-board-sync.mjs --record-touch-set TASK-XX "percorso/file1,percorso/file2"`
-     Così `/next-step` disporrà del perimetro esatto (`VERIFIED_BY_REVIEW`) per lo scodamento parallelo senza consumare i 160 caratteri di `DESIDERATA.md`.
-   - Rimuovi il blocco multi-riga della nota da `## 📥 Da Analizzare (Open)` in `NOTES.md` e inserisci in cima alla tabella `## ✅ Analizzate & Consolidate (Ultime 10 Risolte)` una **singola riga compatta** (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Promossa in DESIDERATA (<Sezione/Modulo>) |`, cella esito <= 120 char).
-2. **Implementa Subito nella Sessione Corrente**:
-   - Promuovi la voce nella sezione `## 1. Backlog Attivo` di `DESIDERATA.md` direttamente come `🟡 In Lavorazione`, avvia lo sviluppo e i test, e a fine task (`/memory-sync`) sposta la voce nella sezione `## 2. Funzionalità Completate` di `DESIDERATA.md` (`🟢 Completato`, cella <= 160 char) e consolida `NOTE-XXX` come singola riga nella tabella `✅ Analizzate & Consolidate` di `NOTES.md`.
-3. **Archivia / Scarta (Già Risolta o Non Necessaria)**:
-   - Rimuovi il blocco da `## 📥 Da Analizzare (Open)` e inserisci una singola riga nella tabella `## ✅ Analizzate & Consolidate` di `NOTES.md` con esito `⚪ Archiviata (<Motivazione <= 120 char>)`.
-4. **Rotazione Storica di `NOTES.md` (`> 10 risolte` o `> 120 righe`)**:
-   - Preserva sempre nell'header la riga `> **Ultimo ID Assegnato**: NOTE-XXX`.
-   - Se la tabella `## ✅ Analizzate & Consolidate` supera le **10 righe** (o se `NOTES.md` supera le **120 righe**), sposta le note risolte meno recenti in `.agents/archive/NOTES_archive.md`.
+### Step 4: Gate Obbligatorio di Conferma Utente (`ask_question` Prima di Qualsiasi Scrittura)
+Esposta la scheda di review (anche quando c'è **1 sola nota aperta** o con `--all`), **fermati obbligatoriamente** e invoca `ask_question` in italiano semplice per chiedere all'utente cosa fare:
+- `(Recommended) Promuovi nel backlog (DESIDERATA.md) per lavorarla in seguito`
+- `Lascia la nota aperta in NOTES.md senza modificare nulla (ci rifletto o ne discutiamo)`
+- `Archivia / Scarta la nota (già risolta o non più necessaria)`
+- `Implementa subito la soluzione proposta nella sessione corrente`
+
+Applica l'azione scelta **solo dopo la risposta dell'utente**:
+1. **Se sceglie "Promuovi nel backlog (`DESIDERATA.md`)"**:
+   - Aggiungi `[TASK-XX]` in `## 1. Backlog Attivo` di `DESIDERATA.md` (`🔴 Prioritario` o `⚪ Pianificato`, cella `Note / Specifica` **<= 160 caratteri** senza lunghi path `@file`).
+   - Registra il `Touch-Set` nel sidecar `.agents/board-state.json`:
+     `node c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/gh-board-sync.mjs --record-touch-set TASK-XX "percorso/file1,percorso/file2"`
+   - Rimuovi il blocco aperto da `## 📥 Da Analizzare` in `NOTES.md` e aggiungi in cima a `## ✅ Analizzate & Consolidate` una **singola riga** (`| NOTE-XXX | <Titolo> | YYYY-MM-DD | Promossa in DESIDERATA (<Modulo>) |`, esito `<= 120` char).
+2. **Se sceglie "Lascia la nota aperta in `NOTES.md`"**:
+   - Non modificare alcun file (`0` scritture su `NOTES.md`, `DESIDERATA.md` e codice); resta disponibile a discutere o affinare la proposta in chat.
+3. **Se sceglie "Archivia / Scarta la nota"**:
+   - Rimuovi il blocco da `## 📥 Da Analizzare` e inserisci una singola riga in `## ✅ Analizzate & Consolidate` di `NOTES.md` con esito `⚪ Archiviata (<Motivazione <= 120 char>)`.
+4. **Se sceglie "Implementa subito nella sessione corrente"**:
+   - Promuovi la voce in `## 1. Backlog Attivo` di `DESIDERATA.md` come `🟡 In Lavorazione`, esegui sviluppo e test, e a fine lavoro (`/memory-sync`) aggiorna `DESIDERATA.md` (`🟢 Completato`) e `NOTES.md` (1 riga in `✅ Analizzate & Consolidate`).
+5. **Rotazione Storica di `NOTES.md` (solo nei casi 1, 3 e 4)**:
+   - Preserva `> **Ultimo ID Assegnato**: NOTE-XXX` nell'header; se `## ✅ Analizzate & Consolidate` supera **10 righe** (o `NOTES.md` supera **120 righe**), ruota le chiuse meno recenti in `.agents/archive/NOTES_archive.md`.

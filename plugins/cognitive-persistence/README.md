@@ -34,7 +34,7 @@ Il plugin governa quattro file standard posizionati alla radice del repository d
 ### 0. `NOTES.md` (Buffer di Cattura In-Flight & Staging Pre-Desiderata — Max 120 Righe)
 Raccoglie osservazioni grezze, dubbi di UX o anomalie notate dall'utente mentre usa l'app o durante un task aperto:
 - **Cattura passiva (`/take-note`) e Contatore Header**: salva la nota incrementando `> **Ultimo ID Assegnato**: NOTE-XXX` nell'intestazione, data/ora e riferimento all'eventuale task `🟡 In Lavorazione` in `DESIDERATA.md`, con **divieto tassativo** per l'agente di ispezionare il codice o interrompere il task attivo.
-- **Mostra ed esegui analisi (`/review-notes`) e Tabella 1-Riga Risolte**: a lavorazione conclusa, mostra la tabella delle note aperte (`📥 Da Analizzare`), esegue l'ispezione sul codice aggiornato per promuoverle in `DESIDERATA.md` e riduce le note chiuse a **1 riga di tabella** nella sezione `✅ Analizzate & Consolidate` (max 10 voci, ruotando le precedenti in `.agents/archive/NOTES_archive.md`).
+- **Review in sola lettura (`/review-notes`) e Tabella 1-Riga Risolte**: a lavorazione conclusa, mostra la tabella delle note aperte (`📥 Da Analizzare`), esegue l'ispezione **in sola lettura** sul codice aggiornato presentando la scheda di review e **attende la conferma esplicita dell'utente (`ask_question`)** prima di promuoverle in `DESIDERATA.md`, lasciarle aperte, archiviarle o implementarle (riducendo le note chiuse a **1 riga di tabella** in `✅ Analizzate & Consolidate`, max 10 voci con rotazione in `.agents/archive/NOTES_archive.md`).
 
 ### 1. `MEMORY.md` (Vincoli Stabili & Governance Anti-Bloat — Max 200 Righe)
 Registra esclusivamente gli invarianti architetturali e la conoscenza empirica non ovvia acquisita durante lo sviluppo (la cronologia degli interventi appartiene a `WORKLOG.md`). Per prevenire l'inflazione del contesto (*context bloat*):
@@ -61,7 +61,7 @@ Mappa il ciclo di vita delle funzionalità prevenendo l'accumulo di mini-ADR nel
 | :--- | :--- | :--- | :--- |
 | **Regola di Condotta** | Regola attiva | [`rules/AGENTS.md`](./rules/AGENTS.md) | Governa `/take-note`, `/review-notes`, `/next-step`, `/memory-sync` e i tetti anti-bloat di `NOTES.md` (<= 120), `MEMORY.md` (<= 200), `WORKLOG.md` (<= 300) e `DESIDERATA.md` (<= 150, celle <= 160 char). |
 | **`take-note`** | Skill / Comando Slash | [`skills/take-note/SKILL.md`](./skills/take-note/SKILL.md) | Cattura pensieri singoli o multipli in `NOTES.md` aggiornando `Ultimo ID Assegnato` nell'header a zero cambio di contesto. |
-| **`review-notes`** | Skill / Comando Slash | [`skills/review-notes/SKILL.md`](./skills/review-notes/SKILL.md) | Mostra il cruscotto delle note aperte in `NOTES.md`, esegue l'analisi sul codice, le promuove in `DESIDERATA.md` e compatta le risolte in 1 riga di tabella (max 10 voci). |
+| **`review-notes`** | Skill / Comando Slash | [`skills/review-notes/SKILL.md`](./skills/review-notes/SKILL.md) | Mostra il cruscotto delle note aperte in `NOTES.md`, esegue la review tecnica/UX in sola lettura sul codice e attende `ask_question` prima di promuoverle in `DESIDERATA.md`, archiviarle o implementarle. |
 | **`next-step`** | Skill / Comando Slash | [`skills/next-step/SKILL.md`](./skills/next-step/SKILL.md) | Runbook di accoglienza requisiti invocabile con `/next-step`: scansiona il *Backlog Attivo* di `DESIDERATA.md`, verifica le guardie anti-bloat dei 4 file e produce il briefing operativo. |
 | **`memory-sync`** | Skill / Comando Slash | [`skills/memory-sync/SKILL.md`](./skills/memory-sync/SKILL.md) | Runbook di fine task: redige l'ADR in `worklog.d/`, aggiunge il *Pointer Record* in `WORKLOG.md`, aggiorna `MEMORY.md` *in-place* e compatta `DESIDERATA.md` e `NOTES.md`. |
 | **`set-chat-title`** | Script di utilità | [`scripts/set-chat-title.mjs`](./scripts/set-chat-title.mjs) | Script Node.js che comunica via Connect-RPC con Antigravity Language Server per aggiornare istantaneamente il titolo della conversazione nella sidebar e nel database. |
@@ -75,8 +75,8 @@ flowchart TD
     subgraph InFlight ["0. Cattura In-Flight & Triage (/take-note & /review-notes)"]
         N1["Invocazione /take-note <testo>"] --> N2["Scrittura in NOTES.md (NOTE-XXX)<br/>+ Tag Lavorazione Attiva<br/>(Zero analisi codice / Zero interruzione)"]
         N2 -. "A lavorazione conclusa" .-> N3["Invocazione /review-notes"]
-        N3 --> N4["Mostra Cruscotto Note Aperte<br/>+ Esecuzione Task Analisi sul Codice"]
-        N4 --> N5["Promozione in DESIDERATA.md (🔴)<br/>e consolidamento nota in NOTES.md (✅)"]
+        N3 --> N4["Mostra Cruscotto Note Aperte + Review sul Codice in Sola Lettura"]
+        N4 --> N5["Gate Utente (ask_question): Promuovi in DESIDERATA (🔴) / Lascia aperta / Scarta / Implementa"]
     end
 
     subgraph Avvio ["1. Start-of-Task (/next-step)"]
@@ -107,8 +107,8 @@ flowchart TD
 ## Prompt di Esempio
 
 - *"`/take-note <testo dell'osservazione>`"* (registra una o più note al volo senza interrompere la lavorazione corrente)
-- *"`/review-notes`"* (mostra la tabella delle note aperte in `NOTES.md` e permette di selezionare su quale avviare il task di analisi approfondita)
-- *"`/review-notes NOTE-001`"* (esegue direttamente il task di analisi approfondita sulla nota `NOTE-001`)
+- *"`/review-notes`"* (mostra la tabella delle note aperte in `NOTES.md`, esegue la review in sola lettura sul codice e chiede conferma prima di toccare `DESIDERATA.md` o `NOTES.md`)
+- *"`/review-notes NOTE-001`"* (esegue la review in sola lettura sulla nota `NOTE-001` e attende la tua decisione su `ask_question`)
 - *"`/next-step`"* (cerca il prossimo desiderata pianificato e avvia la lavorazione)
 - *"`/memory-sync`"* (esegue la sincronizzazione della memoria di progetto per l'intervento appena completato)
 
