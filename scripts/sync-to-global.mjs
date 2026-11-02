@@ -313,6 +313,14 @@ export function syncPluginsToGlobal(options = {}) {
           log(`   [OK] Registered in config.json: ${name} (enabled: true)`);
         }
       }
+      const dormantHeavyPlugins = ['science', 'data-agent-kit-plugin', 'flutter', 'firebase', 'google_maps_platform'];
+      for (const heavyName of dormantHeavyPlugins) {
+        if (parsedConfig.plugins[heavyName] && parsedConfig.plugins[heavyName].enabled === true) {
+          parsedConfig.plugins[heavyName].enabled = false;
+          configUpdated = true;
+          log('   [OK] Disabled dormant high-token plugin in config.json: ' + heavyName);
+        }
+      }
       if (configUpdated) {
         fs.writeFileSync(globalConfigFile, JSON.stringify(parsedConfig, null, 2) + '\n', 'utf-8');
       }
