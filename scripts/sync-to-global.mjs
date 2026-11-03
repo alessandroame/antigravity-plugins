@@ -315,7 +315,7 @@ export function syncPluginsToGlobal(options = {}) {
       }
       const dormantHeavyPlugins = ['science', 'data-agent-kit-plugin', 'flutter', 'firebase', 'google_maps_platform'];
       for (const heavyName of dormantHeavyPlugins) {
-        if (parsedConfig.plugins[heavyName] && parsedConfig.plugins[heavyName].enabled === true) {
+        if (parsedConfig.plugins[heavyName] && parsedConfig.plugins[heavyName].enabled !== false) {
           parsedConfig.plugins[heavyName].enabled = false;
           configUpdated = true;
           log('   [OK] Disabled dormant high-token plugin in config.json: ' + heavyName);
