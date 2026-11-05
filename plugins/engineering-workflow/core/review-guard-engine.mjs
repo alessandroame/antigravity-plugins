@@ -56,6 +56,11 @@ const RISK_PATTERNS = [
     tag: 'UI_LAYOUT_GEOMETRY',
     weight: 2,
     rx: /\b(?:z-index\s*:|overflow(?:-x|-y)?\s*:\s*(?:hidden|clip|scroll|auto)|position\s*:\s*(?:fixed|absolute)|100vh\b|100dvh\b)/i
+  },
+  {
+    tag: 'HEURISTIC_ALIAS_OR_MAGIC_SCALE',
+    weight: 4,
+    rx: /(?:<=?\s*-?\d+(?:\.\d+)?\s*\?\s*0(?:\.0)?\s*:\s*\(?.*?>=?\s*-?\d+(?:\.\d+)?\s*\?\s*1(?:\.0)?|\*\s*0\.(?:04|15|18|24|25|28|32|34|35|42|45|52|55|62|65|68|72|75|85)\b)/
   }
 ];
 
