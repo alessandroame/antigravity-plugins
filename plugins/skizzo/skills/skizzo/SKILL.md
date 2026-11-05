@@ -92,6 +92,7 @@ Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Is
 ## 5. Step 2, Step 3 & Step 4: Cross-Critique / Mediatore (`Gamma`) e Consegna "Human-First" (`~600px`)
 
 1. **Cross-Critique / Mediatore**: confronta i report dei `2..4` subagent ordinati per importanza (o invoca `Subagent Gamma` con `--mediator` per contro-interrogarli via `send_message` in max 1 round) e sintetizza una soluzione che soddisfi **tutti gli oracoli attivi**.
+2. **Divieto di Auto-Certificazione Cieca nello Step 3 (`PASS` solo con Misura Post-Edit)**: chi scrive il codice non può dichiararsi `PASS` sulla fiducia. Dopo l'ultimo `edit_file`/`write_file`, esegui obbligatoriamente i comandi di verifica reali (`npm test`, [`diff-triage.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs) su modifiche multi-file/test, o [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js) sulla UI) e riporta nella colonna `Oracolo & Esito` la misura oggettiva ottenuta (es. `PASS (0 tamper, 14/14 test)`), mai il solo enunciato teorico dello Step 1.
 2. **Formato Obbligatorio di Consegna "Human-First" (Tabella a 4 Colonne Fisse per Riga)**: apri al **rigo 1** con il banner `[!IMPORTANT]` compatto (con link `conversation://` per tutti i `2..4` domini), seguito dai punti chiave in italiano semplice e da una **tabella trasposta per riga a 4 colonne fisse** dentro `<details>` (zero overflow su `~600px`):
 
 ```markdown

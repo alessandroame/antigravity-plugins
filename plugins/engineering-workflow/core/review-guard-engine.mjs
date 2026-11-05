@@ -21,10 +21,10 @@ const VERIFIABLE_CODE_RX =
   /\.(?:m?js|cjs|ts|py|dart|go|rs|java|kt|rb|php|sh|ps1|json)$|(?:^|\/)(?:SKILL|AGENTS)\.md$/i;
 
 const ASSERTION_TOKEN_RX =
-  /\b(?:assert\.[a-zA-Z_]+|expect\s*\(|should\.[a-zA-Z_]+|assert_[a-z_]+|assertEquals|assertTrue|assertFalse)\b/;
+  /^\s*(?:await\s+|return\s+)?(?:assert\.[a-zA-Z_]+|expect\s*\(|[a-zA-Z0-9_$.]+\.should\.[a-zA-Z_]+|assert_[a-z_]+|assertEquals|assertTrue|assertFalse)\b/;
 const TEST_BLOCK_TOKEN_RX = /^\s*(?:it|test|describe)\s*\(/;
 const TAUTOLOGY_ASSERT_RX =
-  /\b(?:assert\.ok\s*\(\s*(?:true|1|'[^']+'|"[^"]+")\s*\)|assert\.(?:strictEqual|equal)\s*\(\s*(true|false|\d+)\s*,\s*\1\s*\)|expect\s*\(\s*(true|false|\d+)\s*\)\.toBe\s*\(\s*\1\s*\))/;
+  /^\s*(?:await\s+|return\s+)?(?:assert\.ok\s*\(\s*(?:true|1|'[^']+'|"[^"]+")\s*\)|assert\.(?:strictEqual|equal)\s*\(\s*(true|false|\d+)\s*,\s*\1\s*\)|expect\s*\(\s*(true|false|\d+)\s*\)\.toBe\s*\(\s*\1\s*\))/;
 
 const RISK_PATTERNS = [
   {
@@ -81,6 +81,117 @@ const UI_VERIFY_MCP_TOOLS = new Set([
 
 const SUBAGENT_PROMPT_RX =
   /Skill Attive \((?:Alpha|Beta|Gamma|Delta|Epsilon)|Agisci esclusivamente come \*\*Subagent|Sei \*\*Subagent|Sfidante [AB]|Giudice Cieco|Blind Diff Critic/i;
+
+const USER_TEST_REALIGN_APPROVAL_RX =
+  /\b(?:riallinea(?:re)?\s+(?:l'oracolo|i\s+test|la\s+soglia)|aggiorna(?:re)?\s+(?:i\s+test|la\s+soglia(?:\s+del\s+test)?)|modifica(?:re)?\s+i\s+test|cambia(?:re)?\s+la\s+soglia|--allow-test-edits)\b/i;
+
+const NUMERIC_ASSERT_LITERAL_RX = /-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi;
+
+/**
+ * Unwraps JSON-encoded string arguments from transcript.jsonl (including truncated strings).
+ * @param {unknown} raw
+ * @returns {string}
+ */
+function unwrapTranscriptString(raw) {
+  if (typeof raw !== 'string' || !raw) return '';
+  let text = raw.trim();
+  if (text.startsWith('"') && text.endsWith('"')) {
+    try {
+      return String(JSON.parse(text));
+    } catch {
+      return text.slice(1, -1).replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\"/g, '"');
+    }
+  }
+  if (text.startsWith('"')) {
+    return text.slice(1).replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\"/g, '"');
+  }
+  return text;
+}
+
+/**
+ * Inspects an in-transcript edit_file / write_file call on a test file for deleted/weakened assertions or faux-tests.
+ * @param {{ name: string, path: string, target: string, replacement: string }} editOp
+ * @returns {{ tampered: boolean, faux: boolean, details: string }}
+ */
+function inspectTestEditOperation(editOp) {
+  const cleanTarget = unwrapTranscriptString(editOp.target);
+  const cleanReplacement = unwrapTranscriptString(editOp.replacement);
+  const targetLines = cleanTarget.split(/\r?\n/);
+  const replacementLines = cleanReplacement.split(/\r?\n/);
+
+  for (const line of replacementLines) {
+    if (TAUTOLOGY_ASSERT_RX.test(line)) {
+      return {
+        tampered: false,
+        faux: true,
+        details: `${editOp.path} (tautological assertion: ${line.trim().slice(0, 60)})`
+      };
+    }
+  }
+
+  const addedTestBlocks = replacementLines.filter((l) => /^\s*(?:it|test)\s*\(/.test(l));
+  const replacementAssertions = replacementLines.filter((l) => ASSERTION_TOKEN_RX.test(l)).length;
+  const hasThrowsOrRejects = replacementLines.some((l) => /\b(?:rejects|throws)\b/.test(l));
+
+  if (addedTestBlocks.length > 0 && replacementAssertions === 0 && !hasThrowsOrRejects) {
+    return {
+      tampered: false,
+      faux: true,
+      details: `${editOp.path} (assertion-free test block: ${addedTestBlocks[0].trim().slice(0, 60)})`
+    };
+  }
+
+  if (editOp.name === 'write_file') {
+    return { tampered: false, faux: false, details: '' };
+  }
+
+  const targetAssertions = targetLines.filter((l) => ASSERTION_TOKEN_RX.test(l)).map((l) => l.trim());
+  const replacementAssertionsList = replacementLines
+    .filter((l) => ASSERTION_TOKEN_RX.test(l))
+    .map((l) => l.trim());
+  const targetBlocks = targetLines.filter((l) => TEST_BLOCK_TOKEN_RX.test(l)).length;
+  const replacementBlocks = replacementLines.filter((l) => TEST_BLOCK_TOKEN_RX.test(l)).length;
+
+  if (targetAssertions.length === 0 && targetBlocks === 0) {
+    return { tampered: false, faux: false, details: '' };
+  }
+
+  // Count how many original assertions from Target were deleted or altered in Replacement
+  const remainingPool = [...replacementAssertionsList];
+  const missingTargetAssertions = [];
+  for (const orig of targetAssertions) {
+    const idx = remainingPool.indexOf(orig);
+    if (idx !== -1) {
+      remainingPool.splice(idx, 1);
+    } else {
+      missingTargetAssertions.push(orig);
+    }
+  }
+
+  // If all original assertions and test blocks are preserved intact, appending new tests/assertions is valid
+  if (missingTargetAssertions.length === 0 && replacementBlocks >= targetBlocks) {
+    return { tampered: false, faux: false, details: '' };
+  }
+
+  if (replacementAssertionsList.length < targetAssertions.length || replacementBlocks < targetBlocks) {
+    return {
+      tampered: true,
+      faux: false,
+      details: `${editOp.path} (-${Math.max(1, missingTargetAssertions.length)} assertions)`
+    };
+  }
+
+  const targetNums = (missingTargetAssertions.join('\n').match(NUMERIC_ASSERT_LITERAL_RX) || []).join(',');
+  const replacementNums = (remainingPool.join('\n').match(NUMERIC_ASSERT_LITERAL_RX) || []).join(',');
+  return {
+    tampered: true,
+    faux: false,
+    details:
+      targetNums !== replacementNums
+        ? `${editOp.path} (altered assertion threshold: [${targetNums}] -> [${replacementNums}])`
+        : `${editOp.path} (altered ${missingTargetAssertions.length} existing assertion(s))`
+  };
+}
 
 /**
  * Unwraps escaped quotes and normalizes slashes for cross-platform path comparisons.
@@ -339,34 +450,40 @@ export function analyzeGitDiffForReview(diffText, options = {}) {
 
 /**
  * Verifies on parsed transcript steps whether all code and UI modifications
- * in the active user turn were followed by a passing test/validation run and UI probe.
+ * in the active user turn were followed by a passing test/validation run and UI probe,
+ * and blocks delivery if existing test assertions were tampered with alongside production edits.
  * @param {Array<Record<string, any>>} steps
+ * @param {{ diffText?: string, allowTestEdits?: boolean }} [options]
  * @returns {{
  *   ok: boolean,
  *   skippedReason: string | null,
  *   missingCodeVerification: boolean,
  *   missingUiVerification: boolean,
+ *   testIntegrityViolation: boolean,
  *   lastCodeEditStep: number,
  *   lastUiEditStep: number,
  *   lastPassingTestStep: number,
  *   lastPassingUiVerifyStep: number,
  *   editedCodeFiles: string[],
  *   editedUiFiles: string[],
+ *   tamperedTestDetails: string[],
  *   reasonIt: string
  * }}
  */
-export function verifyTranscriptDeliveryGate(steps) {
+export function verifyTranscriptDeliveryGate(steps, options = {}) {
   const baseResult = {
     ok: true,
     skippedReason: null,
     missingCodeVerification: false,
     missingUiVerification: false,
+    testIntegrityViolation: false,
     lastCodeEditStep: -1,
     lastUiEditStep: -1,
     lastPassingTestStep: -1,
     lastPassingUiVerifyStep: -1,
     editedCodeFiles: [],
     editedUiFiles: [],
+    tamperedTestDetails: [],
     reasonIt: ''
   };
 
@@ -399,6 +516,9 @@ export function verifyTranscriptDeliveryGate(steps) {
     return { ...baseResult, skippedReason: 'no_user_prompt' };
   }
 
+  const userPromptText = typeof sorted[lastUserIdx]?.content === 'string' ? sorted[lastUserIdx].content : '';
+  const allowTestEdits = Boolean(options.allowTestEdits) || USER_TEST_REALIGN_APPROVAL_RX.test(userPromptText);
+
   const turnSteps = sorted.slice(lastUserIdx + 1);
   if (turnSteps.length === 0) {
     return { ...baseResult, skippedReason: 'no_assistant_steps' };
@@ -412,7 +532,9 @@ export function verifyTranscriptDeliveryGate(steps) {
   let lastAskQuestionStep = -1;
 
   const codeFilesSet = new Set();
+  const prodCodeFilesSet = new Set();
   const uiFilesSet = new Set();
+  const testEditOps = [];
 
   for (let i = 0; i < turnSteps.length; i++) {
     const step = turnSteps[i];
@@ -448,19 +570,32 @@ export function verifyTranscriptDeliveryGate(steps) {
         if (!rawPath || SCRATCH_OR_BRAIN_RX.test(rawPath) || COGNITIVE_OR_DOC_RX.test(rawPath)) {
           continue;
         }
+        const shortPath = rawPath.split('/').slice(-2).join('/');
         const domain = classifyFileDomain(rawPath);
         if (domain === 'ui') {
           lastUiEditStep = stepIdx;
-          uiFilesSet.add(rawPath.split('/').slice(-2).join('/'));
+          uiFilesSet.add(shortPath);
           // UI files that contain logic (.jsx/.tsx/.vue/.svelte) also count as code if project has tests
           if (/\.(?:jsx|tsx|vue|svelte)$/i.test(rawPath)) {
             lastCodeEditStep = stepIdx;
-            codeFilesSet.add(rawPath.split('/').slice(-2).join('/'));
+            codeFilesSet.add(shortPath);
+            prodCodeFilesSet.add(shortPath);
           }
         } else if (domain === 'code' || domain === 'test') {
           if (VERIFIABLE_CODE_RX.test(rawPath) || domain === 'test') {
             lastCodeEditStep = stepIdx;
-            codeFilesSet.add(rawPath.split('/').slice(-2).join('/'));
+            codeFilesSet.add(shortPath);
+            if (domain === 'code') {
+              prodCodeFilesSet.add(shortPath);
+            } else if (domain === 'test') {
+              testEditOps.push({
+                stepIdx,
+                name,
+                path: shortPath,
+                target: String(args.Target || args.TargetContent || ''),
+                replacement: String(args.Replacement || args.ReplacementContent || args.Content || '')
+              });
+            }
           }
         }
       }
@@ -490,11 +625,44 @@ export function verifyTranscriptDeliveryGate(steps) {
     return { ...baseResult, skippedReason: 'awaiting_subagent_or_user' };
   }
 
+  const hasProductionChanges = prodCodeFilesSet.size > 0 || uiFilesSet.size > 0;
+  const tamperedDetailsSet = new Set();
+
+  for (const op of testEditOps) {
+    const check = inspectTestEditOperation(op);
+    if (check.faux) {
+      tamperedDetailsSet.add(check.details);
+    } else if (check.tampered && hasProductionChanges && !allowTestEdits) {
+      tamperedDetailsSet.add(check.details);
+    }
+  }
+
+  if (typeof options.diffText === 'string' && options.diffText.trim().length > 0) {
+    const diffReport = analyzeGitDiffForReview(options.diffText, { allowTestEdits });
+    for (const faux of diffReport.fauxTestAlerts) {
+      tamperedDetailsSet.add(`${faux.file}:${faux.line} (${faux.type})`);
+    }
+    if (!allowTestEdits) {
+      for (const tamper of diffReport.testTamperAlerts) {
+        if (tamper.severity === 'HIGH' || (tamper.severity === 'MEDIUM' && hasProductionChanges)) {
+          tamperedDetailsSet.add(`${tamper.file} (-${tamper.removedAssertions}/+${tamper.addedAssertions} assertions)`);
+        }
+      }
+    }
+  }
+
+  const tamperedTestDetails = [...tamperedDetailsSet];
+  const testIntegrityViolation = tamperedTestDetails.length > 0;
   const missingCodeVerification = lastCodeEditStep >= 0 && lastPassingTestStep < lastCodeEditStep;
   const missingUiVerification = lastUiEditStep >= 0 && lastPassingUiVerifyStep < lastUiEditStep;
-  const ok = !missingCodeVerification && !missingUiVerification;
+  const ok = !missingCodeVerification && !missingUiVerification && !testIntegrityViolation;
 
   const reasons = [];
+  if (testIntegrityViolation) {
+    reasons.push(
+      `manomissione non autorizzata di asserzioni preesistenti o faux-test nei test ([${tamperedTestDetails.slice(0, 3).join('; ')}]) durante una modifica applicativa (ripristina il test con git checkout o applica Stop-on-Test-Conflict chiedendo consenso all'utente)`
+    );
+  }
   if (missingCodeVerification) {
     reasons.push(
       `modifiche codice/config ([${[...codeFilesSet].slice(0, 4).join(', ')}]) successive o prive di esecuzione test/validazione`
@@ -508,19 +676,21 @@ export function verifyTranscriptDeliveryGate(steps) {
 
   const reasonIt = ok
     ? ''
-    : `[DELIVERY-GATE] Rilevate ${reasons.join(' e ')}. Esegui la suite di test (es. npm test / validate) e/o la sonda geometrica UI dopo l'ultimo edit_file prima di consegnare la risposta finale.`;
+    : `[DELIVERY-GATE] Rilevate ${reasons.join(' e ')}. Esegui la suite di test (es. npm test / validate), ripristina i test manomessi e/o esegui la sonda geometrica UI dopo l'ultimo edit_file prima di consegnare la risposta finale.`;
 
   return {
     ok,
     skippedReason: null,
     missingCodeVerification,
     missingUiVerification,
+    testIntegrityViolation,
     lastCodeEditStep,
     lastUiEditStep,
     lastPassingTestStep,
     lastPassingUiVerifyStep,
     editedCodeFiles: [...codeFilesSet],
     editedUiFiles: [...uiFilesSet],
+    tamperedTestDetails,
     reasonIt
   };
 }

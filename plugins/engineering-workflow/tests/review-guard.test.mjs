@@ -121,6 +121,62 @@ describe('Review Guard, Test Integrity & Delivery Gate Engine', () => {
     const passed = verifyTranscriptDeliveryGate(verifiedSteps);
     assert.equal(passed.ok, true);
     assert.equal(passed.missingCodeVerification, false);
+    assert.equal(passed.testIntegrityViolation, false);
+  });
+
+  it('blocks delivery in verifyTranscriptDeliveryGate when existing test assertions are weakened alongside production code edits', () => {
+    const tamperedTurnSteps = [
+      { step_index: 1, type: 'USER_INPUT', source: 'USER_EXPLICIT', content: 'Fix turn rate calculation' },
+      {
+        step_index: 2,
+        type: 'PLANNER_RESPONSE',
+        tool_calls: [
+          {
+            name: 'edit_file',
+            args: {
+              Path: 'c:/project/src/physics.mjs',
+              Target: 'return rate * 1.0;',
+              Replacement: 'return rate * 0.5;'
+            }
+          },
+          {
+            name: 'edit_file',
+            args: {
+              Path: '"c:/project/tests/physics.test.mjs"',
+              Target: JSON.stringify('  assert.equal(computeTurnRate(10), 10);\n});'),
+              Replacement: JSON.stringify('  assert.equal(computeTurnRate(10), 5);\n});')
+            }
+          }
+        ]
+      },
+      {
+        step_index: 3,
+        type: 'PLANNER_RESPONSE',
+        tool_calls: [{ name: 'run_command', args: { CommandLine: 'npm test' } }]
+      },
+      { step_index: 4, status: 'DONE', content: 'Command exited with code 0.' }
+    ];
+
+    // Even though npm test passed after the edit, test tampering blocks delivery
+    const blocked = verifyTranscriptDeliveryGate(tamperedTurnSteps);
+    assert.equal(blocked.ok, false);
+    assert.equal(blocked.testIntegrityViolation, true);
+    assert.equal(blocked.tamperedTestDetails.length, 1);
+    assert.ok(blocked.reasonIt.includes('manomissione non autorizzata'));
+
+    // When the user explicitly authorizes test threshold realignment, delivery passes
+    const approvedSteps = [
+      {
+        step_index: 1,
+        type: 'USER_INPUT',
+        source: 'USER_EXPLICIT',
+        content: 'Riallinea la soglia del test physics.test.mjs al nuovo modello'
+      },
+      ...tamperedTurnSteps.slice(1)
+    ];
+    const allowed = verifyTranscriptDeliveryGate(approvedSteps);
+    assert.equal(allowed.ok, true);
+    assert.equal(allowed.testIntegrityViolation, false);
   });
 
   it('requires UI geometry probe or smoke runner after UI edits (.css/.html) and ignores cognitive docs', () => {

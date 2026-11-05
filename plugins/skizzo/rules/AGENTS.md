@@ -25,7 +25,8 @@ Governa l'orchestrazione competitiva e collaborativa adattiva (**da `2` a `4` su
 ## 3. Ciclo a 4 Fasi (`DUAL-TRACK` / `TRI-TRACK` / `QUAD-TRACK`)
 1. **Fase 1 (Istanziazione Parallela `2..4` Agenti, Budget `<= 4` Turni & Zero Polling)**: per ciascuno dei `2..4` domini selezionati (`Alpha`, `Beta`, `Delta`, `Epsilon`), l'LLM definisce su misura `Role`, `Mandato Non Negoziabile`, `Oracolo di Verifica` e **1–2 skill verticali** (vietate meta-skill `skizzo`/`ab-bench`) e li lancia al Turno 1. Aprono con **Skill Attive (<trackId> - <Ruolo>)**: `<id>` e completano in **max 4 turni tool** con righe `#Lxx-Lyy`. Lanciati i subagent, **chiudere subito il turno (`0` tool call, `0` byte, vietati `schedule` e `manage_subagents`)**.
 2. **Fase 2 (Cross-Critique o Mediatore `--mediator`)**: Cross-Critique tra i `2..4` ruoli oppure **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, `research`, `<id-gamma>`)** che li interroga via `send_message` (max 1 round) ed emette il **Lodo Arbitrale**.
-3. **Fase 3 & 4 (Sintesi Multi-Oracolo e Restituzione "Human-First" a 4 Colonne Fisse)**:
+3. **Fase 3 & 4 (Verifica Post-Codice Anti-Autocertificazione e Restituzione "Human-First" a 4 Colonne Fisse)**:
+   - **Divieto di Auto-Certificazione Cieca (`PASS`)**: vietato compilare `Oracolo & Esito: PASS` copiando l'oracolo teorico della Fase 1; dopo l'ultimo `edit_file`, eseguire materialmente i test, `diff-triage.mjs` (zero test manomessi) e/o le sonde di dominio riportando nella colonna l'esito misurato.
    - **Banner Rigo 1**:
      `> [!IMPORTANT]`
      `> MODALITÀ SKIZZO ATTIVA (DUAL-TRACK | TRI-TRACK | QUAD-TRACK — N Domini per Importanza) — Subagent: [1° <Ruolo Alpha>](conversation://<id-alpha>) · [2° <Ruolo Beta>](conversation://<id-beta>) [· [3° <Ruolo Delta>](conversation://<id-delta>) · [4° <Ruolo Epsilon>](conversation://<id-epsilon>)]`
