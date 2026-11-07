@@ -267,15 +267,26 @@ export function syncPluginsToGlobal(options = {}) {
 
   const pluginEntries = fs.readdirSync(pluginsDir, { withFileTypes: true });
   const syncedPluginNames = [];
+  const disabledPluginNames = new Set();
 
   for (const entry of pluginEntries) {
     if (!entry.isDirectory()) continue;
     const pluginName = entry.name;
     const src = path.join(pluginsDir, pluginName);
     const dest = path.join(globalPluginsDir, pluginName);
+    const manifestFile = path.join(src, 'plugin.json');
 
-    if (!fs.existsSync(path.join(src, 'plugin.json'))) {
+    if (!fs.existsSync(manifestFile)) {
       continue;
+    }
+
+    try {
+      const manifestData = JSON.parse(fs.readFileSync(manifestFile, 'utf-8').replace(/^\uFEFF/, ''));
+      if (manifestData && manifestData.disabled === true) {
+        disabledPluginNames.add(pluginName);
+      }
+    } catch {
+      // Ignore malformed manifest during flag check
     }
 
     // Remove existing symlink/junction or directory before copying (with EBUSY fallback for active OS watchers)
@@ -307,10 +318,15 @@ export function syncPluginsToGlobal(options = {}) {
       }
       let configUpdated = false;
       for (const name of syncedPluginNames) {
+        const shouldEnable = !disabledPluginNames.has(name);
         if (!parsedConfig.plugins[name]) {
-          parsedConfig.plugins[name] = { enabled: true };
+          parsedConfig.plugins[name] = { enabled: shouldEnable };
           configUpdated = true;
-          log(`   [OK] Registered in config.json: ${name} (enabled: true)`);
+          log(`   [OK] Registered in config.json: ${name} (enabled: ${shouldEnable})`);
+        } else if (!shouldEnable && parsedConfig.plugins[name].enabled !== false) {
+          parsedConfig.plugins[name].enabled = false;
+          configUpdated = true;
+          log(`   [OK] Disabled plugin in config.json: ${name} (disabled: true in plugin.json)`);
         }
       }
       const dormantHeavyPlugins = ['science', 'data-agent-kit-plugin', 'flutter', 'firebase', 'google_maps_platform'];

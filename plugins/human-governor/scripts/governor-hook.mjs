@@ -171,6 +171,19 @@ function triggerDesktopBalloon(messageText) {
 }
 
 async function main() {
+  try {
+    const manifestPath = resolve(join(import.meta.dirname || '.', '..', 'plugin.json'));
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+      if (manifest.disabled === true) {
+        process.stdout.write('{}\n');
+        process.exit(0);
+      }
+    }
+  } catch {
+    // Continue if manifest check fails
+  }
+
   let rawInput = '';
   for await (const chunk of process.stdin) {
     rawInput += chunk;

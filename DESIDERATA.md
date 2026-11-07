@@ -9,7 +9,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note / Specifica di Riferimento (<= 160 char) |
 | :--- | :---: | :---: | :--- |
-| *Nessun task pendente nel backlog attivo* | — | `🟢 Completato` | Usa `/take-note` e `/review-notes` per promuovere nuovi desiderata. |
+| Migrazione Ibrida EN/IT & Benchmark A/B | Catalogo | `🔴 Prioritario` | Piano Cloud-ready in [hybrid-en-it-migration.md](./.agents/plans/hybrid-en-it-migration.md): Fase 1 `/ab-bench`, Fase 2 auto-discovery, Fase 3 standard. |
 
 ---
 
