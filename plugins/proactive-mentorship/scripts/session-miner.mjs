@@ -59,9 +59,30 @@ export function resolveCatalogRepoRoot(customRoot) {
     return candidateFromScript;
   }
 
-  const defaultWinPath = 'c:/github/antigravity-plugins';
-  if (existsSync(join(defaultWinPath, 'scripts', 'validate.mjs'))) {
-    return resolve(defaultWinPath);
+  try {
+    const syncStatePath = join(getAnalyticsDir(), 'plugin-sync-state.json');
+    if (existsSync(syncStatePath)) {
+      const parsed = JSON.parse(readFileSync(syncStatePath, 'utf-8'));
+      if (parsed?.repoRoot && existsSync(join(resolve(parsed.repoRoot), 'scripts', 'validate.mjs'))) {
+        return resolve(parsed.repoRoot);
+      }
+    }
+  } catch {
+    // Ignore malformed state file
+  }
+
+  const crossOsCandidates = [
+    resolve(process.cwd(), '..', 'antigravity-plugins'),
+    'c:/github/antigravity-plugins',
+    join(homedir(), 'github', 'antigravity-plugins'),
+    join(homedir(), 'antigravity-plugins'),
+    '/tmp/antigravity-plugins',
+    '/workspaces/antigravity-plugins'
+  ];
+  for (const candidate of crossOsCandidates) {
+    if (existsSync(join(candidate, 'scripts', 'validate.mjs'))) {
+      return resolve(candidate);
+    }
   }
 
   return resolve(process.cwd());

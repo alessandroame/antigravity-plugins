@@ -61,7 +61,7 @@ export function resolveCatalogRoot() {
   if (existsSync(join(candidate, 'scripts', 'validate.mjs'))) {
     return candidate;
   }
-  const winDefault = 'c:/github/antigravity-plugins';
+  const winDefault = [ resolve(process.cwd(), '..', 'antigravity-plugins'), 'c:/github/antigravity-plugins', join(homedir(), 'github', 'antigravity-plugins'), join(homedir(), 'antigravity-plugins'), '/tmp/antigravity-plugins', '/workspaces/antigravity-plugins' ].find((p) => existsSync(join(p, 'scripts', 'validate.mjs'))) || 'c:/github/antigravity-plugins';
   if (existsSync(join(winDefault, 'scripts', 'validate.mjs'))) {
     return resolve(winDefault);
   }

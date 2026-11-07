@@ -40,7 +40,7 @@ export function resolveCatalogRepoRoot(customRoot) {
   ) {
     return resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT);
   }
-  const defaultWinPath = 'c:/github/antigravity-plugins';
+  const defaultWinPath = [ resolve(process.cwd(), '..', 'antigravity-plugins'), 'c:/github/antigravity-plugins', join(homedir(), 'github', 'antigravity-plugins'), join(homedir(), 'antigravity-plugins'), '/tmp/antigravity-plugins', '/workspaces/antigravity-plugins' ].find((p) => existsSync(join(p, 'scripts', 'sync-to-global.mjs'))) || 'c:/github/antigravity-plugins';
   if (existsSync(join(defaultWinPath, 'scripts', 'sync-to-global.mjs'))) {
     return resolve(defaultWinPath);
   }

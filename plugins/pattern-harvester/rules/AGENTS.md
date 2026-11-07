@@ -8,7 +8,7 @@ Governa l'analisi periodica non intrusiva delle sessioni di lavoro (`transcript.
    - Ogni **`5` nuove sessioni umane** (o ogni **`24` ore** di attività), avvia in background detached `pattern-harvester.mjs --incremental --quiet`, salvando i candidati validati in `~/.gemini/antigravity/analytics/pattern-recommendations.json`.
    - **Silenzio Predefinito (`0 byte`)**: se nessun pattern supera sia il **Filtro ROI (`>= 120s`)** sia il **Gate Anti-Collisione**, non viene emesso alcun avviso in chat.
 2. **Attivazione Esplicita e Revisione Periodica**:
-   - Quando l'utente invoca `/pattern-harvester` (o chiede quali pattern ricorrenti possono essere automatizzati), oppure durante `/memory-sync` e `/review-notes` se sono presenti raccomandazioni ad alto ROI non ancora visionate, eseguire `node c:/github/antigravity-plugins/plugins/pattern-harvester/scripts/pattern-harvester.mjs`.
+   - Quando l'utente invoca `/pattern-harvester` (o chiede quali pattern ricorrenti possono essere automatizzati), oppure durante `/memory-sync` e `/review-notes` se sono presenti raccomandazioni ad alto ROI non ancora visionate, eseguire `node ~/.gemini/config/plugins/pattern-harvester/scripts/pattern-harvester.mjs`.
 
 ## 2. Estrazione Strutturale Astratta e Divieto di Overfitting (`Anti-Example Hardcoding`)
 1. **3 Canali Deterministici di Estrazione (`core/harvester-engine.mjs`)**:
@@ -16,7 +16,7 @@ Governa l'analisi periodica non intrusiva delle sessioni di lavoro (`transcript.
    - **Scheletri Strutturali CLI (`CLI_SEQUENCE`)**: normalizza `run_command` sostituendo path, UUID, stringhe e numeri con placeholder (`<dir>/script.mjs`, `<path>`, `<str>`, `<num>`) per intercettare pipeline manuali ricorrenti.
    - **Archetipi Lessicali e Shingle Jaccard (`INTERACTION_ARCHETYPE`)**: raggruppa le richieste utente per similarità di Jaccard (`>= 0.35`) su token e 2-shingle senza usare regex cablate su esempi specifici.
 2. **Gate Anti-Collisione a 4 Livelli (`evaluateCatalogOverlap`)**:
-   - Confronta ogni candidato con le skill built-in, i plugin del catalogo (`c:/github/antigravity-plugins/plugins/*`), le skill globali (`~/.gemini/config/skills/`) e quelle di workspace (`.agents/skills/`).
+   - Confronta ogni candidato con le skill built-in, i plugin del catalogo (`~/.gemini/config/plugins/*`), le skill globali (`~/.gemini/config/skills/`) e quelle di workspace (`.agents/skills/`).
    - Se l'overlap supera `0.75` (o la skill è già stata invocata nel turno senza step manuali extra), il pattern è marcato `ALREADY_COVERED` e scartato.
    - Se l'utente scarta un pattern (`--dismiss <patternId>`), applica un cooldown di `30 giorni`.
 
