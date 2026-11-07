@@ -2,7 +2,7 @@
 
 Buffer di cattura rapida a zero cambio di contesto (`/take-note`). Le osservazioni qui raccolte non sono ancora state analizzate sul codice: utilizza `/review-notes` a lavorazione conclusa per mostrarle, eseguire il task di analisi approfondita e promuoverle in `DESIDERATA.md`.
 > **Governance anti-bloat**: tetto massimo **120 righe**. La sezione *Analizzate & Consolidate* mantiene al massimo le **ultime 10 note chiuse** in formato tabellare a 1 riga (storico in `.agents/archive/NOTES_archive.md`).
-> **Ultimo ID Assegnato**: NOTE-002
+> **Ultimo ID Assegnato**: NOTE-003
 
 ---
 
@@ -28,6 +28,14 @@ Buffer di cattura rapida a zero cambio di contesto (`/take-note`). Le osservazio
   > Vorrei anche pensare a qualche cosa che mi aiuti nel processo di ogni volta che faccio una modifica su un computer, magari vado a dormire, poi vado a lavorare, quindi mi sposto di macchina, l'altro computer non ha fatto il push e io mi ritrovo con dei branch disallineati.
 - **Domande Aperte da Riprendere**:
   1. *Strategia multi-macchina*: snapshot automatico a fine turno su ref ombra `wip/<pc>/<branch>` (senza sporcare `main`) + auto-push sui branch notturni con test verdi + check/fast-forward all'avvio sull'altro PC, oppure auto-commit/push diretto sul branch attivo, oppure sola guardia di avviso non distruttiva?
+
+### [NOTE-003] Analisi preventiva del prompt con proposta migliorata a review
+- **Stato**: `📥 Da Analizzare`
+- **Data Cattura**: 2026-11-05 08:38
+- **Lavorazione Attiva al Momento della Nota**: Nessuna
+- **Ambito Presunto**: `proactive-mentorship` (`prompt-refactor`) o nuovo plugin pre-esecuzione
+- **Testo Originale**:
+  > fare un plugin o estenderne uno esistente (penso alla mentorship) che pirma di eseguire un prompt lo analizza se migliorabile me ne propone uno migliore e me lo sottopone a review
 
 ---
 
