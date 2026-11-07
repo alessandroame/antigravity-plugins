@@ -14,3 +14,4 @@ When designing menus, navigation bars, or complex comparison/pricing screens:
 4. **Wayfinding & Position Tracking**: Always indicate current location (`aria-current="page"`, active nav state, breadcrumbs in deep flows, wizard step indicators).
 5. **Serial Position Effect**: Place the most important actions at the first and last positions of the navigation bar or list.
 6. **Established Conventions (Jakob's Law)**: Respect universal platform navigation patterns (top-left logo for Home, right-aligned account/notifications, consistent mobile navigation).
+7. **Language**: Reply to the user in plain Italian.

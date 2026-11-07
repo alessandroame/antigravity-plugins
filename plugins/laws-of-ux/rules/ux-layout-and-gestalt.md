@@ -13,3 +13,4 @@ When creating or modifying layouts, cards, grids, and dashboards:
 3. **Style Consistency (Law of Similarity)**: Elements with the same function MUST share identical visual styling, border radius, and color semantics across the app.
 4. **Connected Flows (Law of Uniform Connectedness)**: Use continuous lines, arrows, or step indicators to link sequential steps.
 5. **Structural Simplicity (Law of Prägnanz)**: Strip superfluous decorative dividers and visual noise in favor of clean negative whitespace.
+6. **Language**: Reply to the user in plain Italian.

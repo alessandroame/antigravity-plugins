@@ -13,3 +13,4 @@ When creating or modifying buttons, CTAs, and interactive icons:
 3. **Visual Hierarchy (Von Restorff Effect)**: Only ONE primary high-contrast CTA per screen; use outline or ghost styles for secondary/neutral actions.
 4. **A11y (WCAG POUR)**: NEVER convey action meaning by color alone; provide explicit text labels or `aria-label`, WCAG AA contrast (`>= 4.5:1`), and clear `:focus-visible`.
 5. **Instant Feedback & Anti-Double-Click (Doherty Threshold)**: Show visual feedback within `400ms` of tap/click and temporarily disable the button while pending to prevent duplicate submissions.
+6. **Language**: Reply to the user in plain Italian.

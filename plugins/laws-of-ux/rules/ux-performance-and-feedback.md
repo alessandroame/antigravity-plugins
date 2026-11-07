@@ -17,3 +17,4 @@ When handling async loading, saves, or user feedback:
 3. **Skeleton Screens**: For full screens, lists, and cards, use geometry-matched pulsing skeleton loaders to eliminate Cumulative Layout Shift (CLS).
 4. **Undo Grace Period (NN/G Heuristic #3)**: For critical async operations (deletions, archiving, sends), provide a `5–10s` grace window with an `"Annulla"` button before final commit.
 5. **Reassuring Epilogue & Error Recovery (Peak-End Rule & NN/G #9)**: Make completion screens clear and reassuring; on errors, explain the issue in plain human language with a 1-click retry action (`"Riprova"`) that preserves entered form data.
+6. **Language**: Reply to the user in plain Italian.

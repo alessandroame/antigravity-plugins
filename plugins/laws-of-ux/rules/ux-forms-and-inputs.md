@@ -15,3 +15,4 @@ When creating or modifying forms, inputs, and checkout/registration flows:
 5. **Complexity Absorption (Tesler's Law)**: Automatically derive inferable values (card network from BIN, city/province from postal code).
 6. **Error Prevention (NN/G Heuristic #5)**: Use constraints and smart defaults (disable invalid past dates, preselect local currency) and validate inline on `blur` rather than while typing.
 7. **Chunking**: Format long numeric strings into readable blocks (4-digit groups for cards/serials; spaced IBAN and phone formats).
+8. **Language**: Reply to the user in plain Italian.
