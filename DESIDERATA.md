@@ -9,7 +9,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note / Specifica di Riferimento (<= 160 char) |
 | :--- | :---: | :---: | :--- |
-| Migrazione Ibrida EN/IT & Benchmark A/B | Catalogo | `🔴 Prioritario` | Piano Cloud-ready in [hybrid-en-it-migration.md](./.agents/plans/hybrid-en-it-migration.md): Fase 1 `/ab-bench`, Fase 2 auto-discovery, Fase 3 standard. |
+| *(Nessun elemento in backlog attivo)* | — | `🟢 Allineato` | Tutte le funzionalità pianificate risultano completate e validate (`validate.mjs --all`). |
 
 ---
 
@@ -17,6 +17,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note di Rilascio (<= 160 char) |
 | :--- | :---: | :---: | :--- |
+| Standard Ibrido `EN/IT` & Benchmark `/ab-bench` | Catalogo | `🟢 Completato` | Verdetto `GO` (`-21,6%` byte, `+1` dito su `S2`), 56 file `AGENTS.md`/`SKILL.md` migrati in `EN` logico + `IT` utente ([piano](./.agents/plans/hybrid-en-it-migration.md)). |
 | `engineering-sobriety` | Plugin | `🟢 Completato` | Regole anti-hype, bonifica lessicale, zero emoji decorative e skill `tone-audit` ([README](./plugins/engineering-sobriety/README.md)). |
 | `laws-of-ux` (v1.1.0) | Plugin | `🟢 Completato` | 30 leggi UX, Budget 60/40, Gerarchia 3s, Ricevuta Visiva a 4 Misure e `ux-outdoor-and-field-ergonomics` ([README](./plugins/laws-of-ux/README.md)). |
 | `execution-guard` | Plugin | `🟢 Completato` | Watchdog anti-freeze, circuit breaker, timeout script e guardia mock API ([README](./plugins/execution-guard/README.md)). |

@@ -1,46 +1,41 @@
 ---
 name: circuit-breaker
 description: >-
-  Utilizza questa skill quando si verificano errori ripetuti su build o test per interrompere loop ricorsivi, rilevare errori invarianti e applicare il rollback di sicurezza sulle regressioni.
+  Use this skill when repeated build or test errors occur to trigger quantitative circuit breakers, detect identical consecutive failures, and enforce immediate git rollback on test regressions.
 ---
 
 # Circuit Breaker Protocol & Loop Governor
 
-## 1. Obiettivo
-Durante la programmazione autonoma, gli agenti possono entrare in cicli ricorsivi di fix errati:
-- Consumo esponenziale di token.
-- Degrado della qualità del codice con hack e workaround temporanei.
-- Tentativi ripetitivi basati sempre sulla medesima assunzione errata.
-
-Questa skill stabilisce i circuit breaker quantitativi e il protocollo di interruzione.
+## 1. Objective
+Prevent recursive fix loops, exponential token waste, and fragile workarounds during autonomous coding. Always reply to the user in plain Italian.
 
 ---
 
-## 2. Riconoscimento dell'Errore Invariante
+## 2. Invariant Error Detection
 
-1. **Tracciamento dell'Errore**:
-   Prima di applicare una modifica correttiva, annotare il messaggio esatto, l'asserzione fallita e la riga di codice.
-2. **Confronto Post-Modifica**:
-   Se dopo la modifica il medesimo identico errore si ripresenta sulla stessa riga:
-   - *Iterazione 1*: Ammesso formulare un approccio alternativo strutturato.
-   - *Iterazione 2*: Se l'errore ricorre identico, **ATTIVARE IMMEDIATAMENTE IL CIRCUIT BREAKER**. Non tentare una terza volta.
-
----
-
-## 3. Gestione Regressioni (Rollback Guard)
-
-Se l'intervento correttivo causa il fallimento di test che precedentemente passavano con successo:
-1. Annullare subito le ultime modifiche (`git checkout -- <file>` o ripristino del file).
-2. Non tentare di "aggiustare la regressione" stratificando nuovo codice sullo stato corrotto.
-3. Ripartire dall'ultimo stato funzionante verificato.
+1. **Error Tracking**:
+   Before applying a fix, record the exact error message, failed assertion, and file/line number.
+2. **Post-Edit Comparison**:
+   IF the exact same error recurs on the same line after an edit:
+   - *Attempt 1*: Formulate a distinct structural approach.
+   - *Attempt 2*: IF the identical error recurs a 2nd consecutive time, **IMMEDIATELY TRIGGER THE CIRCUIT BREAKER**. NEVER attempt a 3rd retry.
 
 ---
 
-## 4. Procedura di Escalation per Stato STUCK
+## 3. Regression Rollback Guard
 
-Quando scatta il circuit breaker:
-1. Interrompere qualsiasi ulteriore modifica automatica ai file.
-2. Presentare all'utente un report di escalation strutturato:
+IF a fix causes previously passing tests to fail:
+1. IMMEDIATELY revert the breaking changes (`git checkout -- <file>`).
+2. NEVER layer additional patches on top of a broken test state.
+3. Restart analysis from the last verified green state.
+
+---
+
+## 4. STUCK Escalation Report (User-Facing in Italian)
+
+WHEN a circuit breaker trips:
+1. STOP all automated file edits immediately.
+2. Present a structured escalation report to the user in plain Italian:
    - **Obiettivo Fallito**: File esatto, funzione o test non superato.
    - **Ipotesi Testate**: Sintesi dei tentativi effettuati nelle iterazioni precedenti.
    - **Causa Radice del Blocco**: Motivo per cui l'architettura o il contesto attuale rigetta la modifica.

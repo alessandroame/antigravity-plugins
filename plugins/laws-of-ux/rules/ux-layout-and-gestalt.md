@@ -1,15 +1,15 @@
 ---
 description: >-
-  Regola per layout di pagina, raggruppamento visivo, card, dashboard e griglie basata sui principi Gestalt (Proximity, Common Region, Similarity, Connectedness, Prägnanz).
+  Rules for page layout, visual grouping, cards, dashboards, and grids based on Gestalt principles (Proximity, Common Region, Similarity, Connectedness, Pragnanz).
 trigger: model_decision
 globs: "**/*{layout,card,grid,list,container,view,page,dashboard}*.{html,jsx,tsx,vue,svelte,css,scss,dart}"
 ---
 
 # Layout & Gestalt UX Rules
 
-Quando crei o modifichi layout, card, griglie e dashboard:
-1. **Contenitori Definiti (Law of Common Region)**: Racchiudi le entità logiche in card o sezioni con bordi o sfondi chiari.
-2. **Spaziature Gerarchiche (Law of Proximity)**: Usa uno spazio interno minore tra elementi correlati rispetto allo spazio che separa card differenti.
-3. **Consistenza Stile (Law of Similarity)**: Elementi con la stessa funzione devono avere la stessa grafica e colore in tutta l'applicazione.
-4. **Flussi Connessi (Law of Uniform Connectedness)**: Usa linee e indicatori continui per mostrare step sequenziali.
-5. **Semplicità Strutturale (Law of Prägnanz)**: Riduci decorazioni grafiche superflue; prediligi spaziature pulite.
+When creating or modifying layouts, cards, grids, and dashboards:
+1. **Defined Containers (Law of Common Region)**: Group related entities inside cards or sections with clear borders or subtle background contrast (max 1 outer containment level).
+2. **Hierarchical Spacing (Law of Proximity)**: Use tighter internal spacing (`4–8px`) between related items than the spacing separating distinct cards/sections (`16–24px` or `48–64px`).
+3. **Style Consistency (Law of Similarity)**: Elements with the same function MUST share identical visual styling, border radius, and color semantics across the app.
+4. **Connected Flows (Law of Uniform Connectedness)**: Use continuous lines, arrows, or step indicators to link sequential steps.
+5. **Structural Simplicity (Law of Prägnanz)**: Strip superfluous decorative dividers and visual noise in favor of clean negative whitespace.

@@ -1,32 +1,32 @@
 ---
 name: tone-audit
 description: >-
-  Utilizza questa skill quando devi scansionare e bonificare codice e documentazione per rimuovere termini promozionali, convenevoli, enfasi di marketing ed emoji decorative non funzionali.
+  Use this skill when scanning and sanitizing code, UI markup, and documentation
+  to remove promotional hype, sycophantic filler, and non-functional decorative emojis.
 ---
 
-# Skill: Tone & Sobriety Audit
+# Skill: Tone & Sobriety Audit (`/tone-audit`)
 
-Questa skill guida l'analisi sistematica del codebase e della documentazione per identificare ed eliminare linguaggio promozionale, superlativi e termini non tecnici.
+Guides systematic scanning and sanitization of codebase, UI copy, and documentation to eliminate promotional language, superlatives, and decorative emojis. Always reply to the user in plain Italian.
 
-## Procedura Operativa
+## Operational Procedure
 
-### 1. Scansione Lessicale ed Emoji Decorativi
-Eseguire una ricerca mirata nei file di testo, documentazione, commenti e markup UI:
-- **Termini Vietati**: `rivoluzionario`, `game-changer`, `stato dell'arte`, `eccellenza`, `battle-tested`, `bulletproof`, `cockpit`, `tattico`, `radar`, `pulsante magico`, `silver bullet`.
-- **Convenevoli Superflui**: Formule di apertura di cortesia nei prompt di sistema e nelle risposte automatiche.
-- **Emoji Decorative**: Ricerca nei sorgenti UI e viste di simboli non funzionali (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`).
+### Step 1: Lexical & Decorative Emoji Scan
+Search text files, documentation, comments, and UI markup for:
+- **Forbidden Hype Terms**: `rivoluzionario`, `game-changer`, `stato dell'arte`, `eccellenza`, `battle-tested`, `bulletproof`, `cockpit`, `tattico`, `radar`, `pulsante magico`, `silver bullet`.
+- **Sycophantic Openers**: Polite filler in system prompts and automated responses.
+- **Decorative Emojis**: Non-functional symbols in UI views and headings (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`).
 
-### 2. Bonifica e Sostituzione
-- Applicare le sostituzioni obbligatorie indicate in `rules/AGENTS.md`.
-- Sostituire formule enfatiche con descrizioni oggettive, parametri fisici e dati misurabili.
-- Rimuovere le emoji decorative o sostituirle con indicatori semantici/icone accessibili con `aria-label`.
+### Step 2: Sanitization & Replacement
+- Apply the mandatory Italian replacements defined in `rules/AGENTS.md`.
+- Replace emphatic claims with objective descriptions, physical parameters, and measurable metrics.
+- Remove decorative emojis or replace them with semantic indicators / accessible icons with `aria-label`.
 
-### 3. Verifica Integrità Test
-- Ispezionare i test unitari e verificare l'assenza di asserzioni tautologiche (self-matching) o mock fittizi.
-- Segnalare ogni test che non verifica una proprietà reale e indipendente.
+### Step 3: Test Integrity Check
+- Inspect unit tests for tautological assertions (self-matching) or fake mocks that do not verify an independent property.
 
-### 4. Output del Report
-Produrre una sintesi asciutta:
-- Numero di file scansionati.
-- Occorrenze bonificate suddivise per file.
-- Eventuali anomalie riscontrate nei test.
+### Step 4: Audit Report (in Italian)
+Present a concise summary in plain Italian:
+- Number of files scanned.
+- Sanitized occurrences grouped by file.
+- Any test integrity anomalies detected.

@@ -172,7 +172,7 @@ export function validateContentAndSense(content, relPath, pluginHasGenerativeUiD
       !isMetaCollisionDoc &&
       /<agent-embed\b/.test(line) &&
       /\b(?:100vh|h-screen|min-h-screen)\b/.test(line) &&
-      !/\b(?:mai|never|vietato|no|divieto|evitare)\b/i.test(line)
+      !/\b(?:mai|never|not|no|avoid|forbid|forbidden|prohibited|vietato|divieto|evitare)\b/i.test(line)
     ) {
       errors.push(
         `${relPath}:${lineNum}: contraddizione normativa P0 con 'generative_ui' (prescrive 100vh/h-screen su <agent-embed>)`

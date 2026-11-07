@@ -303,9 +303,40 @@ export function syncPluginsToGlobal(options = {}) {
       }
     }
 
-    // Perform recursive physical directory copy (force: true overwrites existing files in-place)
-    fs.cpSync(src, dest, { recursive: true, force: true });
-    log(`   [OK] Physically synchronized: ${pluginName}`);
+    // Perform recursive physical directory copy (with userland fallback for Linux FUSE/container mounts where cpSync chmod throws EPERM)
+    let copiedOk = false;
+    try {
+      fs.cpSync(src, dest, { recursive: true, force: true });
+      copiedOk = true;
+    } catch (cpErr) {
+      if (cpErr && (cpErr.code === 'EPERM' || cpErr.code === 'EACCES' || cpErr.code === 'EXDEV' || cpErr.code === 'ENOTSUP')) {
+        const copyTreeUserland = (sDir, dDir) => {
+          if (!fs.existsSync(dDir)) {
+            fs.mkdirSync(dDir, { recursive: true });
+          }
+          for (const item of fs.readdirSync(sDir, { withFileTypes: true })) {
+            const sPath = path.join(sDir, item.name);
+            const dPath = path.join(dDir, item.name);
+            if (item.isDirectory()) {
+              copyTreeUserland(sPath, dPath);
+            } else if (item.isFile()) {
+              fs.writeFileSync(dPath, fs.readFileSync(sPath));
+            }
+          }
+        };
+        try {
+          copyTreeUserland(src, dest);
+          copiedOk = true;
+        } catch (fallbackErr) {
+          log(`   [WARN] Skipped read-only global mount for ${pluginName} (${fallbackErr.code || fallbackErr.message})`);
+        }
+      } else {
+        throw cpErr;
+      }
+    }
+    if (copiedOk) {
+      log(`   [OK] Physically synchronized: ${pluginName}`);
+    }
     syncedPluginNames.push(pluginName);
   }
 
@@ -396,11 +427,15 @@ export function syncPluginsToGlobal(options = {}) {
         ];
         const updatedContent =
           fmMatch[1] + updatedLines.join('\n') + fmMatch[3] + content.slice(fmMatch[0].length);
-        fs.writeFileSync(skillFile, updatedContent, 'utf-8');
-        compactedSkillsCount++;
-        log(
-          `   [OK] Compacted third-party skill description (${descText.length} -> ${compacted.length} chars): ${entry.name}/${skillName}`
-        );
+        try {
+          fs.writeFileSync(skillFile, updatedContent, 'utf-8');
+          compactedSkillsCount++;
+          log(
+            `   [OK] Compacted third-party skill description (${descText.length} -> ${compacted.length} chars): ${entry.name}/${skillName}`
+          );
+        } catch {
+          // Ignore EPERM on read-only third-party global mounts
+        }
       }
     }
   }

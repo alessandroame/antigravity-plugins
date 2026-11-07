@@ -1,54 +1,54 @@
 ---
 name: worktree-lifecycle
 description: >-
-  Utilizza questa skill quando devi inizializzare Git Worktrees isolati, evitare collisioni tra sessioni concorrenti, verificare lo stato del repository e procedere al teardown pulito.
+  Use this skill when initializing isolated Git Worktrees to prevent branch collisions
+  across concurrent agent sessions, verify repository state, and perform clean teardown.
 ---
 
 # Git Worktree Lifecycle Runbook
 
-## 1. Perché Usare i Git Worktree
-Nei flussi di sviluppo agentico concorrente o quando si aprono più sessioni con Antigravity, cambiare branch direttamente all'interno della cartella principale con `git checkout -b` modifica i file condivisi in tempo reale, corrompendo le sessioni parallele.
-I Git Worktree permettono di avere directory separate su disco per ciascun branch di feature, completamente isolate.
+## 1. Purpose
+Prevent branch-switching collisions across concurrent Antigravity sessions by isolating each feature branch in its own sibling directory via `git worktree`. Always reply to the user in plain Italian.
 
 ---
 
-## 2. Sequenza Operativa
+## 2. Operational Sequence
 
-### Fase 1: Pre-flight Guard
-Verificare che il repository non contenga modifiche pendenti non tracciate o in conflitto:
+### Step 1: Pre-Flight Guard
+Verify the repository has no conflicting untracked or uncommitted changes:
 ```bash
 git status --porcelain
 ```
-Se sono presenti modifiche non committate dell'utente, chiedere indicazioni prima di procedere.
+IF uncommitted user changes exist, ask the user before proceeding.
 
-### Fase 2: Creazione del Worktree
-Creare la cartella isolata a fianco del repository principale:
+### Step 2: Worktree Creation
+Create an isolated sibling directory for the feature branch:
 ```bash
-git worktree add ../<repo>-<nome-feature> -b feature/<nome-feature>
+git worktree add ../<repo>-<feature-name> -b feature/<feature-name>
 ```
-Dirigere tutte le successive letture, scritture e comandi dell'agente verso `../<repo>-<nome-feature>`.
+Direct all subsequent file reads, edits, and commands to `../<repo>-<feature-name>`.
 
-### Fase 3: Sviluppo e Verifica
-1. Implementare le modifiche necessarie.
-2. Eseguire l'intera suite di test e verifica nel worktree.
-3. Presentare all'utente il resoconto con i comandi o gli URL di collaudo.
+### Step 3: Implementation & Verification
+1. Implement the required changes inside the worktree.
+2. Run the full test and validation suite inside the worktree.
+3. Present the Italian summary and verification commands/URLs to the user.
 
-### Fase 4: Consolidamento e Pre-Commit (Post-Approvazione)
-Una volta ottenuto il consenso esplicito dell'utente:
-1. Eseguire lo staging chirurgico dei soli file rilevanti:
+### Step 4: Consolidation & Surgical Commit (Post-Approval)
+Once explicit user approval is obtained:
+1. Stage only the relevant files by explicit path:
    ```bash
    git add <file1> <file2>
-   git commit -m "feat(<scope>): <descrizione Conventional Commits>"
+   git commit -m "feat(<scope>): <Conventional Commits description>"
    ```
-2. Riportare il contesto sulla cartella principale del repository:
+2. Merge back into the main repository directory:
    ```bash
    git checkout main
-   git merge feature/<nome-feature>
+   git merge feature/<feature-name>
    ```
 
-### Fase 5: Teardown Pulito
-Rimuovere il worktree e cancellare il branch unito:
+### Step 5: Clean Teardown
+Remove the worktree and delete the merged branch:
 ```bash
-git worktree remove ../<repo>-<nome-feature>
-git branch -d feature/<nome-feature>
+git worktree remove ../<repo>-<feature-name>
+git branch -d feature/<feature-name>
 ```

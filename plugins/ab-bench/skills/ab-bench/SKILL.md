@@ -1,47 +1,43 @@
 ---
 name: ab-bench
 description: >-
-  Esegue un confronto cieco A/B tra un prompt base e una variante con plugin o skill
-  tramite il Test delle 5 Dita e metriche reali di tempo. Utilizza questa skill quando
-  l'utente invoca /ab-bench o chiede di misurare l'efficacia di un prompt o plugin.
+  Use this skill when the user invokes /ab-bench or asks to benchmark a prompt, skill, or plugin
+  via a blind A/B comparison using the 5-Finger Test and real transcript timing metrics.
 ---
 
-# A/B Bench: Runbook di Sfida Cieca su 5 Dita (`/ab-bench`)
+# A/B Bench: Blind 5-Finger Challenge Runbook (`/ab-bench`)
 
-## 1. Obiettivo e Modalità di Attivazione
+## 1. Objective & Command Parsing (`scripts/bench.mjs --parse`)
 
-Misura in modo empirico e senza pregiudizi se l'uso di una skill/plugin (es. `/skizzo`) o di un prompt alternativo produce un risultato concretamente migliore rispetto al prompt base sullo stesso compito.
+Empirically measure without bias whether a skill/plugin (e.g., `/skizzo`) or alternative prompt outperforms a baseline prompt on the same task. Always present final output to the user in plain Italian.
 
-### Parsing del Comando (`scripts/bench.mjs --parse`)
-- **`/ab-bench <compito>`**: confronta **Senza `/skizzo` (Controllo A)** vs **Con `/skizzo` (Trattamento B)**.
-- **`/ab-bench --skill <nome> <compito>`**: confronta **Senza `<nome>` (Controllo A)** vs **Con `<nome>` (Trattamento B)**.
-- **`/ab-bench "<Prompt A>" vs "<Prompt B>"`**: confronta **Prompt A** vs **Prompt B**.
-- **`/ab-bench --stats`**: esegue `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --stats` e mostra il tabellone storico delle sfide passate.
-
----
-
-## 2. Step 1: Esecuzione Parallela dei 2 Sfidanti (`invoke_subagent`)
-
-Invoca in **un'unica chiamata `invoke_subagent`** due worker `research` indipendenti:
-1. **Subagent Controllo A (`Baseline Challenger`, `<id-a>`)**:
-   - Risolve `<compito>` direttamente in un singolo passaggio senza attivare il plugin/skill in esame.
-2. **Subagent Trattamento B (`Enhanced Challenger`, `<id-b>`)**:
-   - Risolve lo stesso `<compito>` applicando rigorosamente le regole del plugin/skill sotto test (es. per `skizzo`: esegue internamente l'analisi Tecnico Alpha + Dominio Beta + Sintesi di Tesler).
+- **`/ab-bench <compito>`**: compares **Senza `/skizzo` (Controllo A)** vs **Con `/skizzo` (Trattamento B)**.
+- **`/ab-bench --skill <nome> <compito>`**: compares **Senza `<nome>` (Controllo A)** vs **Con `<nome>` (Trattamento B)**.
+- **`/ab-bench "<Prompt A>" vs "<Prompt B>"`**: compares **Prompt A** vs **Prompt B**.
+- **`/ab-bench --stats`**: runs `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --stats` and displays the historical scoreboard.
 
 ---
 
-## 3. Step 2: Misura Fisica e Anonimizzazione (`bench.mjs --prepare`)
+## 2. Step 1: Parallel Challenger Execution (`invoke_subagent`)
 
-Al termine dei due sfidanti, esegui `bench.mjs --prepare` passando i due `conversationId` (`<id-a>` e `<id-b>`) e i testi delle due soluzioni per:
-1. Estrarre dai rispettivi `transcript.jsonl` i tempi reali (`durationMs`), gli step, le chiamate tool e i token.
-2. Rimuovere qualsiasi firma riconoscibile del plugin (`sanitizeForBlindJudge`, es. banner `MODALITÀ SKIZZO ATTIVA` o link `conversation://`).
-3. Assegnare casualmente/crittograficamente le etichette cieche **`Soluzione X`** e **`Soluzione Y`**.
+Invoke two independent `research` subagents in a **single `invoke_subagent` call**:
+1. **Control Subagent A (`Sfidante A`, `<id-a>`)**: Solves `<compito>` directly in a single pass without activating the tested plugin/skill.
+2. **Treatment Subagent B (`Sfidante B`, `<id-b>`)**: Solves `<compito>` strictly applying the tested plugin/skill rules.
 
 ---
 
-## 4. Step 3: Il Giudice Cieco sulle 5 Dita (`invoke_subagent`)
+## 3. Step 2: Physical Measurement & Anonymization (`bench.mjs --prepare`)
 
-Invoca un terzo subagent indipendente (`Role: "Blind 5-Finger Judge"`, `TypeName: "research"`) passandogli **solo** il compito originale e i testi anonimizzati di `Soluzione X` e `Soluzione Y`:
+Once both challengers complete, run `bench.mjs --prepare` with `<id-a>` and `<id-b>` to:
+1. Extract real `durationMs`, `steps`, `toolCalls`, and tokens from `transcript.jsonl`.
+2. Strip identifiable plugin signatures (`sanitizeForBlindJudge`, e.g., `MODALITÀ SKIZZO ATTIVA` banners or `conversation://` links).
+3. Cryptographically assign blind labels **`Soluzione X`** and **`Soluzione Y`**.
+
+---
+
+## 4. Step 3: Blind 5-Finger Judge (`invoke_subagent`)
+
+Invoke a third independent subagent (`Role: "Blind 5-Finger Judge"`, `TypeName: "research"`) passing **only** the task requirement and the anonymized `Soluzione X` and `Soluzione Y` texts:
 
 ```markdown
 Agisci come **Giudice Cieco Indipendente**. Valuta `Soluzione X` e `Soluzione Y` sul seguente requisito:
@@ -59,9 +55,9 @@ Restituisci un blocco JSON con `scoresX: [0|1, 0|1, 0|1, 0|1, 0|1]`, `scoresY: [
 
 ---
 
-## 5. Step 4: Calcolo Verdetto, Salvataggio Storico e Output (`~600px`)
+## 5. Step 4: Verdict Calculation, History Logging & Output (`~600px`)
 
-Esegui `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --evaluate` passando i punteggi del giudice e le metriche per salvare la sfida in `~/.gemini/antigravity/analytics/ab-bench-history.ndjson` e stampare il verdetto nel formato a divulgazione progressiva (`0-Click` <= 12 righe + `<details>` con riga vuota dopo `</summary>`):
+Run `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --evaluate` with judge scores and transcript metrics to log the result in `~/.gemini/antigravity/analytics/ab-bench-history.ndjson` and output the Italian progressive disclosure block (`0-Click` <= 12 lines + `<details>` with blank line after `</summary>`):
 
 ```markdown
 > [!IMPORTANT]

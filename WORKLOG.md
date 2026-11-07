@@ -13,6 +13,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-07 — Benchmark A/B Cieco (`GO`, `-21,6%` Byte) e Migrazione Universale allo Standard Ibrido `EN/IT` (`EN` Logic / `IT` User-Facing)
+- **Tipo**: Migrazione Catalogo, Guardie Bilingui `L3` & Standard Permanente (`plugins/*`, `.agents/skills/*`, `templates/*`, `scripts/validate.mjs`, `MEMORY.md`, `DESIDERATA.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-07_hybrid-en-it-migration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-11-07_hybrid-en-it-migration.md)
+- **Sintesi**:
+  - Eseguito il benchmark cieco `/ab-bench` su 3 scenari (`S1`, `S2`, `S3`) con verdetto **`GO`** (`-21,6%` byte combinati su `execution-guard` e `mapek`, `+1` dito guadagnato su `S2` `4/5 -> 5/5`, `lostFingers: []`, `Language Drift = 0`).
+  - Convertiti in auto-discovery tutti i `56` file normativi (`19` `rules/*.md`, `35` `SKILL.md`, `2` `agents/*.md`) in **Hybrid EN/IT** (`EN` imperativo + `IT` contratto visibile/trigger, zero path hardcoded `c:/github/...`), adeguate le guardie bilingui `L3` e codificato lo standard permanente in `skill-governance`, `proactive-mentorship`, `mapek`, `pattern-harvester`, `starter-plugin` e `MEMORY.md`.
+
+---
+
 ## 2026-10-30 — Automazione Pre-Review Cieca (`/review-diff`), Guardia Integrità Test, Runner UI Multi-Viewport e Gate `Stop` sul Transcript (`engineering-workflow` v1.3.0)
 - **Tipo**: Guardie Eseguibili `L3`, Hook `Stop` & Pre-Review Avversariale (`plugins/engineering-workflow/` v1.3.0, `scripts/run-all-tests.mjs`, `package.json`, `session-miner.mjs`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-30_review-and-delivery-automation-gates.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-30_review-and-delivery-automation-gates.md)
@@ -114,11 +123,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Dettagli**: [`.agents/worklog.d/2026-10-18_human-governor-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_human-governor-plugin.md)
 - **Sintesi**:
   - Implementato il plugin `human-governor` (`/focus-audit`) con valutatore headless [`evaluator.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/core/evaluator.mjs), hook `PreInvocation` [`governor-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/governor-hook.mjs) (rilevamento WIP concorrenti in `brain/`, context-thrashing, maratone e coprifuoco `22:30–07:00` con blocco `ask_question` e notifica Windows) e CLI [`status.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs) (`5/5 test PASS`).
-
----
-
-## 2026-10-18 — Evoluzione Plugin `proactive-mentorship` v1.1.0 (Coaching Antigravity, Agent Training Ladder `L0..L3` e Guardie `L3` in `validate.mjs`)
-- **Tipo**: Evoluzione Plugin & Validatore Statico (`plugins/proactive-mentorship/` v1.1.0, `scripts/validate.mjs`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md)
-- **Sintesi**:
-  - Espanso `proactive-mentorship` al coaching *just-in-time* sui comandi Antigravity (`/grill-me`, `/plan`, `/compact`, `/goal`, `/learn`, `/skizzo`, `/ab-bench`) e all'Agent Training Ladder (`L0..L3`) con Gate Anti-Disturbo, prontuari in `references/` e guardie `L3` in `scripts/validate.mjs` (`</summary>` e `references/`).

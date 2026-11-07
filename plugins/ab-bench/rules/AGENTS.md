@@ -1,24 +1,24 @@
-# Protocollo di Valutazione Cieca A/B per Prompt, Skill e Plugin (`/ab-bench`)
+# Blind A/B Evaluation Protocol for Prompts, Skills & Plugins (`/ab-bench`)
 
-Governa il confronto empirico alla cieca tra un prompt di controllo (**Sfidante A — Base**) e una variante potenziata (**Sfidante B — Trattamento**) tramite il **Test delle 5 Dita** e il rapporto tempo/beneficio.
+Governs empirical blind A/B benchmarking between a baseline control (**Sfidante A — Base**) and an enhanced variant (**Sfidante B — Trattamento**) using the **5-Finger Test** and time/value ROI. Always reply to the user in plain Italian.
 
-## 1. Dormienza Predefinita e Trigger (`/ab-bench`)
-1. **Inattivo di Default (`OFF`)**: dormiente finché l'utente non invoca `/ab-bench` o chiede un confronto A/B.
-2. **Zero-Config Default**:
-   - `/ab-bench <compito>`: confronta **Senza `/skizzo` (Controllo)** vs **Con `/skizzo` (Dual-Track)**.
-   - `/ab-bench --skill <nome> <compito>`: confronta **Senza `<nome>`** vs **Con `<nome>`**.
-   - `/ab-bench "<Prompt A>" vs "<Prompt B>"`: confronta le due formulazioni.
-   - `/ab-bench --stats`: bilancio storico da `~/.gemini/antigravity/analytics/ab-bench-history.ndjson`.
+## 1. Default Dormancy & Activation Triggers (`/ab-bench`)
+1. **Dormant by Default (`OFF`)**: Inactive unless the user explicitly invokes `/ab-bench` or asks for an A/B comparison.
+2. **Zero-Config Modes**:
+   - `/ab-bench <compito>`: compares **Senza `/skizzo` (Controllo)** vs **Con `/skizzo` (Dual-Track)**.
+   - `/ab-bench --skill <nome> <compito>`: compares **Senza `<nome>`** vs **Con `<nome>`**.
+   - `/ab-bench "<Prompt A>" vs "<Prompt B>"`: compares the two prompt formulations.
+   - `/ab-bench --stats`: renders historical scoreboard from `~/.gemini/antigravity/analytics/ab-bench-history.ndjson`.
 
-## 2. Protocollo Cieco e Test delle 5 Dita
-1. **Isolamento & Anonimizzazione (`Soluzione X` vs `Soluzione Y`)**: `A` e `B` girano in subagent isolati; `scripts/bench.mjs` rimuove firme/link e assegna le etichette cieche `Soluzione X`/`Y` prima del **Subagent Giudice Cieco** (vietato l'autogiudizio del padre).
-2. **Scala Binaria (`0` o `1` per Dito, Totale `0..5`, vietati decimali o pareggi)**:
-   - **Pollice (`Va al primo colpo`)**: zero errori di sintassi, crash o `TODO` incompleti.
-   - **Indice (`Meno click / fatica`)**: minimo numero di passaggi manuali per l'utente.
-   - **Medio (`Tolleranza input sporchi`)**: normalizza spazi extra, separatori misti e formati imperfetti.
-   - **Anulare (`Tenuta casi limite`)**: gestisce input vuoti, valori estremi e viewport `360px` senza rompersi.
-   - **Mignolo (`Logica pulita / separata`)**: motore di calcolo isolato dalla UI e verificato da test.
-3. **Verdetto sul Tempo (Rasoio di Occam, tempi estratti da `transcript.jsonl` via `bench.mjs`)**:
-   - `Dita(B) > Dita(A)` -> **SÌ, VALEVA LA PENA** (`Vince B`, indicando dita guadagnate e delta secondi).
-   - `Dita(B) == Dita(A)` -> **NO, TEMPO SPRECATO** (`Vince A`, stesse dita in meno tempo/step).
-   - `Dita(B) < Dita(A)` -> **NO, DANNO DA OVER-ENGINEERING** (`Vince A`).
+## 2. Blind Protocol & 5-Finger Binary Evaluation
+1. **Isolation & Anonymization (`Soluzione X` vs `Soluzione Y`)**: Run `A` and `B` in isolated `research` subagents; `scripts/bench.mjs` strips plugin banners/links (`sanitizeForBlindJudge`) and assigns cryptographic blind labels `Soluzione X`/`Soluzione Y` before invoking the **Blind Judge Subagent** (`Giudice Cieco`; self-grading by parent is FORBIDDEN).
+2. **Binary 5-Finger Scale (`0` or `1` per Finger, Total `0..5`, no decimals)**:
+   - **Pollice (`Va al primo colpo`)**: Complete, immediately runnable, zero syntax errors, crashes, or unfinished `TODO`s.
+   - **Indice (`Meno click / fatica`)**: Minimizes manual steps, clicks, and unnecessary user choices.
+   - **Medio (`Tolleranza input sporchi`)**: Normalizes extra spaces, mixed separators, and imperfect inputs (Postel's Law).
+   - **Anulare (`Tenuta casi limite`)**: Handles empty/null inputs, extremes, and `360px` viewports without breaking.
+   - **Mignolo (`Logica pulita / separata`)**: Isolates calculation engine from UI and verifies with deterministic tests.
+3. **Time/Value Verdict (Occam's Razor via `bench.mjs` on `transcript.jsonl`)**:
+   - `Fingers(B) > Fingers(A)` -> **SÌ, VALEVA LA PENA** (`Vince B`, reporting gained fingers and seconds delta).
+   - `Fingers(B) == Fingers(A)` -> **NO, TEMPO SPRECATO** (`Vince A`, same score in fewer steps/time).
+   - `Fingers(B) < Fingers(A)` -> **NO, DANNO DA OVER-ENGINEERING** (`Vince A`).

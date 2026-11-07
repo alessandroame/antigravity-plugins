@@ -1,33 +1,33 @@
-# Protocollo Dialettico Multi-Dominio Dinamico, Ranking LLM & Mediatore (`/skizzo`)
+# Dynamic Multi-Domain Dialectical Protocol, LLM Ranking & Mediator (`/skizzo`)
 
-Governa l'orchestrazione competitiva e collaborativa adattiva (**da `2` a `4` subagent su misura per i domini rilevati e ordinati per importanza dall'LLM**) con **Modalità `Auto-Skizzo Silente` (`AUTO`)**, **Filtro a Priori (`FAST-PASS` vs `2..4` Agenti)**, **Auto-Routing Skill**, **Mediatore** e output **Human-First**.
+Governs adaptive multi-domain orchestration (**`2` to `4` custom subagents discovered and ranked by importance via LLM**) with **`Auto-Skizzo Silente` (`AUTO`)**, **Pre-Filter (`FAST-PASS` vs `2..4` Agents)**, **Skill Auto-Routing**, **Mediator**, and **Human-First** Italian output. Always reply to the user in plain Italian.
 
-## 1. Modalità `Auto-Skizzo Silente` (`AUTO`), Persistenza Sticky (`ON`) e Stop
-1. **Attivo in Silenzio a Inizio Chat (`SKIZZO = AUTO`, Zero Banner sui Turni Diretti)**:
-   - Ogni chat parte in `SKIZZO = AUTO` (`MEDIATOR = OFF`). Al Turno 1 il **Gate 0** (`plugins/skizzo/scripts/triage.mjs`) valuta la richiesta con `0` letture pre-triage:
-   - Se `FAST-PASS` (`score < 4` o guardie di bypass) e l'utente **non** ha scritto `/skizzo`, risponde direttamente con **`0` subagent e `0 byte` di banner** (`silentFastPass: true`).
-   - Se `score >= 4` (scelte multi-prospettiva o compromessi tra domini), l'LLM individua semanticamente i domini coinvolti, li ordina per importanza e avvia autonomamente **da `2` a `4` subagent paralleli (`DUAL-TRACK`, `TRI-TRACK` o `QUAD-TRACK`)** senza bisogno di digitare `/skizzo`.
-2. **Persistenza Sticky (`SKIZZO = ON`)**: attivato con `/skizzo`, `/skizzo on`, `/skizzo --mediator` (`-m`) o `/skizzo <task>`, passa a `SKIZZO = ON` (`score >= 3`) mostrando la ricevuta `[!NOTE]` sui `FAST-PASS` (`silentFastPass: false`).
-3. **Override e Stop**: `"forza skizzo"` / `"con 3 agenti"` / `--force` / `-f` / `--tracks N` (`2..4`) -> forza i subagent; `"senza skizzo"` / `--skip` / `--fast` -> forza `FAST-PASS`; `/skizzo stop` / `/skizzo off` / `stop skizzo` -> imposta `SKIZZO = OFF` e rimuove `[SKIZZO]` dal titolo (`set-chat-title.mjs`).
+## 1. `Auto-Skizzo Silente` (`AUTO`), Sticky Persistence (`ON`) & Stop
+1. **Silent Default at Chat Start (`SKIZZO = AUTO`, Zero Banners on Direct Turns)**:
+   - Every chat starts in `SKIZZO = AUTO` (`MEDIATOR = OFF`). At Turn 1, **Gate 0** (`plugins/skizzo/scripts/triage.mjs`) evaluates the request with `0` pre-triage file reads:
+   - IF `FAST-PASS` (`score < 4` or bypass guards) and the user did **not** type `/skizzo`, reply directly in Italian with **`0` subagents and `0 bytes` of banner** (`silentFastPass: true`).
+   - IF `score >= 4` (multi-perspective decisions or cross-domain tradeoffs), the LLM semantically identifies the involved domains, ranks them by importance, and autonomously launches **`2` to `4` parallel subagents (`DUAL-TRACK`, `TRI-TRACK`, or `QUAD-TRACK`)** without requiring `/skizzo`.
+2. **Sticky Persistence (`SKIZZO = ON`)**: When triggered via `/skizzo`, `/skizzo on`, `/skizzo --mediator` (`-m`), or `/skizzo <task>`, state switches to `SKIZZO = ON` (`score >= 3`), showing the `[!NOTE]` receipt on `FAST-PASS` turns (`silentFastPass: false`).
+3. **Overrides & Stop**: `"forza skizzo"` / `"con 3 agenti"` / `--force` / `-f` / `--tracks N` (`2..4`) -> forces subagents; `"senza skizzo"` / `--skip` / `--fast` -> forces `FAST-PASS`; `/skizzo stop` / `/skizzo off` / `stop skizzo` -> sets `SKIZZO = OFF` and strips `[SKIZZO]` from chat title (`set-chat-title.mjs`).
 
-## 2. Gate 0 & Scoperta Dinamica dei Domini via LLM (`0` vs `2..4` Subagent Ordinati per Importanza)
-1. **Via Rapida (`FAST-PASS` — `0` Subagent)**:
-   - **Caso A (Ops/Git/Test/Sync/Conferma)**: `/memory-sync`, `/take-note`, `/review-notes`, `/next-step`, `/validate-plugins`, `git`, `npm`, `start server` o conferme (*"fallo"*, *"vai"*, *"procedi"*).
-   - **Caso B (Sola Lettura / `"non agire"`)**: `/how-its-made`, *"spiega"*, *"dove si trova"*, *"non agire"*, *"è solo una domanda"*, *"senza modificare nulla"*.
-   - **Caso C (Micro-Edit a Scelta Unica)**: refusi, rename, ritocco di costante/colore già deciso su 1 file.
-   - **Banner `FAST-PASS`**: `0 byte` se `silentFastPass: true` (`AUTO`); altrimenti:
+## 2. Gate 0 & Dynamic LLM Domain Discovery (`0` vs `2..4` Ranked Subagents)
+1. **Fast Path (`FAST-PASS` — `0` Subagents)**:
+   - **Case A (Ops/Git/Test/Sync/Confirm)**: `/memory-sync`, `/take-note`, `/review-notes`, `/next-step`, `/validate-plugins`, `git`, `npm`, `start server`, or confirmations (*"fallo"*, *"vai"*, *"procedi"*).
+   - **Case B (Read-Only / `"non agire"`)**: `/how-its-made`, *"spiega"*, *"dove si trova"*, *"non agire"*, *"è solo una domanda"*, *"senza modificare nulla"*.
+   - **Case C (Single-Choice Micro-Edit)**: Typos, renames, or already-decided single-file constant/color tweaks.
+   - **`FAST-PASS` Banner**: `0 bytes` when `silentFastPass: true` (`AUTO`); otherwise:
      `> [!NOTE]`
      `> MODALITÀ SKIZZO ATTIVA (FAST-PASS — Risposta rapida per <motivo>, ~90s risparmiati) · Resta attiva per i prossimi messaggi · Scrivi "forza skizzo" (o "/skizzo --force") per forzare gli agenti.`
-2. **Rilevamento Semantico, Ranking di Importanza e Regola di Arresto `2 vs 3 vs 4` (via LLM)**:
-   - Nessun ruolo è prefissato: superato il `FAST-PASS`, l'LLM individua semanticamente **tutti i domini di competenza o punti di vista degli stakeholder coinvolti** (senza forzare un ruolo tecnico se il problema non riguarda codice).
-   - **Ordinamento e Taglio di Parsimonia (`2 <= N <= 4`, `rankAndCapDomains`)**: l'LLM ordina i domini per **importanza decrescente** valutando (1) *Impatto diretto sull'obiettivo*, (2) *Tensione dialettica reale con gli altri domini* e (3) *Rischio di omissione*. Parte da `2` domini (`DUAL-TRACK`) e aggiunge il `3°` (`TRI-TRACK`) o il `4°` (`QUAD-TRACK`, tetto massimo) **solo se introduce un vincolo/oracolo ortogonale non assorbibile dai primi due**, scartando quelli secondari.
+2. **Semantic Discovery, Importance Ranking & Stopping Rule (`2 <= N <= 4`, `rankAndCapDomains`)**:
+   - Zero hardcoded roles: past `FAST-PASS`, the LLM identifies all relevant stakeholder/competency domains (without forcing a coding role on non-software tasks) and ranks them by **descending importance**: (1) *Direct impact on goal*, (2) *Real dialectical tension*, (3) *Omission risk*.
+   - Starts at `2` domains (`DUAL-TRACK`) and adds a `3rd` (`TRI-TRACK`) or `4th` (`QUAD-TRACK`, hard cap) **ONLY IF it introduces an orthogonal constraint/oracle not covered by the first two**.
 
-## 3. Ciclo a 4 Fasi (`DUAL-TRACK` / `TRI-TRACK` / `QUAD-TRACK`)
-1. **Fase 1 (Istanziazione Parallela `2..4` Agenti, Budget `<= 4` Turni & Zero Polling)**: per ciascuno dei `2..4` domini selezionati (`Alpha`, `Beta`, `Delta`, `Epsilon`), l'LLM definisce su misura `Role`, `Mandato Non Negoziabile`, `Oracolo di Verifica` e **1–2 skill verticali** (vietate meta-skill `skizzo`/`ab-bench`) e li lancia al Turno 1. Aprono con **Skill Attive (<trackId> - <Ruolo>)**: `<id>` e completano in **max 4 turni tool** con righe `#Lxx-Lyy`. Lanciati i subagent, **chiudere subito il turno (`0` tool call, `0` byte, vietati `schedule` e `manage_subagents`)**.
-2. **Fase 2 (Cross-Critique o Mediatore `--mediator`)**: Cross-Critique tra i `2..4` ruoli oppure **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, `research`, `<id-gamma>`)** che li interroga via `send_message` (max 1 round) ed emette il **Lodo Arbitrale**.
-3. **Fase 3 & 4 (Verifica Post-Codice Anti-Autocertificazione e Restituzione "Human-First" a 4 Colonne Fisse)**:
-   - **Divieto di Auto-Certificazione Cieca (`PASS`)**: vietato compilare `Oracolo & Esito: PASS` copiando l'oracolo teorico della Fase 1; dopo l'ultimo `edit_file`, eseguire materialmente i test, `diff-triage.mjs` (zero test manomessi) e/o le sonde di dominio riportando nella colonna l'esito misurato.
-   - **Banner Rigo 1**:
+## 3. 4-Phase Cycle (`DUAL-TRACK` / `TRI-TRACK` / `QUAD-TRACK`)
+1. **Phase 1 (Parallel `2..4` Subagents, `<= 4` Tool Turns & Zero Polling)**: For each selected domain (`Alpha`, `Beta`, `Delta`, `Epsilon`), define `Role`, `Non-Negotiable Mandate`, `Verification Oracle`, and **1–2 leaf skills** (NEVER meta-skills `skizzo`/`ab-bench`) and launch at Turn 1. Each subagent MUST open Line 1 with **Skill Attive (<trackId> - <Ruolo>)**: `<id>` and finish in **max 4 tool turns** citing `#Lxx-Lyy`. Immediately after `invoke_subagent`, **end the turn (`0` tool calls, `0` bytes; `schedule` and `manage_subagents` polling are FORBIDDEN)**.
+2. **Phase 2 (Cross-Critique or `--mediator`)**: Cross-Critique across the `2..4` roles or **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, `research`, `<id-gamma>`)** querying them via `send_message` (max 1 round) and issuing the **Lodo Arbitrale**.
+3. **Phase 3 & 4 (Anti-Self-Certification Post-Code Check & 4-Column "Human-First" Output in Italian)**:
+   - **No Blind `PASS`**: After the last `edit_file`, run real tests, `diff-triage.mjs`, and/or domain probes and report measured outcomes in `Oracolo & Esito`.
+   - **Line 1 Banner**:
      `> [!IMPORTANT]`
      `> MODALITÀ SKIZZO ATTIVA (DUAL-TRACK | TRI-TRACK | QUAD-TRACK — N Domini per Importanza) — Subagent: [1° <Ruolo Alpha>](conversation://<id-alpha>) · [2° <Ruolo Beta>](conversation://<id-beta>) [· [3° <Ruolo Delta>](conversation://<id-delta>) · [4° <Ruolo Epsilon>](conversation://<id-epsilon>)]`
-   - **Corpo Visibile (Zero Gergo & Zero LaTeX fuori da `<details>`)**: esporre **Cosa cambia per te**, **Contributo dei domini attivati (in ordine di importanza)** e **Conflitto risolto tra i ruoli (e perché vince questa sintesi)** — **Controlli**: `Tutti i test/oracoli superati (X/X OK)`. In `<details>` (chiuso, riga vuota post-`</summary>`) usare una **tabella per riga a 4 colonne fisse** (`# Dominio | Skill & Mandato | Proposta Chiave | Oracolo & Esito`) per evitare overflow su `~600px`.
+   - **Visible Body (Plain Italian, Zero Jargon/LaTeX outside `<details>`)**: Show **Cosa cambia per te**, **Contributo dei domini attivati (in ordine di importanza)**, and **Conflitto risolto tra i ruoli (e perché vince questa sintesi)** — **Controlli**: `Tutti i test/oracoli superati (X/X OK)`. Inside `<details>` (closed, blank line after `</summary>`), render a **fixed 4-column table** (`# Dominio | Skill & Mandato | Proposta Chiave | Oracolo & Esito`).

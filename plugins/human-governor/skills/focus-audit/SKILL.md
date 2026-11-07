@@ -1,53 +1,52 @@
 ---
 name: focus-audit
 description: >-
-  Monitora il numero di sessioni WIP contemporanee, i cambi di contesto tra chat,
-  le maratone senza pause e il coprifuoco notturno. Utilizza questa skill quando
-  l'utente invoca /focus-audit o chiede di verificare o configurare i limiti WIP.
+  Use this skill when the user invokes /focus-audit or asks to inspect or configure
+  concurrent human WIP limits, chat context switching, continuous work streaks, and night curfew.
 ---
 
-# Focus Audit & Configurazione Human Governor (`/focus-audit`)
+# Focus Audit & Human Governor Configuration (`/focus-audit`)
 
-Questa procedura ispeziona la telemetria comportamentale dell'operatore umano e configura le soglie anti-sovraccarico del plugin `human-governor`.
+Inspects operator behavioral telemetry and configures anti-overload thresholds for `human-governor`. Always reply to the user in plain Italian.
 
 ---
 
-## Step 1: Esecuzione della Scansione Comportamentale
+## Step 1: Behavioral Telemetry Scan
 
-Eseguire lo script di stato per leggere le sessioni WIP attive negli ultimi 30 minuti, i cambi di chat e la configurazione corrente:
+Run the status script to inspect active human WIP sessions over the last 30 minutes, chat switches, and current settings:
 
-```powershell
-node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --json
+```bash
+node ~/.gemini/config/plugins/human-governor/scripts/status.mjs --json
 ```
 
-- **Verifica**: l'output JSON deve contenere `status` (`OK`, `WARN`, `CRITICAL`), `metrics`, `activeConversations` e `violations`.
+- **Check**: JSON output includes `status` (`OK`, `WARN`, `CRITICAL`), `metrics`, `activeConversations`, and `violations`.
 
 ---
 
-## Step 2: Configurazione Soglie o Snooze (Se Richiesto)
+## Step 2: Threshold Configuration or Snooze (When Requested)
 
-Se l'utente chiede di modificare le soglie o silenziare temporaneamente gli avvisi, utilizzare i flag dedicati:
+If the user asks to adjust thresholds or snooze alerts, run:
 
-```powershell
-# Impostare il limite massimo di WIP contemporanei (1..10, default 2)
-node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --max-wip 2
+```bash
+# Set max concurrent WIP limit (1..10, default 2)
+node ~/.gemini/config/plugins/human-governor/scripts/status.mjs --max-wip 2
 
-# Impostare la fascia di coprifuoco notturno (formato HH:MM-HH:MM)
-node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --curfew 22:30-07:00
+# Set night curfew window (HH:MM-HH:MM)
+node ~/.gemini/config/plugins/human-governor/scripts/status.mjs --curfew 22:30-07:00
 
-# Silenziare gli avvisi per N minuti (0 per riattivare subito)
-node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --snooze 30
+# Snooze alerts for N minutes (0 to re-enable immediately)
+node ~/.gemini/config/plugins/human-governor/scripts/status.mjs --snooze 30
 
-# Attivare o disattivare il banner di notifica desktop di Windows
-node "c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs" --toast on
+# Enable or disable desktop toast notifications
+node ~/.gemini/config/plugins/human-governor/scripts/status.mjs --toast on
 ```
 
 ---
 
-## Step 3: Restituzione della Diagnosi Operativa
+## Step 3: Diagnostic Report (User-Facing in Italian)
 
-1. **In Chiaro (0-Click)**:
-   - Riportare lo stato (`OK`, `WARN`, `CRITICAL`) e i 4 indicatori principali (`WIP attivi`, `cambi chat/10m`, `prompt/60m`, `streak continua`).
-   - Se `activeWipCount > maxConcurrentWip`, elencare i link `[Conversazione](conversation://<id>)` delle sessioni aperte chiedendo quali chiudere subito.
-2. **In `<details>` (1-Click)**:
-   - Mostrare la tabella completa delle soglie configurate e delle sessioni rilevate nella finestra temporale.
+1. **Level 0 (`0-Click`)**:
+   - Report overall status (`OK`, `WARN`, `CRITICAL`) and the 4 core metrics (`WIP attivi`, `cambi chat/10m`, `prompt/60m`, `streak continua`) in plain Italian.
+   - IF `activeWipCount > maxConcurrentWip`, list open `[Conversazione](conversation://<id>)` links and ask which ones to close.
+2. **Level 1 (`<details>`)**:
+   - Render the full table of configured thresholds and active sessions detected in the time window (with a blank line after `</summary>`).

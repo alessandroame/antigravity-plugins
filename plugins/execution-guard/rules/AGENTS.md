@@ -1,18 +1,18 @@
-# Regole di Resilienza Operativa: Watchdog, Anti-Deadlock e Circuit Breaker (`execution-guard`)
+# Operational Resilience: Watchdog, Anti-Deadlock & Circuit Breaker (`execution-guard`)
 
-Previene stalli dell'agente, task zombi in background e spreco di token in cicli di correzione ripetitivi.
+Prevents agent stalls, zombie background tasks, and token waste in repetitive fix loops. Always reply to the user in plain Italian.
 
-## 1. Gestione Task Background, Reactive Wakeup e Dead-Man Switch (`schedule`)
-1. **Priorità Sincrona e Reactive Wakeup Nativo**: per build e test (`npm test`, `node --test`), impostare sempre `WaitMsBeforeAsync: 10000`. Per il normale completamento asincrono affidarsi al **Reactive Wakeup** nativo di Antigravity (vietato il polling manuale).
-2. **Dead-Man Switch Anti-Freeze (Solo Processi a Rischio Stallo)**: se scivola in background (`task-<id>`) un comando soggetto a blocchi indefiniti (browser headless, socket/rete, child process senza timeout), affiancare al Reactive Wakeup un timer `schedule` di sicurezza (`DurationSeconds: 90`, `TimerCondition: "<task-id>"` che si auto-cancella se il task termina regolarmente) per ispezionare (`status`) e terminare (`kill`) eventuali processi zombi.
+## 1. Background Tasks, Reactive Wakeup & Dead-Man Switch (`schedule`)
+1. **Synchronous Priority & Native Reactive Wakeup**: For builds and tests (`npm test`, `node --test`), ALWAYS set `WaitMsBeforeAsync: 10000`. Rely on native **Reactive Wakeup** for normal async completion (manual polling is FORBIDDEN).
+2. **Dead-Man Switch Anti-Freeze (Stall-Prone Processes Only)**: IF a hang-prone command (headless browser, network/socket, child process without timeout) slips into background (`task-<id>`), MUST pair Reactive Wakeup with a safety `schedule` timer (`DurationSeconds: 90`, `TimerCondition: "<task-id>"`, auto-canceling on normal exit) to inspect (`status`) and terminate (`kill`) zombie processes.
 
-## 2. Circuit Breaker Quantitativo e Rollback Guard
-- **Errori di Build, Sintassi e Lint**: max **3** tentativi -> STOP, dichiarare STUCK, proporre rollback.
-- **Test Unitari e Logica di Dominio**: max **5** tentativi -> STOP, fornire root-cause analysis.
-- **Verifiche Visive / Headless Browser**: max **3** tentativi -> STOP, acquisire screenshot e diagnosticare il DOM.
-- **Identico Errore (Stesso Messaggio/Linea)**: max **2** tentativi -> **INTERRUZIONE IMMEDIATA** (vietato un 3° tentativo).
-- **Regression Rollback Guard**: se una modifica rompe test precedentemente verdi, eseguire subito `git checkout -- <file>` anziché stratificare patch.
+## 2. Quantitative Circuit Breaker & Rollback Guard
+- **Build, Syntax & Lint Errors**: max **3** attempts -> STOP, declare STUCK in Italian, propose rollback.
+- **Unit Tests & Domain Logic**: max **5** attempts -> STOP, provide root-cause analysis in Italian.
+- **Visual / Headless Browser Checks**: max **3** attempts -> STOP, capture screenshot and diagnose DOM.
+- **Identical Error (Same Message/Line)**: max **2** attempts -> **IMMEDIATE STOP** (a 3rd retry is FORBIDDEN).
+- **Regression Rollback Guard**: IF an edit breaks previously green tests, IMMEDIATELY run `git checkout -- <file>` instead of layering patches.
 
-## 3. Timeout Script Node.js (`45s`) e Mock Guard Offline
-1. **Timeout di Processo**: negli script standalone impostare `setTimeout(() => { console.error('[FATAL TIMEOUT]'); process.exit(1); }, 45000).unref()` e chiudere browser/server in `finally`.
-2. **Zero Chiamate Live nei Test**: i test automatici non devono mai effettuare chiamate HTTP reali verso API esterne (usare `?mock=1` / fixture offline `< 1s`).
+## 3. Node.js Script Timeout (`45s`) & Offline Mock Guard
+1. **Process Timeout**: Standalone scripts MUST include `setTimeout(() => { console.error('[FATAL TIMEOUT]'); process.exit(1); }, 45000).unref()` and close browsers/servers in `finally`.
+2. **Zero Live Calls in Tests**: Automated tests MUST NEVER make live HTTP calls to external APIs (use `?mock=1` or offline fixtures `< 1s`).

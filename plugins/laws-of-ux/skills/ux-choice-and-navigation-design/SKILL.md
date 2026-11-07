@@ -6,52 +6,29 @@ description: >-
 
 # Choice Architecture & Navigation Skill
 
-Questa skill guida l'agente nella progettazione di menu, navigazioni, comparazioni e configuratori di scelta, prevenendo la "paralisi decisionale" e l'affaticamento cognitivo.
+Guides the design of menus, navigation bars, comparison tables, and filter sidebars to prevent decision paralysis and cognitive overload. Always reply to the user in plain Italian.
 
-## Problemi Tipici Risolti da questa Skill
-- Menu chilometrici con decine di voci disordinate.
-- Schermate di pricing o comparazione con troppe opzioni poco distinguibili.
-- Filtri di ricerca eccessivi che disorientano l'utente anziché aiutarlo.
-- Informazioni critiche sepolte in mezzo a liste anonime.
+## Applied Laws & Core Rules
 
----
-
-## Leggi Applicate & Regole Chiave
-
-1. **Hick's Law (Tempo di Decisione)**:
-   - Il tempo per compiere una scelta aumenta logaritmicamente con il numero e la complessità delle alternative.
-   - Riduci le opzioni visibili primarie a 3-5 macro-scelte.
-
-2. **Choice Overload (Paradosso della Scelta)**:
-   - Troppe opzioni riducono la probabilità di acquisto/scelta e aumentano il rimpianto post-decisione.
-   - *Strategia*: Evidenzia un'opzione "Consigliata" o "Più Popolare" (es. nei piani di abbonamento); consenti il confronto affiancato di massimo 3 elementi alla volta.
-
-3. **Recognition over Recall nelle Ricerche (NN/G Euristica #6 & Baymard)**:
-   - Non costringere l'utente a ricordare codici articolo, sintassi rigide o termini esatti.
-   - Fornisci autocompletamento visivo predittivo, visualizzazione dei termini cercati di recente (*Recently Searched/Viewed*) e tolleranza semantica verso refusi e sinonimi (evitando il 61% di fallimenti riscontrati dal benchmark Baymard sui motori di ricerca interni).
-
-4. **Filtri Multipli & Faccettati (Benchmark Baymard a 5 Categorie)**:
-   - Nei cataloghi, elenchi complessi e tabelle dati, implementa sempre le **5 categorie essenziali di filtro**:
-     1. *Categoria/Tipologia*.
-     2. *Specifiche/Attributi tecnici*.
-     3. *Prezzo/Fascia di valore*.
-     4. *Valutazione/Rating recensioni*.
-     5. *Disponibilità/Stato*.
-   - Mostra il conteggio degli elementi risultanti per ciascun filtro (`es. In Stock (42)`) ed esponi i filtri attivi come tag/pill rimovibili con un click.
-
-5. **Serial Position Effect (Primacy e Recency)**:
-   - L'utente ricorda con massima facilità il primo e l'ultimo elemento di una sequenza.
-   - *Strategia*: Posiziona le voci di navigazione e le opzioni primarie agli estremi della barra o del menu.
-
+1. **Hick's Law (Decision Time)**:
+   - Decision time grows logarithmically with the number and complexity of choices.
+   - Cap top-level visible options at **`3–5` macro-choices**.
+2. **Choice Overload (Paradox of Choice)**:
+   - Highlight a recommended option (`"Consigliata"` / `"Più Popolare"`) and limit side-by-side comparisons to at most **3 items**.
+3. **Recognition over Recall in Search (NN/G Heuristic #6 & Baymard)**:
+   - Provide predictive visual autocomplete, recent searches (*Recently Searched/Viewed*), and typo/synonym tolerance so searches never dead-end on empty `"Nessun risultato"` views.
+4. **Faceted Filtering (Baymard 5-Category Benchmark)**:
+   - In catalogs and dense data tables, implement the **5 core filter categories**: (1) Category/Type, (2) Technical Specs/Attributes, (3) Price/Value Range, (4) Rating/Reviews, (5) Availability/Status.
+   - Show live item counts per facet (`In Stock (42)`) and expose active filters as 1-click removable pills.
+5. **Serial Position Effect (Primacy & Recency)**:
+   - Place the most important navigation items at the **first and last** positions of the bar or menu.
 6. **Jakob's Law & Wayfinding**:
-   - Rispetta le convenzioni universali della navigazione web/mobile (logo a sinistra per tornare alla home, menu hamburger coerente, carrello o notifiche a destra).
-   - Includi sempre breadcrumb per navigazioni profonde e indicatori di stato attivo evidenti (`aria-current="page"`).
+   - Preserve universal web/mobile conventions and always mark the active route (`aria-current="page"`, breadcrumbs in deep flows).
 
 ---
 
-## Procedura Operativa per l'Agente
-1. **Audit delle Opzioni**: Conta le alternative presentate simultaneamente all'utente. Se superano 5-7, raggruppale in categorie o introduci filtri a cascata.
-2. **Ottimizzazione Search Bar**: Aggiungi cronologia ricerche recenti, dropdown con suggerimenti istantanei e gestione degli stati "Nessun risultato" con suggerimenti alternativi.
-3. **Implementazione 5 Filtri Baymard**: Organizza le sidebar di filtraggio strutturandole nelle 5 categorie standard con indicatori di conteggio e pillole di reset rapido.
-4. **Curated Recommendations**: Aggiungi un badge ('Scelta consigliata') per indirizzare la maggior parte degli utenti verso la scelta standard.
-5. **Architettura della Barra di Navigazione**: Riorganizza i link: link core all'inizio, profilo/impostazioni alla fine, elementi secondari raggruppati in un menu 'Altro'.
+## Agent Operational Procedure
+1. **Option Count Audit**: Count simultaneous top-level choices; if `> 5–7`, group into categories or progressive disclosure.
+2. **Search Bar Optimization**: Add recent search history, instant suggestion dropdown, and fallback suggestions on zero matches.
+3. **5-Facet Filter Sidebar**: Structure filter panels around the 5 Baymard categories with live counts and reset pills.
+4. **Navigation Bar Ordering**: Place core links first, profile/settings last, and secondary links inside an `"Altro"` overflow menu.

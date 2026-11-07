@@ -1,62 +1,51 @@
 ---
 name: validate-plugins
-description: Esegue la suite di validazione automatica dei manifest e della struttura di tutti i plugin presenti nella raccolta (scripts/validate.mjs).
+description: >-
+  Use this skill when running the automated validation suite (scripts/validate.mjs) to check
+  plugin manifests, rules, skills, subagents, Markdown hygiene, and cognitive file ceilings.
 ---
 
-# Procedura di Validazione Plugin
+# Plugin Validation Procedure (`validate-plugins`)
 
-Questa skill esegue il controllo formale e strutturale di conformità di tutti i plugin presenti nella directory `plugins/`.
+Runs formal and structural compliance checks across all plugins, templates, and cognitive files in the repository. Always reply to the user in plain Italian.
 
 ---
 
-## 1. Comando di Esecuzione
+## 1. Execution Commands
 
-Dalla radice del repository `antigravity-plugins`:
+From the `antigravity-plugins` repository root:
 
 ```bash
-# Valida tutti i plugin in plugins/
+# Validate all plugins in plugins/
 node scripts/validate.mjs
 
-# Valida tutti i plugin inclusi i template
+# Validate all plugins, templates, built-in evolution, and cognitive files (MEMORY/WORKLOG/DESIDERATA/NOTES)
 node scripts/validate.mjs --all
 
-# Valida una cartella specifica
+# Validate a specific plugin directory
 node scripts/validate.mjs plugins/engineering-sobriety
 ```
 
 ---
 
-## 2. Controlli Effettuati dallo Script
+## 2. Automated Checks Performed
 
 1. **Manifest (`plugin.json`)**:
-   - Validità sintattica (supporta JSON e JSONC con commenti rimossi).
-   - Presenza e formato di `name`: stringa minuscola in `kebab-case`.
-   - Unicità globale di `name` nel repository (per evitare scarti silenti nel loader di Antigravity).
-   - Presenza di `description` (non vuota).
-   - Formato SemVer di `version` (es. `1.0.0`).
-   - `suggestedPrompts`: array di stringhe, massimo 3 elementi ammessi.
-   - `logo`: percorso relativo esistente su disco con estensione valida (`.png`, `.svg`, `.jpg`, `.jpeg`, `.webp`).
-   - Segnalazione di campi non supportati (es. `author`, `homepage`).
-
-2. **Documentazione (`README.md`)**:
-   - Presenza del file README esplicativo all'interno della cartella del plugin.
-
-3. **Regole (`rules/AGENTS.md`)**:
-   - Verifica che il file esista nella cartella `rules/`.
-   - Verifica che sia markdown puro (privo di frontmatter YAML).
-
-4. **Skill (`skills/<nome>/SKILL.md`)**:
-   - Verifica dell'esistenza di `SKILL.md` per ogni sottocartella in `skills/`.
-   - Verifica del frontmatter YAML con campi obbligatori `name` e `description`.
-
-5. **Integrazioni Esterne (`mcp_config.json`, `hooks.json`)**:
-   - Validità del JSON e dell'oggetto `mcpServers`.
+   - Valid JSON/JSONC syntax, unique lowercase `kebab-case` `name`, non-empty `description`, SemVer `version` (`X.Y.Z`), max 3 `suggestedPrompts`, valid relative `logo`, and zero unsupported top-level fields.
+2. **Documentation (`README.md`)**:
+   - Presence of human-readable `README.md` (in Italian).
+3. **Rules (`rules/AGENTS.md` & `rules/*.md`)**:
+   - Pure Markdown without YAML frontmatter for `rules/AGENTS.md`, `<= 6,000` bytes per plugin (`<= 60 KB` aggregate), GFM `<details>` hygiene (0–2 leading spaces, max depth 2, blank line after `</summary>`), no inline LaTeX formulas, and no hardcoded user paths.
+4. **Skills (`skills/<name>/SKILL.md`) & Subagents (`agents/*.md`)**:
+   - Valid YAML frontmatter (`name` in `kebab-case`, `description` within `[80, 250]` chars with `Use this skill when...` / `Use this skill to...`, no unquoted inline `: `), `SKILL.md <= 200` lines, `agents/*.md <= 180` lines, and zero collisions with built-in skills/subagents.
+5. **External Configs (`mcp_config.json`, `hooks.json`) & Cognitive Ceilings (`--all`)**:
+   - Valid JSON configs and strict line/byte caps on `MEMORY.md` (`<= 200` lines / `16 KB`), `WORKLOG.md` (`<= 300` lines / `20 KB`), `DESIDERATA.md` (`<= 150` lines), and `NOTES.md` (`<= 120` lines).
 
 ---
 
-## 3. Risoluzione Errori Comuni
+## 3. Common Error Fixes
 
-- **`plugin.json non valido`**: correggere virgole mancanti o sintassi JSON nel file indicato.
-- **`"name" deve essere in kebab-case`**: rinominare il campo `name` usando solo caratteri minuscoli e trattini (es. `my-awesome-plugin`).
-- **`rules/AGENTS.md contiene frontmatter YAML`**: rimuovere il blocco iniziale `--- ... ---` dal file di regole (solo le skill richiedono il frontmatter).
-- **`skills/<nome>/SKILL.md: frontmatter YAML mancante`**: aggiungere all'inizio del file YAML `name:` e `description:`.
+- **`plugin.json non valido`**: Fix JSON syntax or trailing commas.
+- **`"name" deve essere in kebab-case`**: Use lowercase letters, digits, and hyphens only.
+- **`rules/AGENTS.md contiene frontmatter YAML`**: Strip `--- ... ---` from `rules/AGENTS.md`.
+- **`lunghezza description fuori dal range [80, 250]`**: Rewrite `description` using `>-` block and `Use this skill when...` within `80–250` chars.

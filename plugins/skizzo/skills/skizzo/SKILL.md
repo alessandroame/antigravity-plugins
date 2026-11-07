@@ -1,64 +1,53 @@
 ---
 name: skizzo
 description: >-
-  Attiva l'orchestrazione multi-dominio dinamica (da 2 a 4 subagent individuati e ordinati
-  per importanza dall'LLM) con Auto-Skizzo Silente e Fast-Pass. Utilizza questa skill
-  quando l'utente invoca /skizzo o emerge un bivio progettuale.
+  Use this skill when the user invokes /skizzo or a multi-domain design tradeoff emerges
+  to run dynamic 2-to-4 subagent orchestration ranked by LLM importance with Auto-Skizzo Silente.
 ---
 
-# Skizzo: Orchestrazione Multi-Dominio Dinamica, Ranking LLM & Mediatore (`/skizzo`)
+# Skizzo: Dynamic Multi-Domain Orchestration, LLM Ranking & Mediator (`/skizzo`)
 
-## 1. Obiettivo, Rilevamento Domini via LLM (`2..4` Agenti) e Modalità `Auto-Skizzo Silente` (`AUTO`)
+## 1. Objective, LLM Domain Discovery (`2..4` Agents) & `Auto-Skizzo Silente` (`AUTO`)
 
-Mette in competizione e collaborazione parallela **da `2` a `4` subagent su misura** quando una richiesta presenta reali scelte multi-prospettiva (`score >= 4` in modalità implicita `AUTO`, `score >= 3` se attivato con `/skizzo`), mentre risponde **subito in modalità diretta (`FAST-PASS`, `0` subagent)** su comandi operativi, domande di lettura e micro-correzioni puntuali.
+Orchestrates **`2` to `4` custom subagents** in parallel competition and collaboration when a task involves real multi-perspective tradeoffs (`score >= 4` in implicit `AUTO` mode, `score >= 3` when explicitly invoked via `/skizzo`), while replying **immediately in direct mode (`FAST-PASS`, `0` subagents)** on operational commands, read-only questions, and single-choice micro-edits. Always write user-facing output in plain Italian.
 
-### Protocollo di Scoperta, Ordinamento per Importanza e Criterio di Arresto (`2 <= N <= 4`)
-Nessun ruolo è cablato a priori: quando il task supera il filtro `FAST-PASS`, l'agente padre usa il proprio ragionamento semantico per determinare **quanti** e **quali** agenti servono:
-1. **Individuazione Aperta dei Domini**: analizza la richiesta e il contesto per estrarre tutte le discipline, le competenze specialistiche o i punti di vista degli stakeholder coinvolti (senza schemi rigidi e senza forzare un ruolo informatico se la decisione non riguarda codice).
-2. **Ordinamento per Importanza (`rankAndCapDomains`)**:
-   - Valuta ciascun dominio candidato secondo tre criteri: **Impatto Primario (`importance`, `0..10`)**, **Tensione Dialettica (`tension`, `0..10`)** e **Rischio di Omissione**.
-   - Ordina i domini per priorità decrescente (`priorityScore = importance * 2 + tension`) eliminando prospettive ridondanti.
-3. **Criterio di Arresto Deterministico (Rasoio di Occam per `2 vs 3 vs 4` Agenti)**:
-   - **Parti da `N = 2` (`DUAL-TRACK`)** con i primi 2 domini più importanti in tensione.
-   - **Aggiungi il `3°` (`TRI-TRACK`) o il `4°` (`QUAD-TRACK`, tetto massimo assoluto)** *solo se* introduce un **vincolo strutturale o un oracolo di verifica ortogonale** non assorbibile dai primi due (o se l'utente lo richiede esplicitamente, es. *"con 3 agenti"* / `--tracks 3`). Scarta o accorpa tutti i domini oltre il 4° posto.
-4. **Istanziazione su Misura**: per ciascuno dei `2..4` domini selezionati (`Alpha`, `Beta`, `Delta`, `Epsilon`), definisce al volo **Titolo del Ruolo**, **Mandato Non Negoziabile**, **1–2 Skill verticali** dal catalogo `<skills>` e **Oracolo di Verifica**.
-5. **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, attivo con `--mediator` / `-m`)**: arbitro imparziale che interroga i subagent attivi via `send_message` (max 1 round) ed emette il lodo arbitrale.
+### Discovery, Importance Ranking & Stopping Rule (`2 <= N <= 4`)
+Zero pre-wired roles: when a task passes `FAST-PASS`, the parent LLM determines **how many** and **which** agents are needed:
+1. **Open Domain Identification**: Extract all disciplines, specialist competencies, or stakeholder perspectives involved (without forcing a coding role on non-software decisions).
+2. **Importance Ranking (`rankAndCapDomains`)**:
+   - Score each candidate domain on **Primary Impact (`importance`, `0..10`)**, **Dialectical Tension (`tension`, `0..10`)**, and **Omission Risk** (`priorityScore = importance * 2 + tension`).
+3. **Occam's Razor Stopping Rule (`2 vs 3 vs 4` Agents)**:
+   - **Start at `N = 2` (`DUAL-TRACK`)** with the top 2 conflicting domains.
+   - **Add a `3rd` (`TRI-TRACK`) or `4th` (`QUAD-TRACK`, hard cap)** *only if* it introduces an **orthogonal structural constraint or verification oracle** not covered by the first two (or if explicitly requested via *"con 3 agenti"* / `--tracks 3`).
+4. **Custom Instantiation**: For each selected domain (`Alpha`, `Beta`, `Delta`, `Epsilon`), define **Role Title**, **Non-Negotiable Mandate**, **1–2 leaf skills** from `<skills>` (NEVER `skizzo` or `ab-bench`), and **Verification Oracle**.
+5. **`Subagent Gamma` (`Dialectical Mediator & Conflict Resolver`, active with `--mediator` / `-m`)**: Impartial arbiter querying active subagents via `send_message` (max 1 round).
 
-> **Nota di Autosufficienza Telemetrica**: questo runbook contiene tutti i template operativi necessari. Non eseguire `view_file` secondari su `references/dialectic-template.md` durante il flusso standard per evitare doppi conteggi in `collector.mjs`.
-
----
-
-## 2. Step 0: Modalità `Auto-Skizzo Silente` (`AUTO`), Persistenza Sticky (`ON`), Override e Stop
-
-1. **Modalità `Auto-Skizzo Silente` a Inizio Chat (`SKIZZO = AUTO`, Zero Banner sui Turni Normali)**:
-   - Di default ogni chat parte in `SKIZZO = AUTO`. Al Turno 1 il **Gate 0** (`triage.mjs`) valuta la richiesta:
-   - Se `FAST-PASS` implicito (`silentFastPass: true`): risponde direttamente con **`0` subagent e `0 byte` di banner** (nessun avviso `[!NOTE]`).
-   - Se `score >= 4`: l'LLM individua i domini, li ordina per importanza (cap a `4`), avvia i `2..4` subagent in parallelo e aggiorna il titolo chat con `[SKIZZO] `.
-2. **Persistenza Sticky Esplicita (`SKIZZO = ON`)**:
-   - Quando l'utente invoca `/skizzo`, `/skizzo on`, `/skizzo --mediator` (o `-m`) o `/skizzo <task>`, lo stato passa a `SKIZZO = ON (Sticky)` per i messaggi successivi (soglia `score >= 3`, ricevuta `[!NOTE]` visibile sui `FAST-PASS`).
-3. **Override in Linguaggio Naturale o Flag e Stop**:
-   - **Forza Skizzo o Numero Agenti (*"forza skizzo"*, *"con 3 agenti"*, *"usa 4 domini"*, `--force`, `--tracks 2..4`)**: salta il filtro rapido e avvia i subagent per i `N` domini più importanti (valori fuori scala vengono limitati in `[2..4]`).
-   - **Salta per 1 Turno (*"senza skizzo"*, *"vai veloce"*, `--skip`, `--fast`)**: esegue il turno corrente in `FAST-PASS` (`0` subagent).
-   - **Stop Completo (`stop skizzo`, `ferma skizzo`, `/skizzo stop`, `/skizzo off`)**: imposta `SKIZZO = OFF` e rimuove `[SKIZZO]` dal titolo.
-4. **Aggiornamento Visivo del Titolo Chat (`set-chat-title.mjs` con `--conversation-id` Obbligatorio)**:
-   - Leggi `<Conversation ID>` da `<user_information>` ed esegui:
-     `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --conversation-id "<Conversation ID>" --title "[SKIZZO] <Titolo>"` (o `[SKIZZO+MED]` con `--mediator`).
+> **Telemetry Self-Sufficiency**: This runbook contains all required templates. Do NOT call `view_file` on `references/dialectic-template.md` during normal execution.
 
 ---
 
-## 3. Step 0.5 (Gate 0): Filtro a Priori (`FAST-PASS` vs `MULTI-TRACK`, `< 5ms`)
+## 2. Step 0: `Auto-Skizzo Silente` (`AUTO`), Sticky (`ON`), Overrides & Stop
 
-**Prima di leggere qualsiasi file del progetto (`0` chiamate `read_file` pre-triage)**, valuta al **Turno 1** in `< 5ms` il messaggio tramite [`plugins/skizzo/scripts/triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs):
+1. **Default `SKIZZO = AUTO`**: At Turn 1, **Gate 0** (`plugins/skizzo/scripts/triage.mjs`) evaluates the prompt:
+   - Implicit `FAST-PASS` (`silentFastPass: true`): reply directly with **`0` subagents and `0 bytes` of banner**.
+   - `score >= 4`: rank domains (`max 4`), launch `2..4` subagents in parallel, and prefix chat title with `[SKIZZO] `.
+2. **Explicit Sticky (`SKIZZO = ON`)**: `/skizzo`, `/skizzo on`, `/skizzo --mediator` (`-m`), or `/skizzo <task>` sets `SKIZZO = ON` (`score >= 3`, showing `[!NOTE]` on `FAST-PASS`).
+3. **Natural Language / Flag Overrides & Stop**:
+   - **Force**: *"forza skizzo"*, *"con 3 agenti"*, *"usa 4 domini"*, `--force`, `--tracks 2..4`.
+   - **Skip 1 Turn**: *"senza skizzo"*, *"vai veloce"*, `--skip`, `--fast`.
+   - **Stop**: `stop skizzo`, `ferma skizzo`, `/skizzo stop`, `/skizzo off` -> sets `SKIZZO = OFF` and removes `[SKIZZO]` from title via `node ~/.gemini/config/plugins/cognitive-persistence/scripts/set-chat-title.mjs --conversation-id "<Conversation ID>" --title "<Titolo>"`.
 
-| Categoria del Messaggio | Scelta Automatica | Azione Operativa |
-| :--- | :---: | :--- |
-| **A. Operazioni Meccaniche, Git, Test, Sync, Memoria o Conferma Piano** (`/memory-sync`, `/take-note`, `git`, `start server`, *"fallo"*, *"vai"*, *"procedi"*) | **`FAST-PASS` (`0` Subagent)** | Rispondi subito senza `invoke_subagent` (`0 byte` banner se `AUTO`, `[!NOTE]` se `ON`). |
-| **B. Domande Informative o Clausola `"non agire / solo una domanda"`** (*"spiega"*, *"dove si trova"*, `/how-its-made`, *"non agire facciamo solo un piano"*) | **`FAST-PASS` (`0` Subagent)** | Rispondi subito senza `invoke_subagent` (`0 byte` banner se `AUTO`, `[!NOTE]` se `ON`). |
-| **C. Micro-Correzioni Chirurgiche a Scelta Zero** (refuso, rename, cambio costante/colore già deciso su 1 file) | **`FAST-PASS` (`0` Subagent)** | Applica subito la modifica senza `invoke_subagent`. |
-| **D. Decisioni e Progettazioni Multi-Dominio (`score >= 4` in `AUTO`, `>= 3` in `ON`)** | **`2..4` Subagent (`DUAL`/`TRI`/`QUAD-TRACK`)** | Rileva i domini via LLM, ordinali per importanza (`max 4`) e lancia i subagent allo **Step 1**. |
+---
 
-### Template quando scatta `FAST-PASS` in sessione Esplicita (`silentFastPass: false`)
-*(Nota: se `silentFastPass: true` in modalità `AUTO` implicita, emettere `0 byte` di banner e rispondere normalmente).*
+## 3. Step 0.5 (Gate 0): Pre-Filter (`FAST-PASS` vs `MULTI-TRACK`, `< 5ms`)
+
+**Before reading any project file (`0` pre-triage `read_file` calls)**, evaluate Turn 1 via `plugins/skizzo/scripts/triage.mjs`:
+- **A. Ops, Git, Test, Sync, Memory, or Plan Confirmation** (`/memory-sync`, `/take-note`, `git`, `start server`, *"fallo"*, *"vai"*, *"procedi"*) -> **`FAST-PASS` (`0` Subagents)**.
+- **B. Informational Questions or `"non agire / solo una domanda"`** (*"spiega"*, *"dove si trova"*, `/how-its-made`, *"non agire facciamo solo un piano"*) -> **`FAST-PASS` (`0` Subagents)**.
+- **C. Zero-Choice Surgical Micro-Edits** (typo, rename, single-file constant/color tweak) -> **`FAST-PASS` (`0` Subagents)**.
+- **D. Multi-Domain Decisions (`score >= 4` in `AUTO`, `>= 3` in `ON`)** -> **`2..4` Subagents (`DUAL`/`TRI`/`QUAD-TRACK`)**.
+
+### Explicit `FAST-PASS` Template (`silentFastPass: false` only)
 ```markdown
 > [!NOTE]
 > **MODALITÀ SKIZZO ATTIVA (`FAST-PASS` — Risposta rapida per [comando operativo | domanda di lettura | modifica puntuale], ~90s risparmiati)** · Resta attiva per i prossimi messaggi · Scrivi `"forza skizzo"` (o `/skizzo --force`) per forzare gli agenti.
@@ -66,12 +55,12 @@ Nessun ruolo è cablato a priori: quando il task supera il filtro `FAST-PASS`, l
 
 ---
 
-## 4. Step 1: Istanziazione Parallela dei `2..4` Domini Più Importanti & Silenzio Intermedio
+## 4. Step 1: Parallel Instantiation of Top `2..4` Domains & Intermediate Silence
 
-Individuati e ordinati per importanza i `2..4` domini (`Alpha`, `Beta`, ed eventualmente `Delta`, `Epsilon`), assegna a ciascuno **1–2 skill verticali pertinenti** dal catalogo `<skills>` (**vietato assegnare meta-skill** come `skizzo` o `ab-bench`; fallback `core-standard`) e invoca **nello stesso turno** tutti i subagent in parallelo (`TypeName: "research"`, oppure `TypeName: "self"` in Git Worktrees con `--proto`):
-- **Divieto di Polling (`0` `schedule` / `0` `manage_subagents`) e Silenzio su Wakeup Parziale**: appena invocati i subagent (e finché anche un solo subagent è ancora `running`), **non chiamare `schedule`, non chiamare `manage_subagents(Action: 'list')` e non stampare testo intermedio**; termina immediatamente il turno con **0 tool call e 0 byte**.
+Launch all `2..4` subagents (`Alpha`, `Beta`, and optional `Delta`, `Epsilon`) in a **single `invoke_subagent` call** (`TypeName: "research"`):
+- **Zero Polling & Partial-Wakeup Silence**: Immediately after `invoke_subagent` (and while any subagent is still `running`), **NEVER call `schedule`, NEVER call `manage_subagents(Action: 'list')`, and emit `0 bytes` of intermediate text**; end the turn immediately.
 
-### Prompt Template Parametrico — Subagent `<trackId>` (`<Ruolo del Dominio #Rank>`)
+### Parametric Subagent Prompt Template — `<trackId>` (`<Ruolo del Dominio #Rank>`)
 ```markdown
 Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Istanziato> — Priorità #<Rank>)** sul seguente requisito:
 [INSERIRE TASK UTENTE]
@@ -89,11 +78,11 @@ Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Is
 
 ---
 
-## 5. Step 2, Step 3 & Step 4: Cross-Critique / Mediatore (`Gamma`) e Consegna "Human-First" (`~600px`)
+## 5. Step 2, Step 3 & Step 4: Cross-Critique, Post-Edit Verification & "Human-First" Output (`~600px`)
 
-1. **Cross-Critique / Mediatore**: confronta i report dei `2..4` subagent ordinati per importanza (o invoca `Subagent Gamma` con `--mediator` per contro-interrogarli via `send_message` in max 1 round) e sintetizza una soluzione che soddisfi **tutti gli oracoli attivi**.
-2. **Divieto di Auto-Certificazione Cieca nello Step 3 (`PASS` solo con Misura Post-Edit)**: chi scrive il codice non può dichiararsi `PASS` sulla fiducia. Dopo l'ultimo `edit_file`/`write_file`, esegui obbligatoriamente i comandi di verifica reali (`npm test`, [`diff-triage.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs) su modifiche multi-file/test, o [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js) sulla UI) e riporta nella colonna `Oracolo & Esito` la misura oggettiva ottenuta (es. `PASS (0 tamper, 14/14 test)`), mai il solo enunciato teorico dello Step 1.
-2. **Formato Obbligatorio di Consegna "Human-First" (Tabella a 4 Colonne Fisse per Riga)**: apri al **rigo 1** con il banner `[!IMPORTANT]` compatto (con link `conversation://` per tutti i `2..4` domini), seguito dai punti chiave in italiano semplice e da una **tabella trasposta per riga a 4 colonne fisse** dentro `<details>` (zero overflow su `~600px`):
+1. **Cross-Critique / Mediator**: Synthesize a unified solution satisfying **all active oracles** (or invoke `Subagent Gamma` when `--mediator` is set).
+2. **No Blind Self-Certification in Step 3**: After the final `edit_file`/`write_file`, run real verification commands (`npm test`, `diff-triage.mjs`, `ui-geometry-probe.js`) and report measured results in `Oracolo & Esito` (`PASS (0 tamper, 14/14 test)`).
+3. **Mandatory "Human-First" Delivery Format (Fixed 4-Column Table inside `<details>`)**:
 
 ```markdown
 > [!IMPORTANT]

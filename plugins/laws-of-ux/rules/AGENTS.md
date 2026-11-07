@@ -1,17 +1,17 @@
 # Laws of UX Engineering Rules (`laws-of-ux`)
 
-Applica queste regole nella progettazione/revisione di interfacce utente e nella colonna di chat di Antigravity (`~600px`).
+Apply these rules when designing or reviewing UIs and within the Antigravity chat column (`~600px`). Always reply to the user in plain Italian.
 
-## 1. Moduli, Layout (Gestalt) & Target Touch
-- **Input & Form (Postel, Tesler, Chunking)**: accetta input permissivi normalizzandoli via software; mantieni `<= 6–8` campi per step in colonna singola con `autocomplete`, distanza label-input `<= 8px` e tra gruppi `>= 16–24px`.
-- **Gerarchia in 3 Secondi (Anti-"Muro di Box")**: massimo **4 card/gruppi visibili *above-the-fold*** su mobile (`360x800`), max 1 livello di contenimento perimetrale, **3 livelli netti di scala tipografica** (Dato Primario Hero `24–32px bold` -> Secondario `14–16px` -> Etichetta/Unità `11–12px`) e `white-space: nowrap` sui gruppi `valore + unità` (`24 km/h`, `1850 m`).
-- **Fitts's Law & Von Restorff**: touch target **`>= 48 x 48 px`** su mobile (`>= 32px` desktop) con gap `>= 8px`; un solo pulsante primario ad alto contrasto nella zona del pollice.
+## 1. Forms, Layout (Gestalt) & Touch Targets
+- **Inputs & Forms (Postel, Tesler, Chunking)**: Accept permissive inputs and normalize them in software; keep `<= 6–8` fields per step in a single-column layout with `autocomplete`, label-to-input gap `<= 8px`, and inter-group gap `>= 16–24px`.
+- **3-Second Hierarchy (Anti-"Wall of Boxes")**: Max **4 visible cards/groups above-the-fold** on mobile (`360x800`), max 1 outer containment level, **3 distinct typographic tiers** (Primary Hero `24–32px bold` -> Secondary `14–16px` -> Label/Unit `11–12px`), and `white-space: nowrap` on `value + unit` groups (`24 km/h`, `1850 m`).
+- **Fitts's Law & Von Restorff**: Touch targets **`>= 48 x 48 px`** on mobile (`>= 32px` desktop) with `>= 8px` gap; a single high-contrast primary CTA in the thumb zone.
 
-## 2. Reattività, Navigazione & Accessibilità (WCAG POUR)
-- **Doherty Threshold (`< 400ms`) & Caricamenti**: feedback visivo immediato (`:active`, anti-doppio tap); `< 1s` nessun loader, `1–3s` skeleton senza CLS, `3–10s` progress bar, `> 10s` stima + asincrono; finestra di Undo (`5–10s`) sulle azioni distruttive.
-- **Hick's & Miller's Law**: limita le scelte di primo livello a `3–5` opzioni e i gruppi informativi a `5–7` elementi.
-- **Safe Autonomy & WCAG 2.1 AA/AAA**: esponi la fonte dei suggerimenti automatici con override in 1 tap (`Cheap Takeover`); contrasto `>= 4.5:1` testo normale (`>= 7:1` indicatori critici outdoor), `:focus-visible` e semantica nativa.
+## 2. Responsiveness, Navigation & Accessibility (WCAG POUR)
+- **Doherty Threshold (`< 400ms`) & Loading Hierarchy**: Instant visual feedback (`:active`, anti-double-tap); `< 1s` no loader, `1–3s` CLS-free skeleton, `3–10s` deterministic progress bar, `> 10s` ETA + background execution; `5–10s` Undo grace window on destructive actions.
+- **Hick's & Miller's Law**: Limit top-level choices to `3–5` options and information chunks to `5–7` items.
+- **Safe Autonomy & WCAG 2.1 AA/AAA**: Expose the rationale/source of automated suggestions with 1-tap override (`Cheap Takeover`); contrast `>= 4.5:1` normal text (`>= 7:1` critical outdoor indicators), `:focus-visible`, and native semantics.
 
-## 3. Standard Outdoor / High-Glare & Metro di Giudizio Visivo (4 Misure)
-- **Budget Schermo 60/40 & `100dvh`**: nelle viste operative (mappe, meteogrammi, telemetria 3D), riserva **`>= 60%` dell'altezza viewport (`360x800`)** al canvas primario senza scroll; header, filtri e HUD flottanti `<= 40%` senza occludere controlli (`elementFromPoint`). Usa `100dvh`, `touch-action: pan-x` sui caroselli monoriga (vietato `flex-wrap`) e tema chiaro/scuro ad alto contrasto con feedback Tri-Modale (Colore + Testo + Simbolo).
-- **Ricevuta di Collaudo a 4 Misure (Zero Giudizi "A Occhio")**: quando ispezioni uno screenshot nel browser è vietato dire *"sembra tutto ok"* senza misure o inventare difetti se i controlli passano (**0 modifiche** per il Rasoio di Occam). Valida sempre: (1) **Budget schermo** (`>= 60%` libero), (2) **Scala gerarchica in 3s** + `nowrap`, (3) **Sonda geometrica** (`0` sovrapposizioni `elementFromPoint`, `0` testi tagliati, `0` scroll orizzontali su `360x800`), (4) **Flusso `Prima -> Click -> Dopo`** visibile senza scrollare.
+## 3. Outdoor / High-Glare Standards & 4-Measure Visual Receipt
+- **60/40 Screen Budget & `100dvh`**: On operational views (maps, meteograms, 3D telemetry), reserve **`>= 60%` of viewport height (`360x800`)** for the primary canvas without scrolling; keep headers, filters, and floating HUDs `<= 40%` with zero control occlusion (`elementFromPoint`). Use `100dvh`, `touch-action: pan-x` on single-row carousels (NEVER use `flex-wrap`), and high-contrast light/dark themes with Tri-Modal feedback (Color + Text + Symbol).
+- **4-Measure Verification Receipt (Zero Eyeball Judgments)**: When inspecting a browser screenshot, NEVER claim *"sembra tutto ok"* without metrics or invent artificial defects when checks pass (**0 changes** per Occam's Razor). ALWAYS validate and report in Italian: (1) **Budget schermo** (`>= 60%` free), (2) **Scala gerarchica in 3s** + `nowrap`, (3) **Sonda geometrica** (`0` `elementFromPoint` overlaps, `0` clipped text, `0` horizontal scroll on `360x800`), (4) **Flusso `Prima -> Click -> Dopo`** visible without scrolling.

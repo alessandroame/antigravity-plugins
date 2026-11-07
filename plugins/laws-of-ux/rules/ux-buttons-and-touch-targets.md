@@ -1,15 +1,15 @@
 ---
 description: >-
-  Regola per pulsanti, CTA, barre di azioni, icone cliccabili e target touch (Fitts's Law, Von Restorff Effect, Doherty Threshold).
+  Rules for buttons, CTAs, action bars, clickable icons, and touch targets (Fitts's Law, Von Restorff Effect, Doherty Threshold).
 trigger: model_decision
 globs: "**/*{button,btn,cta,icon-button,action-bar,fab,menu-item}*.{html,jsx,tsx,vue,svelte,css,scss,dart}"
 ---
 
 # Button & Touch Ergonomics Rules
 
-Quando crei o modifichi pulsanti, CTA e icone interattive:
-1. **Target Minimi (Fitts's Law)**: Minimo **48×48 px** su dispositivi touch (con padding trasparente se l'icona è inferiore) e **32×32 px** su desktop; distanziamento minimo di **8 px** tra pulsanti contigui per azzerare i tap accidentali.
-2. **Raggiungibilità del Pollice (Thumb Zone)**: Su mobile, posiziona le azioni primarie e di conferma nella metà inferiore dello schermo (sticky bottom bar o float centrale facilmente raggiungibile con una mano sola).
-3. **Gerarchia Visiva (Von Restorff Effect)**: Solo un pulsante primario per schermata con contrasto marcato; usa stili outline o ghost per azioni secondarie e neutre.
-4. **Accessibilità A11y (WCAG POUR)**: Non distinguere l'azione unicamente tramite colore; fornisci etichette testuali esplicite o `aria-label`, contrasto conforme WCAG AA (min 4.5:1) e stato `:focus-visible` chiaro.
-5. **Feedback Immediato & Anti-Double-Click (Doherty Threshold)**: Mostra feedback visivo entro 400ms dal tap/click e disabilita temporaneamente il pulsante durante l'elaborazione per prevenire invii doppi o duplicati transazionali.
+When creating or modifying buttons, CTAs, and interactive icons:
+1. **Minimum Targets (Fitts's Law)**: At least **`48x48 px`** on touch devices (using transparent hit-area padding if the icon is smaller) and **`32x32 px`** on desktop; minimum **`8 px`** gap between adjacent buttons to prevent accidental taps.
+2. **Thumb Zone Reachability**: On mobile, place primary and confirmation actions in the lower half of the screen (sticky bottom bar or reachable center float).
+3. **Visual Hierarchy (Von Restorff Effect)**: Only ONE primary high-contrast CTA per screen; use outline or ghost styles for secondary/neutral actions.
+4. **A11y (WCAG POUR)**: NEVER convey action meaning by color alone; provide explicit text labels or `aria-label`, WCAG AA contrast (`>= 4.5:1`), and clear `:focus-visible`.
+5. **Instant Feedback & Anti-Double-Click (Doherty Threshold)**: Show visual feedback within `400ms` of tap/click and temporarily disable the button while pending to prevent duplicate submissions.

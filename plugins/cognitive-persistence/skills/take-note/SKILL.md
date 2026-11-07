@@ -1,46 +1,45 @@
 ---
 name: take-note
-description: Cattura pensieri e osservazioni in NOTES.md a zero cambio di contesto senza interrompere il task attivo. Use this skill when the user runs /take-note or asks to jot down notes for later analysis.
+description: >-
+  Use this skill when the user runs /take-note or asks to jot down notes for later analysis,
+  capturing observations in NOTES.md with zero context switch and without inspecting code.
 ---
 
-# Take Note: Runbook di Cattura In-Flight a Zero Context-Switch
+# Take Note: Zero Context-Switch In-Flight Capture Runbook (`/take-note`)
 
-## 1. Obiettivo e Guardia di Isolamento
+## 1. Objective & Isolation Guard
 
-Registrare istantaneamente nel file `NOTES.md` (alla radice del workspace) pensieri, dubbi di UX, idee o anomalie emerse mentre l'utente usa l'applicazione o mentre è aperta una lavorazione in corso (`🟡 In Lavorazione`).
+Instantly record thoughts, UX doubts, ideas, or anomalies into `NOTES.md` at the workspace root without interrupting the active task (`🟡 In Lavorazione`). Always reply to the user in plain Italian.
 
-### Guardia Rigida Anti-Analisi Prematura (Mandatory Constraint)
-1. **Zero Ispezione Codice**: Durante l'esecuzione di `/take-note` è **tassativamente vietato** invocare tool di esplorazione o modifica del codice sorgente applicativo (`view_file` su file di codice, `grep_search`, `find_by_name`, `replace_file_content` su sorgenti).
-2. **Unici File Autorizzati**: L'agente può leggere/scrivere esclusivamente `NOTES.md` e leggere `DESIDERATA.md` (solo per estrarre il nome dell'eventuale task `🟡 In Lavorazione`).
-3. **Zero Ipotesi Risolutive**: Non formulare diagnosi, non proporre fix e non discutere il merito tecnico della nota. La lavorazione attualmente aperta potrebbe modificare i moduli interessati rendendo precoce qualsiasi analisi.
-
----
-
-## 2. Flusso Operativo Passo-Passo
-
-### Step 1: Parsing dell'Input (Singola Nota o Batch Multi-Nota)
-1. Estrai il testo fornito dall'utente dopo `/take-note` (o nel messaggio di richiesta).
-2. Se l'utente ha incollato più pensieri distinti (separati da righe vuote o elenchi puntati), suddividili in annotazioni atomiche indipendenti, conservando per ciascuna il **testo originale esatto (verbatim)** senza alterarne il lessico.
-3. Se il comando `/take-note` viene invocato senza testo, chiedi in una sola riga: *"Scrivi pure il pensiero o l'elenco di note da registrare in `NOTES.md`."*
-
-### Step 2: Rilevamento Passivo del Contesto Attivo (`DESIDERATA.md`)
-1. Se esiste `DESIDERATA.md` alla radice del workspace, verifica se è presente una riga con stato `🟡 In Lavorazione`.
-2. Registra il nome di tale lavorazione come metadato `Lavorazione Attiva al Momento della Nota` (oppure `Nessun task attivo in lavorazione` se non ci sono task `🟡`). Questo metadato servirà a `/review-notes` per verificare se il lavoro in corso ha influenzato l'oggetto della nota.
-
-### Step 3: Persistenza Strutturata in `NOTES.md` e Contatore ID nell'Header
-1. Leggi `NOTES.md` alla radice del workspace (se non esiste, crealo con l'intestazione standard riportata nella sezione 3).
-2. Calcola il prossimo identificativo univoco `NOTE-XXX` (es. `NOTE-001`, `NOTE-002`) leggendo il metadato di testa `> **Ultimo ID Assegnato**: NOTE-XXX` (e verificando per sicurezza che sia >= al numero più alto presente nel file) e **aggiorna immediatamente il contatore nell'header** con il nuovo ID assegnato.
-3. Appendi la nuova scheda (o le nuove schede) in fondo alla sezione `## 📥 Da Analizzare (Open)`.
-
-### Step 4: Conferma Ultra-Compatta, Opzione Remota (`--remote`) e Ripresa Lavorazione
-1. **Default Locale Anti-Rumore (`0ms` Rete)**: per non intasare GitHub di appunti temporanei presi al PC, `/take-note` salva solo in `NOTES.md`. Se invece l'utente specifica `--remote` (o detta la nota da smartphone con Gemini Live / Google AI Studio seguendo [`references/voice-intake-kit.md`](../../references/voice-intake-kit.md)), la nota viene creata anche come Issue GitHub (`status:inbox`).
-2. Rispondi all'utente con una conferma sintetica (massimo 2-3 righe o micro-tabella con `ID` e `Titolo`):
-   - Esempio: `Registrata [NOTE-004] in NOTES.md (analisi differita a /review-notes).`
-3. Se nella sessione corrente era in corso un task operativo, **riprendi immediatamente** il passo successivo di quel task senza attendere ulteriori conferme.
+### Strict Anti-Premature-Analysis Guard (Mandatory Constraint)
+1. **Zero Code Inspection**: During `/take-note`, it is **STRICTLY FORBIDDEN** to invoke code exploration or edit tools (`view_file`/`read_file` on source files, `grep_search`, `find_by_name`, `replace_file_content` on code).
+2. **Only Authorized Files**: Read/write ONLY `NOTES.md` and read `DESIDERATA.md` (solely to extract the active `🟡 In Lavorazione` task title).
+3. **Zero Premature Diagnosis**: NEVER diagnose, propose fixes, or debate technical merits during `/take-note`.
 
 ---
 
-## 3. Template Canonico di `NOTES.md` (Tetto Max 120 Righe)
+## 2. Step-by-Step Procedure
+
+### Step 1: Input Parsing (Single or Multi-Note Batch)
+1. Extract the text after `/take-note`. If multiple distinct items are pasted, split them into atomic notes while preserving the user's **exact verbatim text**.
+2. IF `/take-note` is invoked without text, reply in 1 line: *"Scrivi pure il pensiero o l'elenco di note da registrare in `NOTES.md`."*
+
+### Step 2: Passive Active-Task Detection (`DESIDERATA.md`)
+1. If `DESIDERATA.md` exists, record any `🟡 In Lavorazione` row as `Lavorazione Attiva al Momento della Nota` (or `Nessun task attivo in lavorazione`).
+
+### Step 3: Structured Persistence in `NOTES.md` & Header ID Counter
+1. Read `NOTES.md` (or create it using the canonical template in Section 3).
+2. Compute the next sequential `NOTE-XXX` from `> **Ultimo ID Assegnato**: NOTE-XXX` (ensuring it is `>=` the highest ID in the file) and **immediately update the header counter**.
+3. Append the new note block(s) at the end of `## 📥 Da Analizzare (Open)`.
+
+### Step 4: Ultra-Compact Confirmation, `--remote` Option & Task Resumption
+1. **Local Default (`0ms` Network)**: Save only in `NOTES.md` unless `--remote` is specified (or dictated from mobile via [`references/voice-intake-kit.md`](../../references/voice-intake-kit.md) as a `status:inbox` GitHub Issue).
+2. Reply in 1–2 Italian lines: `Registrata [NOTE-XXX] in NOTES.md (analisi differita a /review-notes).`
+3. IF an operational task was in progress, **immediately resume** its next step without waiting.
+
+---
+
+## 3. Canonical `NOTES.md` Template (Max `120` Lines)
 
 ```markdown
 # Annotazioni & Pensieri in Corso d'Opera (NOTES)

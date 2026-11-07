@@ -6,54 +6,51 @@ description: >-
 
 # Laws of UX Heuristic Audit Skill
 
-Questa skill esegue una diagnosi euristica a 360° su una schermata, un componente o un flusso utente completo, confrontandolo con tutte le **30 Laws of UX** (Jon Yablonski, [lawsofux.com](https://lawsofux.com/)).
+Executes a 360-degree heuristic audit on a screen, component, or user flow against the **30 Laws of UX** (Jon Yablonski), **10 NN/G Heuristics**, and **Baymard Benchmarks**. Always present the audit report to the user in plain Italian.
 
-## Quando Utilizzare
-- L'utente chiede: *"Fai un audit UX di questa pagina / di questo flusso"*.
-- Revisione di usabilità e accessibilità prima di un rilascio in produzione.
-- Valutazione comparativa tra una vecchia e una nuova versione di una UI.
-
----
-
-## Fasi dell'Audit Integrato (30 Laws of UX + 10 Euristiche NN/G + Benchmark Baymard)
-
-### Fase 1: Modello Mentale & Coerenza (Jakob's Law, NN/G #2 e #4)
-- **Convenzioni Esterne & Interne**: Il layout e i controlli rispettano i pattern consolidati di piattaforma (Jakob's Law, NN/G #4)?
-- **Match con il Mondo Reale**: Terminologia e concetti riflettono il linguaggio dell'utente anziché tecnicismi interni di sistema (NN/G #2)?
-- **Wayfinding**: L'utente sa sempre dove si trova all'interno del flusso e come tornare indietro senza ostacoli?
-
-### Fase 2: Layout & Percezione Gestalt (Proximity, Common Region, Similarity, Connectedness, Prägnanz)
-- **Raggruppamento Visivo**: I dati correlati sono raggruppati in card o confini visivi espliciti (Common Region)?
-- **Distanze di Prossimità**: Le etichette e gli hint sono a <= 8 px dal relativo campo e i gruppi distinti a >= 16-24 px?
-- **Rapporto Segnale/Rumore**: Sono stati eliminati elementi decorativi e divisori superflui (Prägnanz, Occam's Razor, NN/G #8)?
-
-### Fase 3: Carico Cognitivo & Memoria (Miller, Chunking, Recognition over Recall, Serial Position, Von Restorff)
-- **Recognition over Recall (NN/G #6)**: Le scelte sono visibili a schermo (ricerche recenti, autocompletamento visivo) senza richiedere sforzo di memoria mnemonica all'utente?
-- **Filtri di Catalogo (Benchmark Baymard)**: Se l'interfaccia include cataloghi o elenchi densi, sono disponibili le 5 categorie chiave di filtro (categoria, specifiche, prezzo, rating, disponibilità)?
-- **Gerarchia delle Azioni**: Esiste una sola CTA primaria prominente ad alto contrasto per vista (Von Restorff Effect)?
-
-### Fase 4: Ergonomia, Form & Prevenzione Errori (Fitts, Postel, Parkinson, Baymard, NN/G #5)
-- **Touch Target & Spaziatura (Fitts)**: I target touch misurano almeno 48x 48 px su mobile e 32x 32 px su desktop, distanziati di almeno 8 px? Le azioni primarie sono nella Thumb Zone?
-- **Potatura Campi & Colonna Singola (Baymard)**: Il form è strutturato a colonna singola? Il numero totale di campi per step è contenuto a <= 6-8 campi?
-- **Tolleranza Input (Postel)**: Il sistema accetta formati elastici (spazi nei telefoni, formati data alternativi) e li normalizza?
-- **Prevenzione Attiva (NN/G #5)**: Il sistema impedisce date non valide o selezioni incoerenti prima ancora del submit?
-
-### Fase 5: Reattività, Latenza & Controllo (Doherty, Timing Hierarchy, Peak-End, NN/G #1 e #3)
-- **Feedback Immediato**: Ogni tocco riceve feedback visivo entro 400ms (Doherty Threshold, NN/G #1)?
-- **Gerarchia di Caricamento**: Nessun loader invasivo sotto 1s; spinner/skeleton tra 1-3s; progress bar deterministica tra 3-10s; stima esplicita + background per attese > 10s?
-- **User Control & Undo (NN/G #3)**: Esiste una finestra di grazia (5-10s) con pulsante "Annulla" per azioni asincrone o invii critici?
-- **Schermata Finale Rassicurante**: L'epilogo conferma chiaramente l'esito dell'operazione e le fasi successive (Peak-End Rule)?
-
-### Fase 6: Trasparenza AI & Interfacce Autonome (Standard 2026 - Windmill #11)
-- **Explainability (Show the Reasoning)**: Quando il sistema pre-compila campi, propone suggerimenti o genera contenuti in autonomia, ne espone la motivazione e la confidenza verificabile inline?
-- **Cheap Takeover (Override a Basso Costo)**: Modificare o correggere l'output generato dall'AI costa meno sforzo e meno click rispetto a eseguire l'operazione da zero?
-- **Autonomia Sicura**: Le azioni irreversibili o transazionali richiedono sempre conferma esplicita dell'utente?
+## Activation Triggers
+- User asks: *"Fai un audit UX di questa pagina / di questo flusso"*.
+- Pre-release usability and accessibility review.
+- Before/after UI comparison.
 
 ---
 
-## Schema del Report di Remediation (P0-P3)
-Genera il report classificando i rilievi secondo la matrice di severità:
-- **P0 - Critical (Blocker)**: Impossibilità di completare l'azione, touch target < 32px con click falliti, freeze senza feedback > 1s, assenza navigazione da tastiera (A11y Blocker), assenza di conferma su azioni distruttive.
-- **P1 - High**: Form multi-colonna complessi (> 10 campi non suddivisi), assenza di filtri base in cataloghi densi, AI takeover costoso (costringe a riscrivere da capo), violazione palese delle convenzioni di piattaforma (Jakob).
-- **P2 - Medium**: Assenza di attributi `autocomplete`, label distanti dagli input (> 10px), liste non raggruppate (> 7 elementi non chunked), ricerche prive di autocompletamento o gestione typo.
-- **P3 - Low / Polish**: Micro-copy migliorabile, transizioni visive perfezionabili, valorizzazione dell'epilogo di conferma (Peak-End).
+## Integrated 6-Phase Audit
+
+### Phase 1: Mental Model & Consistency (Jakob's Law, NN/G #2 & #4)
+- **Platform Conventions**: Do layout and controls follow familiar platform patterns?
+- **Real-World Match**: Does copy use user language instead of internal system jargon?
+- **Wayfinding**: Is current location and back-navigation immediately obvious?
+
+### Phase 2: Layout & Gestalt Perception (Proximity, Common Region, Similarity, Connectedness, Prägnanz)
+- **Visual Grouping**: Are related items bounded in clear cards/regions (max 1 outer containment level, max 4 cards above-the-fold on `360x800`)?
+- **Proximity Spacing**: Are labels/hints `<= 8 px` from their input and distinct groups `>= 16–24 px` apart?
+- **Signal-to-Noise Ratio**: Are decorative dividers and clutter stripped (Prägnanz, Occam's Razor, NN/G #8)?
+
+### Phase 3: Cognitive Load & Memory (Miller, Chunking, Recognition over Recall, Serial Position, Von Restorff)
+- **Recognition over Recall (NN/G #6)**: Are recent searches and visual autocomplete visible without memory recall?
+- **Catalog Filters (Baymard)**: Are the 5 core filter facets (category, specs, price, rating, availability) present with live counts?
+- **Action Hierarchy**: Is there a single high-contrast Primary CTA per view (Von Restorff)?
+
+### Phase 4: Ergonomics, Forms & Error Prevention (Fitts, Postel, Parkinson, Baymard, NN/G #5)
+- **Touch Targets & Spacing (Fitts)**: Are targets `>= 48x48 px` on mobile (`>= 32x32 px` desktop) with `>= 8 px` gap and primary CTAs in the Thumb Zone?
+- **Field Pruning & Single Column (Baymard)**: Is the form single-column with `<= 6–8` fields per step?
+- **Input Tolerance & Prevention (Postel, NN/G #5)**: Does it normalize permissive inputs and prevent invalid selections before submit?
+
+### Phase 5: Responsiveness, Latency & Control (Doherty, Timing Hierarchy, Peak-End, NN/G #1 & #3)
+- **Instant Feedback**: Visual feedback within `400ms`?
+- **Loading Hierarchy**: `< 1s` no loader, `1–3s` spinner/skeleton, `3–10s` deterministic progress bar, `> 10s` ETA + background?
+- **Undo Window (NN/G #3)**: `5–10s` `"Annulla"` grace window on critical/destructive actions?
+
+### Phase 6: AI Transparency & Safe Autonomy
+- **Explainability & Cheap Takeover**: Are automated suggestions explained inline and overridable in 1 tap?
+- **Safe Autonomy**: Do irreversible actions require explicit user confirmation?
+
+---
+
+## Remediation Report Schema (`P0–P3`, User-Facing in Italian)
+Classify findings in plain Italian by severity:
+- **P0 - Critical (Blocker)**: Broken flow, touch target `< 32px`, unguarded freeze `> 1s`, missing keyboard A11y, or unconfirmed destructive action.
+- **P1 - High**: Multi-column form (`> 10` unchunked fields), missing core filters, costly AI takeover, or broken platform conventions.
+- **P2 - Medium**: Missing `autocomplete`, label gap `> 10px`, unchunked lists (`> 7` items), or search without typo tolerance.
+- **P3 - Low / Polish**: Micro-copy, transitions, or Peak-End confirmation polish.
