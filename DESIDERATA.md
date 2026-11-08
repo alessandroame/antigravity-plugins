@@ -23,14 +23,14 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `execution-guard` | Plugin | `🟢 Completato` | Watchdog anti-freeze, circuit breaker, timeout script e guardia mock API ([README](./plugins/execution-guard/README.md)). |
 | `engineering-workflow` (v1.3.0) | Plugin | `🟢 Completato` | Git chirurgico, `/review-diff`, guardia test, `ui-smoke-runner.mjs` e hook `delivery-gate-hook.mjs` ([README](./plugins/engineering-workflow/README.md)). |
 | `cognitive-persistence` (v1.6.0) | Plugin | `🟢 Completato` | Architettura 3+1, Kanban remoto, auto-distillazione skill `L1..L3` in `/memory-sync` e kit vocale ([README](./plugins/cognitive-persistence/README.md)). |
-| `proactive-mentorship` (v1.3.0) | Plugin | `🟢 Completato` | Revisione preventiva prompt (`NOTE-003`), Auto-Apprendimento `L0..L3` e discovery Cloud ([README](./plugins/proactive-mentorship/README.md)). |
+| `proactive-mentorship` (v1.3.0) | Plugin | `🟢 Completato` | Revisione preventiva prompt (`NOTE-003`), zero telemetria fittizia Cloud e discovery (`session-miner.mjs`). |
 | `skill-governance` | Plugin | `🟢 Completato` | Two-phase token model, audit dimensionale (A-F) e `skill-collision-check` ([README](./plugins/skill-governance/README.md)). |
 | `telemetry-analytics` (v2.1.0) | Plugin | `🟢 Completato` | Backfill Desktop/Cloud (`39` sessioni), token per prompt (footer 3 valori + dashboard) ed ETA ([README](./plugins/telemetry-analytics/README.md)). |
 | `code-inspector` | Plugin | `🟢 Completato` | Modello IPO Esteso, `/how-its-made`, widget `<agent-embed>` dual-tab e cassetti `<details>` ([README](./plugins/code-inspector/README.md)). |
-| `skizzo` (v1.7.0) | Plugin | `🟢 Completato` | Orchestrazione dinamica `2..4` domini ordinati per importanza via LLM, `Auto-Skizzo Silente` e `triage.mjs` ([README](./plugins/skizzo/README.md)). |
+| `skizzo` (v1.7.0) | Plugin | `🟢 Completato` | Orchestrazione `2..4` domini via LLM, `Auto-Skizzo Silente` e regex universali anti-hardcoding ([README](./plugins/skizzo/README.md)). |
 | `ab-bench` (v1.0.0) | Plugin | `🟢 Completato` | Sfida cieca A/B su 5 Dita (`/ab-bench`, `--skill`, `--stats`), sanitizer anti-bias, Rasoio di Occam e storico 5 MB ([README](./plugins/ab-bench/README.md)). |
 | `human-governor` (v1.0.0) | Plugin | `🟢 Completato` | Guardia WIP (max 2), anti-thrashing, coprifuoco 22:30-07:00, hook `PreInvocation` e `/focus-audit` ([README](./plugins/human-governor/README.md)). |
-| `pattern-harvester` (v1.1.0) | Plugin | `🟢 Completato` | Mining periodico multi-brain Desktop/Cloud (`jetski/brain` + `cloud-sessions-log.ndjson`) ([README](./plugins/pattern-harvester/README.md)). |
+| `pattern-harvester` (v1.1.0) | Plugin | `🟢 Completato` | Mining periodico multi-brain Desktop/Cloud con filtro anti-placeholder `task:*.log` ([README](./plugins/pattern-harvester/README.md)). |
 | `mapek` (v1.1.0) | Plugin | `🟢 Completato` | Supervisore Desktop/Cloud, Agenti `L2c`, Guardia L3 `mandatory-exit-oracle-check` e Mastery EMA ([README](./plugins/mapek/README.md)). |
 | `adaptive-router` (v1.0.0) | Plugin | `🟢 Completato` | Routing 3-tier (`LOW/MEDIUM/HIGH` -> `flash_lite/flash/pro`), auto-discovery nuovi modelli e calibrazione ([README](./plugins/adaptive-router/README.md)). |
 | `starter-plugin` | Template | `🟢 Completato` | Blueprint standard per nuovi plugin con manifest SemVer valido ([README](./templates/starter-plugin/README.md)). |

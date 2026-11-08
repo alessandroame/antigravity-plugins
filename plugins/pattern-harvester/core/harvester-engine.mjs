@@ -232,6 +232,7 @@ export function normalizeCommandSkeleton(commandLine) {
     .replace(/\b\d{2,}\b/g, '<num>');
 
   const normalized = cmd.toLowerCase().trim();
+  if (/^task:(?:task-)?(?:<num>|\d+)\.log$/i.test(normalized)) return '';
   // Reject degenerate skeletons that contain only placeholders without executable/command tokens
   const strippedPlaceholders = normalized
     .replace(/<(?:uuid|dir|path|str|num)>|["']/g, '')

@@ -49,7 +49,7 @@ export function resolveCatalogRepoRoot(customRoot) {
   ) {
     return resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT);
   }
-  const defaultWinPath = [
+  const matchedCandidate = [
     resolve(process.cwd(), '..', 'antigravity-plugins'),
     join(homedir(), 'alessandroame', 'antigravity-plugins'),
     join(homedir(), '.gemini', 'antigravity-plugins'),
@@ -58,9 +58,9 @@ export function resolveCatalogRepoRoot(customRoot) {
     join(homedir(), 'antigravity-plugins'),
     '/tmp/antigravity-plugins',
     '/workspaces/antigravity-plugins'
-  ].find((p) => existsSync(join(p, 'scripts', 'sync-to-global.mjs'))) || 'c:/github/antigravity-plugins';
-  if (existsSync(join(defaultWinPath, 'scripts', 'sync-to-global.mjs'))) {
-    return resolve(defaultWinPath);
+  ].find((p) => existsSync(join(p, 'scripts', 'sync-to-global.mjs')));
+  if (matchedCandidate) {
+    return resolve(matchedCandidate);
   }
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const candidateFromScript = resolve(scriptDir, '..', '..', '..');

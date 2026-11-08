@@ -59,7 +59,7 @@ const READONLY_OVERRIDE_PATTERNS = [
 
 // Guard G3: Surgical single-choice micro-edits (typo, rename, single constant/color/padding tweak)
 const MICRO_EDIT_PATTERNS = [
-  /\b(?:correggi\s+(?:il\s+)?(?:typo|refuso)|fix\s+typo|rinomina|rename|cambia\s+il\s+(?:colore|testo|padding|margine|titolo|numero|valore)|tieni\s+la\s+camera\s+pi[uù]\s+(?:lontana|vicina|alta|bassa)|avvicina\s+la\s+camera|allontana\s+la\s+camera|aggiorna\s+la\s+versione|bump\s+version|fix\s+(?:lint|import))\b/i
+  /\b(?:correggi\s+(?:il\s+)?(?:typo|refuso)|fix\s+typo|rinomina|rename|cambia\s+il\s+(?:colore|testo|padding|margine|titolo|numero|valore)|aggiorna\s+la\s+versione|bump\s+version|fix\s+(?:lint|import))\b/i
 ];
 
 // Signals that indicate genuine design, architectural, or multi-perspective trade-offs (overrides G2a/G3)
@@ -74,12 +74,12 @@ const TENSION_ARCH_PATTERNS = [
 
 // Additive Scoring Dimension 2 (+2 pt): Human experience, usability, ergonomics, learning, or stakeholder perspectives
 const TENSION_UX_PATTERNS = [
-  /\b(?:utente|ux|ui|interfaccia|flusso|click|fatica|passaggi|pulsant\w+|botton\w+|form|modulo|dashboard|vista|mobile|360px|responsive|ergonomi\w+|semplicit[aà]|comodo|automatic\w+|preferenz\w+|feedback|inquadratur\w+|regia|replay\s+3d|prospettiv\w+|punto\s+di\s+vista|stakeholder|ruol\w+|domini\w*|apprendiment\w+|didattic\w+|chiarezz\w+|comprensi\w+|fruibilit[aà]|esperienz\w+)\b/i
+  /\b(?:utente|ux|ui|interfaccia|flusso|click|fatica|passaggi|pulsant\w+|botton\w+|form|modulo|dashboard|vista|mobile|360px|responsive|ergonomi\w+|semplicit[aà]|comodo|automatic\w+|preferenz\w+|feedback|prospettiv\w+|punto\s+di\s+vista|stakeholder|ruol\w+|domini\w*|apprendiment\w+|didattic\w+|chiarezz\w+|comprensi\w+|fruibilit[aà]|esperienz\w+)\b/i
 ];
 
 // Additive Scoring Dimension 3 (+2 pt): Constraints, safety, edge cases, risk, dirty inputs, or multi-symptom regressions
 const TENSION_EDGE_PATTERNS = [
-  /\b(?:input|parsing|parser|validaz\w+|format\w+|casi\s+limite|edge\s+case|error\w+|fallback|cache|concorrenz\w+|race\s+condition|deterministic\w+|a\s+priori|sogli\w+|filtr\w+|ricerca|tolleranz\w+|sicurezz\w+|rischi\w*|vincol\w+|limiti|critic\w+|affidabilit[aà]|avviene\s+ancora|sparisc\w+|inchiodat\w+|scalin\w+|rollio|smoothing|frustum|jitter)\b/i
+  /\b(?:input|parsing|parser|validaz\w+|format\w+|casi\s+limite|edge\s+case|error\w+|fallback|cache|concorrenz\w+|race\s+condition|deterministic\w+|a\s+priori|sogli\w+|filtr\w+|ricerca|tolleranz\w+|sicurezz\w+|rischi\w*|vincol\w+|limiti|critic\w+|affidabilit[aà]|regression\w+|latenza|avviene\s+ancora|non\s+funziona\s+ancora|stesso\s+errore)\b/i
 ];
 
 // Additive Scoring Dimension 4 (+1 pt): Open-ended exploration / multiple degrees of freedom / trade-off arbitration

@@ -58,6 +58,8 @@ describe('Pattern Harvester Headless Core (harvester-engine.mjs)', () => {
     assert.equal(skeleton, 'node <dir>/validate.mjs --all --id <uuid> --port <num>');
     assert.ok(!skeleton.includes('aless'));
     assert.ok(!skeleton.includes('4ed62dc7'));
+    assert.equal(normalizeCommandSkeleton('task:task-4.log'), '');
+    assert.equal(normalizeCommandSkeleton('task:task-12.log'), '');
   });
 
   it('extracts lexical tokens and 2-shingles and computes bounded Jaccard similarity', () => {

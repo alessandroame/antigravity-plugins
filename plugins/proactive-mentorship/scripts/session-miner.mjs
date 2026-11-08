@@ -72,13 +72,13 @@ const SKILL_EVOLUTION_RX =
   /\b(?:aggiorna(?:re)?\s+(?:la\s+|le\s+)?skill|aggiorna(?:re)?\s+(?:i\s+)?plugin\w*|in\s+base\s+all'esperienza|auto[- ]?apprendimento|rendere\s+la\s+modalit[aà]|ricordati\s+sempre|d'ora\s+in\s+poi|non\s+fare\s+mai|implementare\s+nei\s+plugin)\b/i;
 
 const REGRESSION_FRICTION_RX =
-  /\b(?:avviene\s+ancora|ancora\s+presente|sembra\s+totalmente\s+assente|inchiodat\w+|scalin\w+|sparisc\w+|troppo\s+buono|a\s+occhio|non\s+funziona\s+ancora|stesso\s+errore)\b/i;
+  /\b(?:avviene\s+ancora|ancora\s+presente|non\s+funziona\s+ancora|stesso\s+errore|stesso\s+difetto|continua\s+a\s+non\s+funzionare|si\s+rompe\s+ancora|regression\w+|a\s+occhio)\b/i;
 
 const READONLY_CLAUSE_RX =
   /\b(?:non\s+agire|[eè]\s+solo\s+una?\s+domanda|solo\s+una?\s+domanda|senza\s+modificare)\b/i;
 
 const VISUAL_AUDIT_RX =
-  /\b(?:screenshot|replay\s+3d|inquadratur\w+|camera|360x800|overflow|sonda|geometr\w+|layout)\b/i;
+  /\b(?:screenshot|viewport|360x800|1280x800|overflow|sonda|geometr\w+|layout|responsive|interfaccia|canvas|svg)\b/i;
 
 const CROSS_REPO_SYNC_RX =
   /\b(?:npm\s+run\s+sync|sync-to-global|aggiorna\s+i\s+plugin\w*|sincronizza\s+i\s+plugin)\b/i;
@@ -637,11 +637,16 @@ function buildSyntheticJsonlFromCloudDir(convDir, convId) {
             workspace = wsMatch[1];
           }
           const cmdMatch = head.match(/^>\s*(.+)$/gm);
-          const cmdLine = cmdMatch && cmdMatch.length > 0 ? cmdMatch[cmdMatch.length - 1].replace(/^>\s*/, '').trim() : `task:${tf.name}`;
-          toolCalls.push({
-            name: 'run_command',
-            args: { CommandLine: cmdLine }
-          });
+          const cmdLine =
+            cmdMatch && cmdMatch.length > 0
+              ? cmdMatch[cmdMatch.length - 1].replace(/^>\s*/, '').trim()
+              : '';
+          if (cmdLine) {
+            toolCalls.push({
+              name: 'run_command',
+              args: { CommandLine: cmdLine }
+            });
+          }
         } catch {
           // Ignore locked task log
         }
@@ -665,11 +670,7 @@ function buildSyntheticJsonlFromCloudDir(convDir, convId) {
       JSON.stringify({
         type: 'PLANNER_RESPONSE',
         created_at: isoTs,
-        tool_calls:
-          toolCalls.length > 0
-            ? toolCalls
-            : [{ name: 'run_command', args: { CommandLine: 'node scripts/validate.mjs --all' } }],
-        token_usage: { input_tokens: 18000, cache_read_tokens: 12000, output_tokens: 950 }
+        tool_calls: toolCalls
       })
     ];
 
@@ -797,7 +798,7 @@ export function discoverUnifiedBrainSessions(options = {}) {
                   type: 'PLANNER_RESPONSE',
                   created_at: iso,
                   tool_calls: ev.toolCalls,
-                  token_usage: { input_tokens: 16000, cache_read_tokens: 10000, output_tokens: 800 }
+                  ...(ev.tokenUsage ? { token_usage: ev.tokenUsage } : {})
                 })
               );
             }

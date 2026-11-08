@@ -499,18 +499,21 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
     if (!entry) return;
 
     const prevTier = entry.tier;
-    const durationMs =
-      lastUserTs && endTs && endTs > lastUserTs && endTs - lastUserTs <= 300000
-        ? endTs - lastUserTs
-        : entry.avgDurationMs || 25000;
+    const hasMeasuredDuration =
+      Boolean(lastUserTs && endTs && endTs > lastUserTs && endTs - lastUserTs <= 300000);
+    const durationMs = hasMeasuredDuration ? endTs - lastUserTs : 0;
 
     const n = (entry.samples || 0) + 1;
     entry.samples = n;
-    entry.avgDurationMs = Math.round(((entry.avgDurationMs || durationMs) * (n - 1) + durationMs) / n);
+    if (hasMeasuredDuration) {
+      entry.avgDurationMs = entry.avgDurationMs
+        ? Math.round((entry.avgDurationMs * (n - 1) + durationMs) / n)
+        : durationMs;
+    }
     if (turnOutputTokens > 0) {
-      entry.avgOutputTokens = Math.round(
-        ((entry.avgOutputTokens || turnOutputTokens) * (n - 1) + turnOutputTokens) / n
-      );
+      entry.avgOutputTokens = entry.avgOutputTokens
+        ? Math.round((entry.avgOutputTokens * (n - 1) + turnOutputTokens) / n)
+        : turnOutputTokens;
     }
     const turnErrRate = turnToolCalls > 0 ? turnToolErrors / turnToolCalls : 0;
     entry.errorRate = Number((((entry.errorRate || 0) * (n - 1) + turnErrRate) / n).toFixed(3));
@@ -559,8 +562,8 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
                 confidence: inferred.confidence,
                 source: 'auto-discovered',
                 samples: 0,
-                avgDurationMs: inferred.tier === 'HIGH' ? 60000 : inferred.tier === 'LOW' ? 14000 : 28000,
-                avgOutputTokens: inferred.tier === 'HIGH' ? 1600 : inferred.tier === 'LOW' ? 400 : 900,
+                avgDurationMs: 0,
+                avgOutputTokens: 0,
                 errorRate: 0
               };
               newlyDiscoveredModels.push(rawModel);
@@ -611,8 +614,8 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
             confidence: inferred.confidence,
             source: 'auto-discovered',
             samples: 0,
-            avgDurationMs: inferred.tier === 'HIGH' ? 60000 : inferred.tier === 'LOW' ? 14000 : 28000,
-            avgOutputTokens: inferred.tier === 'HIGH' ? 1600 : inferred.tier === 'LOW' ? 400 : 900,
+            avgDurationMs: 0,
+            avgOutputTokens: 0,
             errorRate: 0
           };
           newlyDiscoveredModels.push(rawM);

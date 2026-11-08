@@ -277,6 +277,12 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
         'utf-8'
       );
 
+      fs.writeFileSync(
+        path.join(tasksDir, 'task-2.log'),
+        'Background output without command header\n',
+        'utf-8'
+      );
+
       const analyticsDir = path.join(tmpRoot, 'analytics');
       recordCloudTurnEvent(
         {
@@ -296,6 +302,9 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
       assert.equal(sessions.length, 2);
       assert.ok(sessions.some((s) => s.conversationId === '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae' && s.syntheticJsonl));
       assert.ok(sessions.some((s) => s.conversationId === 'cloud-conv-extra' && s.syntheticJsonl));
+      const nestedSess = sessions.find((s) => s.conversationId === '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae');
+      assert.ok(!nestedSess.syntheticJsonl.includes('task:task-2.log'));
+      assert.ok(!nestedSess.syntheticJsonl.includes('18000'));
     } finally {
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     }

@@ -123,12 +123,13 @@ export function runUiGeometryProbe(win = globalThis.window, doc = globalThis.doc
     }
     if (canvas.hasAttribute('data-primary-canvas') || canvas.matches('.leaflet-container, .mapboxgl-map, [data-map]')) {
       primaryCanvasRatio = Number((r.height / vh).toFixed(2));
-      if (primaryCanvasRatio < 0.55) {
+      const minCanvasRatio = 0.55;
+      if (primaryCanvasRatio < minCanvasRatio) {
         violations.push({
           type: 'PRIMARY_CANVAS_SUFFOCATED',
           element: label,
           heightRatio: primaryCanvasRatio,
-          minRequiredRatio: 0.6
+          minRequiredRatio: minCanvasRatio
         });
       }
     }
