@@ -35,7 +35,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `adaptive-router` (v1.0.0) | Plugin | `🟢 Completato` | Routing 3-tier (`LOW/MEDIUM/HIGH` -> `flash_lite/flash/pro`), auto-discovery nuovi modelli e calibrazione ([README](./plugins/adaptive-router/README.md)). |
 | `starter-plugin` | Template | `🟢 Completato` | Blueprint standard per nuovi plugin con manifest SemVer valido ([README](./templates/starter-plugin/README.md)). |
 | Validatore statico (`scripts/validate.mjs`) | Tooling | `🟢 Completato` | Verifica manifest, SemVer, regole, frontmatter skill, igiene Markdown/LaTeX e tetti righe dei 4 file cognitivi. |
-| Sync fisico globale (`scripts/sync-to-global.mjs`) | Tooling | `🟢 Completato` | Clona i plugin in `~/.gemini/config/plugins/` (resiliente a `EBUSY`) e aggiorna `config.json`. |
+| Sync fisico globale (`scripts/sync-to-global.mjs`) | Tooling | `🟢 Completato` | Sincronizza plugin/skill, `config.json` e bootstrap Cloud permanente `~/.gemini/GEMINI.md` su `/shared/user/.gemini`. |
 | Meta-skill `install-plugin` & `validate-plugins` | Tooling | `🟢 Completato` | Installazione guidata con audit collisioni e validazione interattiva (`.agents/skills/`). |
 | Posizionamento Agentic Harness (`README.md`) | Docs | `🟢 Completato` | Documentazione ecosistema, bonifica zero-emoji e allineamento triade cognitiva. |
 
