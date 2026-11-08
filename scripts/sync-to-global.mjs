@@ -199,6 +199,50 @@ export function saveSyncState(stateFile, stateObj) {
 }
 
 /**
+ * Synchronizes a directory tree in-place without calling chmod/chown (portable across Windows, POSIX, and FUSE/virtiofs).
+ * Writes only modified files and removes stale target entries no longer present in `src`.
+ * @param {string} src
+ * @param {string} dest
+ */
+function syncDirectoryContents(src, dest) {
+  const st = fs.statSync(src);
+  if (st.isDirectory()) {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+    const srcEntries = fs.readdirSync(src);
+    const srcSet = new Set(srcEntries);
+    for (const existing of fs.readdirSync(dest)) {
+      if (!srcSet.has(existing)) {
+        try {
+          fs.rmSync(path.join(dest, existing), { recursive: true, force: true });
+        } catch {
+          // Ignore locked handle on Windows
+        }
+      }
+    }
+    for (const ent of srcEntries) {
+      syncDirectoryContents(path.join(src, ent), path.join(dest, ent));
+    }
+  } else if (st.isFile()) {
+    const parent = path.dirname(dest);
+    if (!fs.existsSync(parent)) {
+      fs.mkdirSync(parent, { recursive: true });
+    }
+    const buf = fs.readFileSync(src);
+    if (fs.existsSync(dest)) {
+      try {
+        const existing = fs.readFileSync(dest);
+        if (Buffer.compare(buf, existing) === 0) return;
+      } catch {
+        // Overwrite if unreadable
+      }
+    }
+    fs.writeFileSync(dest, buf);
+  }
+}
+
+/**
  * Synchronizes physical plugins from `antigravity-plugins` to `~/.gemini/config/plugins/`.
  * @param {{
  *   repoRoot?: string,
@@ -289,53 +333,19 @@ export function syncPluginsToGlobal(options = {}) {
       // Ignore malformed manifest during flag check
     }
 
-    // Remove existing symlink/junction or directory before copying (with EBUSY fallback for active OS watchers)
+    // Remove legacy symlink/junction before syncing physical files
     if (fs.existsSync(dest)) {
       const stat = fs.lstatSync(dest);
       if (stat.isSymbolicLink()) {
         fs.unlinkSync(dest);
-      } else {
-        try {
-          fs.rmSync(dest, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
-        } catch {
-          // Directory handle held by active IDE watcher on Windows: overwrite files in-place via cpSync
-        }
       }
     }
 
-    // Perform recursive physical directory copy (with userland fallback for Linux FUSE/container mounts where cpSync chmod throws EPERM)
-    let copiedOk = false;
     try {
-      fs.cpSync(src, dest, { recursive: true, force: true });
-      copiedOk = true;
-    } catch (cpErr) {
-      if (cpErr && (cpErr.code === 'EPERM' || cpErr.code === 'EACCES' || cpErr.code === 'EXDEV' || cpErr.code === 'ENOTSUP')) {
-        const copyTreeUserland = (sDir, dDir) => {
-          if (!fs.existsSync(dDir)) {
-            fs.mkdirSync(dDir, { recursive: true });
-          }
-          for (const item of fs.readdirSync(sDir, { withFileTypes: true })) {
-            const sPath = path.join(sDir, item.name);
-            const dPath = path.join(dDir, item.name);
-            if (item.isDirectory()) {
-              copyTreeUserland(sPath, dPath);
-            } else if (item.isFile()) {
-              fs.writeFileSync(dPath, fs.readFileSync(sPath));
-            }
-          }
-        };
-        try {
-          copyTreeUserland(src, dest);
-          copiedOk = true;
-        } catch (fallbackErr) {
-          log(`   [WARN] Skipped read-only global mount for ${pluginName} (${fallbackErr.code || fallbackErr.message})`);
-        }
-      } else {
-        throw cpErr;
-      }
-    }
-    if (copiedOk) {
+      syncDirectoryContents(src, dest);
       log(`   [OK] Physically synchronized: ${pluginName}`);
+    } catch (syncErr) {
+      log(`   [WARN] Skipped read-only global mount for ${pluginName} (${syncErr.code || syncErr.message})`);
     }
     syncedPluginNames.push(pluginName);
   }
