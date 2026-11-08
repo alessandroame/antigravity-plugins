@@ -1,8 +1,8 @@
 {
   "name": "proactive-mentorship",
   "displayName": "Proactive Mentorship, AGY Coaching & Autonomous Self-Learning",
-  "description": "Coaching architetturale, uso ottimale di Antigravity e auto-apprendimento continuo (Zero-Prompt Self-Learning L0-L3, session-miner.mjs e refactoring Before/After).",
-  "version": "1.2.0",
+  "description": "Coaching architetturale, revisione preventiva dei prompt (NOTE-003), uso ottimale di Antigravity e auto-apprendimento continuo Desktop/Cloud (session-miner.mjs).",
+  "version": "1.3.0",
   "suggestedPrompts": [
     "Esamina questo prompt e proponi il refactoring Before/After e il comando Antigravity più adatto",
     "Esegui il mining delle sessioni precedenti con session-miner.mjs e distilla le lezioni in regole L1-L3",

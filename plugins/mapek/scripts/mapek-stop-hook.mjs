@@ -9,16 +9,18 @@
  * Always outputs `{}\n` on stdout for zero UI noise.
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { getAnalyticsDir, getBrainDir } from './mapek.mjs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { getAnalyticsDir } from './mapek.mjs';
 import { isHumanConversationTranscript } from '../../human-governor/scripts/governor-hook.mjs';
+import {
+  discoverUnifiedBrainSessions,
+  isDirectCliEntrypoint
+} from '../../proactive-mentorship/scripts/session-miner.mjs';
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  import.meta.url.replace(/\\/g, '/') === pathToFileURL(resolve(process.argv[1])).href.replace(/\\/g, '/');
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isDirectEntry) {
   const safetyWatchdog = setTimeout(() => {
@@ -40,10 +42,9 @@ export function shouldTriggerBackgroundMapekScan(state, nowMs = Date.now()) {
   return { shouldTrigger: false, reason: 'IDLE' };
 }
 
-function runStopCheck() {
+export function runStopCheck() {
   try {
     const analyticsDir = getAnalyticsDir();
-    const brainDir = getBrainDir();
     const nowMs = Date.now();
     mkdirSync(analyticsDir, { recursive: true });
 
@@ -60,22 +61,16 @@ function runStopCheck() {
     const recentCutoffMs = nowMs - 60 * 60 * 1000;
     let newlyTouched = 0;
 
-    if (existsSync(brainDir)) {
-      for (const ent of readdirSync(brainDir, { withFileTypes: true })) {
-        if (!ent.isDirectory()) continue;
-        const tPath = join(brainDir, ent.name, '.system_generated', 'logs', 'transcript.jsonl');
-        if (!existsSync(tPath)) continue;
-        try {
-          const st = statSync(tPath);
-          if (st.mtimeMs < recentCutoffMs) continue;
-          const prevMtime = Number(state.knownHumanSessions?.[ent.name]?.mtimeMs || 0);
-          if (st.mtimeMs > prevMtime && isHumanConversationTranscript(tPath)) {
-            state.knownHumanSessions[ent.name] = { mtimeMs: Math.round(st.mtimeMs) };
-            newlyTouched += 1;
-          }
-        } catch {
-          // Ignore locked file
-        }
+    const sessions = discoverUnifiedBrainSessions({ analyticsDir });
+    for (const item of sessions) {
+      if (item.mtimeMs < recentCutoffMs) continue;
+      const prevMtime = Number(state.knownHumanSessions?.[item.conversationId]?.mtimeMs || 0);
+      const isHuman = item.transcriptPath
+        ? isHumanConversationTranscript(item.transcriptPath)
+        : Boolean(item.syntheticJsonl);
+      if (item.mtimeMs > prevMtime && isHuman) {
+        state.knownHumanSessions[item.conversationId] = { mtimeMs: Math.round(item.mtimeMs) };
+        newlyTouched += 1;
       }
     }
 

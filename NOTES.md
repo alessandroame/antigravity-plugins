@@ -29,17 +29,10 @@ Buffer di cattura rapida a zero cambio di contesto (`/take-note`). Le osservazio
 - **Domande Aperte da Riprendere**:
   1. *Strategia multi-macchina*: snapshot automatico a fine turno su ref ombra `wip/<pc>/<branch>` (senza sporcare `main`) + auto-push sui branch notturni con test verdi + check/fast-forward all'avvio sull'altro PC, oppure auto-commit/push diretto sul branch attivo, oppure sola guardia di avviso non distruttiva?
 
-### [NOTE-003] Analisi preventiva del prompt con proposta migliorata a review
-- **Stato**: `📥 Da Analizzare`
-- **Data Cattura**: 2026-11-05 08:38
-- **Lavorazione Attiva al Momento della Nota**: Nessuna
-- **Ambito Presunto**: `proactive-mentorship` (`prompt-refactor`) o nuovo plugin pre-esecuzione
-- **Testo Originale**:
-  > fare un plugin o estenderne uno esistente (penso alla mentorship) che pirma di eseguire un prompt lo analizza se migliorabile me ne propone uno migliore e me lo sottopone a review
-
 ---
 
 ## ✅ Analizzate & Consolidate (Ultime 10 Risolte)
 
 | ID | Titolo Sintetico | Data | Esito & Destinazione (<= 120 char) |
 | :--- | :--- | :---: | :--- |
+| `NOTE-003` | Analisi preventiva del prompt con proposta a review | 2026-11-08 | Implementata in `proactive-mentorship` (`evaluatePromptForPreventiveReview` + `--review-prompt` + `model-router.mjs`). |

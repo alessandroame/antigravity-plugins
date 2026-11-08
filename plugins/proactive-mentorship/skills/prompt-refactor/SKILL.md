@@ -18,11 +18,12 @@ Turns workflow friction (ambiguous prompt, recurring regression, or session less
 
 ## 2. Sequential Operational Procedure (Step 1 -> Step 4)
 
-### Step 1 — Anti-Noise Silence Gate
-Check before emitting any coaching:
-- Does the prompt already cite target `@file`/symbols, touch `<= 2` files, and present zero architectural risks, regressions, or self-learning triggers?
-  - **YES**: **Stay silent (`0 bytes` of coaching)** and execute the requested task directly.
-  - **NO**: Proceed to **Step 2**.
+### Step 1 — Anti-Noise Silence Gate & Preventive Prompt Review (`NOTE-003`)
+Run `node ~/.gemini/config/plugins/proactive-mentorship/scripts/session-miner.mjs --review-prompt "<prompt>"` (or inspect `promptReview` from `model-router.mjs --prompt "<prompt>"`):
+- **IF `promptReview.needsReview === false`** (prompt already cites target `@file`/symbols, touches `<= 2` files, or is a question/confirmation) AND no regression/self-learning trigger is present:
+  - **Stay silent (`0 bytes` of coaching)** and execute the requested task directly.
+- **IF `promptReview.needsReview === true`** (broad/unanchored mutation lacking `@file` or verification criteria):
+  - **BEFORE modifying files**, show `promptReview.improvedPromptDraftIt` inside the Mentorship Box and call `ask_question` with `promptReview.reviewOptionsIt` so the user can approve the improved prompt in 1 click.
 
 ### Step 2 — Single Antigravity Move Selection (Hick's Law)
 Select **at most 1 native command** matching the primary bottleneck:

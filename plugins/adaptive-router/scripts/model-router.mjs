@@ -9,13 +9,19 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   classifyPromptRoute,
   createDefaultCapabilityRegistry,
   discoverCapabilitiesFromTranscript,
   inferModelCapability
 } from '../core/router-engine.mjs';
+import {
+  classifySelfLearningCandidate,
+  collectPendingSupervisionAdvisories,
+  evaluatePromptForPreventiveReview,
+  isDirectCliEntrypoint,
+  recordCloudTurnEvent
+} from '../../proactive-mentorship/scripts/session-miner.mjs';
 
 export function getAnalyticsDir(customDir) {
   if (customDir) return resolve(customDir);
@@ -172,9 +178,7 @@ function formatStatusMarkdown(registry) {
   return lines.join('\n');
 }
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  import.meta.url.replace(/\\/g, '/') === pathToFileURL(resolve(process.argv[1])).href.replace(/\\/g, '/');
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isDirectEntry) {
   const args = process.argv.slice(2);
@@ -233,5 +237,20 @@ if (isDirectEntry) {
 
   const reg = loadCapabilityRegistry();
   const route = classifyPromptRoute(rawPrompt, { registry: reg, activeUiModel });
-  process.stdout.write(`${JSON.stringify(route, null, 2)}\n`);
+  recordCloudTurnEvent({ userText: rawPrompt, tier: route.tier });
+  const promptReview = evaluatePromptForPreventiveReview(rawPrompt);
+  const selfLearning = classifySelfLearningCandidate(rawPrompt);
+  const supervision = collectPendingSupervisionAdvisories();
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        ...route,
+        promptReview,
+        selfLearning,
+        supervision
+      },
+      null,
+      2
+    )}\n`
+  );
 }

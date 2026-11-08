@@ -27,10 +27,12 @@ import {
   generateCandidateScaffold,
   normalizePathToken
 } from '../core/harvester-engine.mjs';
+import {
+  discoverUnifiedBrainSessions,
+  isDirectCliEntrypoint
+} from '../../proactive-mentorship/scripts/session-miner.mjs';
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  import.meta.url.replace(/\\/g, '/') === pathToFileURL(resolve(process.argv[1])).href.replace(/\\/g, '/');
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 // Process timeout guard (45s) as mandated by execution-guard
 if (isDirectEntry) {
@@ -49,7 +51,14 @@ export function getAnalyticsDir() {
 export function getBrainDir() {
   const custom = process.env.ANTIGRAVITY_BRAIN_DIR;
   if (custom) return resolve(custom);
-  return join(homedir(), '.gemini', 'antigravity', 'brain');
+  const candidates = [
+    join(homedir(), '.gemini', 'antigravity', 'brain'),
+    join(homedir(), '.gemini', 'jetski', 'brain')
+  ];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return candidates[0];
 }
 
 export function resolveCatalogRoot() {
@@ -207,17 +216,15 @@ export function loadInstalledCatalogEntries(repoRoot = resolveCatalogRoot()) {
 }
 
 /**
- * Parses a single human conversation transcript into structured turns.
+ * Parses a raw JSONL transcript string into structured turns for pattern harvesting.
  * @param {string} convId
- * @param {string} transcriptPath
- * @returns {{ convId: string, mtimeMs: number, turns: Array<{ userText: string, toolCalls: Array<{ name: string, args: Record<string, unknown> }>, invokedSkills: string[], totalTokens: number }> } | null}
+ * @param {string} rawText
+ * @param {number} [mtimeMs]
  */
-export function parseTranscriptToSessionRecord(convId, transcriptPath) {
-  if (!isHumanConversationTranscript(transcriptPath)) return null;
-
+export function parseJsonlTextToSessionRecord(convId, rawText, mtimeMs = Date.now()) {
+  if (typeof rawText !== 'string' || !rawText.trim()) return null;
   try {
-    const st = statSync(transcriptPath);
-    const rawLines = readFileSync(transcriptPath, 'utf-8').split(/\r?\n/);
+    const rawLines = rawText.split(/\r?\n/);
     const turns = [];
     let currentTurn = null;
 
@@ -232,7 +239,6 @@ export function parseTranscriptToSessionRecord(convId, transcriptPath) {
 
       if (step.type === 'USER_INPUT' || step.source === 'USER_EXPLICIT') {
         const content = String(step.content || '');
-        // Skip system wakeup messages injected as pseudo-inputs
         if (content.includes('<SYSTEM_MESSAGE>') && !content.includes('<USER_REQUEST>')) {
           continue;
         }
@@ -289,7 +295,24 @@ export function parseTranscriptToSessionRecord(convId, transcriptPath) {
     }
 
     if (turns.length === 0) return null;
-    return { convId, mtimeMs: st.mtimeMs, turns };
+    return { convId, mtimeMs, turns };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parses a single human conversation transcript into structured turns.
+ * @param {string} convId
+ * @param {string} transcriptPath
+ * @returns {{ convId: string, mtimeMs: number, turns: Array<{ userText: string, toolCalls: Array<{ name: string, args: Record<string, unknown> }>, invokedSkills: string[], totalTokens: number }> } | null}
+ */
+export function parseTranscriptToSessionRecord(convId, transcriptPath) {
+  if (!isHumanConversationTranscript(transcriptPath)) return null;
+  try {
+    const st = statSync(transcriptPath);
+    const raw = readFileSync(transcriptPath, 'utf-8');
+    return parseJsonlTextToSessionRecord(convId, raw, st.mtimeMs);
   } catch {
     return null;
   }
@@ -343,7 +366,6 @@ export function saveHarvesterState(state, analyticsDir = getAnalyticsDir()) {
 export function runPatternHarvestScan(options = {}) {
   const days = Number(options.days || 14);
   const limit = Number(options.limit || 40);
-  const brainDir = options.brainDir || getBrainDir();
   const analyticsDir = options.analyticsDir || getAnalyticsDir();
   const repoRoot = options.repoRoot || resolveCatalogRoot();
   const nowMs = Date.now();
@@ -351,33 +373,22 @@ export function runPatternHarvestScan(options = {}) {
 
   const state = loadHarvesterState(analyticsDir);
   const catalogEntries = loadInstalledCatalogEntries(repoRoot);
-  const candidatesFiles = [];
+  const discovered = discoverUnifiedBrainSessions({
+    brainDir: options.brainDir,
+    analyticsDir,
+    includeCloudLog: !options.brainDir
+  }).filter((item) => item.mtimeMs >= cutoffMs);
 
-  if (existsSync(brainDir)) {
-    for (const ent of readdirSync(brainDir, { withFileTypes: true })) {
-      if (!ent.isDirectory()) continue;
-      const tPath = join(brainDir, ent.name, '.system_generated', 'logs', 'transcript.jsonl');
-      if (!existsSync(tPath)) continue;
-      try {
-        const st = statSync(tPath);
-        if (st.mtimeMs >= cutoffMs) {
-          candidatesFiles.push({ convId: ent.name, tPath, mtimeMs: st.mtimeMs });
-        }
-      } catch {
-        // ignore
-      }
-    }
-  }
-
-  candidatesFiles.sort((a, b) => b.mtimeMs - a.mtimeMs);
-  const selected = candidatesFiles.slice(0, limit);
+  const selected = discovered.slice(0, limit);
   const sessions = [];
 
   for (const item of selected) {
-    const rec = parseTranscriptToSessionRecord(item.convId, item.tPath);
+    const rec = item.transcriptPath
+      ? parseTranscriptToSessionRecord(item.conversationId, item.transcriptPath)
+      : parseJsonlTextToSessionRecord(item.conversationId, item.syntheticJsonl || '', item.mtimeMs);
     if (rec) {
       sessions.push(rec);
-      state.knownHumanSessions[item.convId] = { mtimeMs: item.mtimeMs };
+      state.knownHumanSessions[item.conversationId] = { mtimeMs: item.mtimeMs };
     }
   }
 

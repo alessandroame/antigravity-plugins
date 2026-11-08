@@ -13,6 +13,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-08 — Ripristino Supervisione Sessioni Cloud (`mapek`, `pattern-harvester`, `proactive-mentorship`), Fix Symlink CLI e Revisione Preventiva Prompt (`NOTE-003`)
+- **Tipo**: Architettura Ibrida Desktop/Cloud, Mining Sessioni & Coaching Preventivo (`proactive-mentorship` v1.3.0, `mapek` v1.1.0, `pattern-harvester` v1.1.0, `adaptive-router`, `engineering-workflow`, `skizzo`, `sync-to-global.mjs`, `NOTES.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-08_cloud-session-supervision-and-preventive-prompt-review.md`](file:///home/antigravity/alessandroame/antigravity-plugins/.agents/worklog.d/2026-11-08_cloud-session-supervision-and-preventive-prompt-review.md)
+- **Sintesi**:
+  - Risolto il blocco a `0` byte degli script CLI invocati via symlink `~/.gemini -> /shared/user/.gemini` tramite `isDirectCliEntrypoint` (`realpathSync`) e unificata la discovery delle sessioni tra Desktop (`~/.gemini/antigravity/brain`) e Cloud (`~/.gemini/jetski/brain` + `analytics/cloud-sessions-log.ndjson`) con `discoverUnifiedBrainSessions` e `recordCloudTurnEvent`.
+  - Implementata la **Revisione Preventiva dei Prompt** (`NOTE-003`, `evaluatePromptForPreventiveReview`) con proposta `ask_question` a 1-click sui prompt mutativi vaghi, cablando il Turn-1 in [`model-router.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/adaptive-router/scripts/model-router.mjs) (`CLOUD_BOOTSTRAP.md`) e il trigger background di fine turno (`mapek-stop-hook.mjs` + `periodic-harvester-hook.mjs`) in [`diff-triage.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs).
+
+---
+
 ## 2026-11-07 — Benchmark A/B Cieco (`GO`, `-21,6%` Byte) e Migrazione Universale allo Standard Ibrido `EN/IT` (`EN` Logic / `IT` User-Facing)
 - **Tipo**: Migrazione Catalogo, Guardie Bilingui `L3` & Standard Permanente (`plugins/*`, `.agents/skills/*`, `templates/*`, `scripts/validate.mjs`, `MEMORY.md`, `DESIDERATA.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-07_hybrid-en-it-migration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-11-07_hybrid-en-it-migration.md)
@@ -107,19 +116,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Dettagli**: [`.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md)
 - **Sintesi**:
   - Integrato nei 4 comandi esistenti (`/take-note`, `/review-notes`, `/next-step`, `/memory-sync`) il ponte Kanban remoto Git-native universale ([`board-engine.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/board-engine.mjs), [`gh-board-sync.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/gh-board-sync.mjs), `15/15 test PASS` in [`board-engine.test.mjs`](file:///c:/github/antigravity-plugins/tests/board-engine.test.mjs)) con auto-discovery cartelle/test multi-stack, sidecar `.agents/board-state.json` (preservando i `<= 160` char di `DESIDERATA.md`), scodamento parallelo su 2 Git Worktree con junction dipendenze `< 20ms`, auto-serializzazione dei conflitti e kit vocale [`voice-intake-kit.md`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/references/voice-intake-kit.md).
-
----
-
-## 2026-10-19 — Evoluzione Plugin `skizzo` v1.5.0 (Filtro Automatico a Priori `Gate 0: FAST-PASS vs DUAL-TRACK` e Motore `triage.mjs`)
-- **Tipo**: Evoluzione Protocollo Multi-Agente & Ottimizzazione Latenza (`plugins/skizzo/` v1.5.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md)
-- **Sintesi**:
-  - Introdotto il **Gate 0 di Triage Automatico a Priori** ([`triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs), `< 5ms`, `7/7 test PASS` in [`triage.test.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/tests/triage.test.mjs)) che mantiene `SKIZZO = ON` in sessione ma esegue `FAST-PASS` (`0` subagent, ~90–120s risparmiati + banner `[!NOTE]`) su comandi operativi/Git/memoria, sola lettura, conferme di piani già approvati e micro-edit, avviando `DUAL-TRACK` sulle scelte progettuali (con override `--force` e `--skip`).
-
----
-
-## 2026-10-18 — Creazione Plugin `human-governor` v1.0.0 (Tutela Cognitiva, Limite WIP Contemporanei, Anti-Thrashing e Coprifuoco)
-- **Tipo**: Nuovo Plugin di Governance Operatore & Hook `PreInvocation` (`plugins/human-governor/` v1.0.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-18_human-governor-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_human-governor-plugin.md)
-- **Sintesi**:
-  - Implementato il plugin `human-governor` (`/focus-audit`) con valutatore headless [`evaluator.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/core/evaluator.mjs), hook `PreInvocation` [`governor-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/governor-hook.mjs) (rilevamento WIP concorrenti in `brain/`, context-thrashing, maratone e coprifuoco `22:30–07:00` con blocco `ask_question` e notifica Windows) e CLI [`status.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs) (`5/5 test PASS`).

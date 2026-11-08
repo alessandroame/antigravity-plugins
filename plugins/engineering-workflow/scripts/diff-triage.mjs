@@ -7,10 +7,14 @@
  * so human and subagent reviewers skip mechanical noise.
  */
 
-import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { spawn, spawnSync } from 'node:child_process';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { analyzeGitDiffForReview } from '../core/review-guard-engine.mjs';
+import {
+  isDirectCliEntrypoint,
+  recordCloudTurnEvent
+} from '../../proactive-mentorship/scripts/session-miner.mjs';
 
 const safetyTimer = setTimeout(() => {
   console.error('[FATAL TIMEOUT] diff-triage.mjs exceeded 45s safety ceiling.');
@@ -107,6 +111,30 @@ function printHumanReport(report, repoPath) {
   }
 }
 
+function triggerBackgroundSupervisionOnTurnEnd(report) {
+  try {
+    if (report.summary.filesChanged > 0) {
+      const files = [...new Set(report.criticalHighlights.map((h) => h.file))].slice(0, 6);
+      const toolCalls = files.map((f) => ({ name: 'replace_file_content', args: { TargetFile: f } }));
+      toolCalls.push({ name: 'run_command', args: { CommandLine: 'node scripts/diff-triage.mjs' } });
+      recordCloudTurnEvent({ toolCalls });
+    }
+    const scriptDir = dirname(fileURLToPath(import.meta.url));
+    const mapekHook = resolve(scriptDir, '..', '..', 'mapek', 'scripts', 'mapek-stop-hook.mjs');
+    const harvesterHook = resolve(scriptDir, '..', '..', 'pattern-harvester', 'scripts', 'periodic-harvester-hook.mjs');
+    for (const hookScript of [mapekHook, harvesterHook]) {
+      const child = spawn(process.execPath, [hookScript], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      child.unref();
+    }
+  } catch {
+    // Non-blocking background supervision
+  }
+}
+
 function main() {
   const opts = parseCliArgs(process.argv.slice(2));
   const diffText = collectWorkspaceGitDiff(opts.repo, opts);
@@ -114,6 +142,8 @@ function main() {
     allowTestEdits: opts.allowTestEdits,
     maxHighlights: opts.maxHighlights
   });
+
+  triggerBackgroundSupervisionOnTurnEnd(report);
 
   if (opts.json) {
     console.log(JSON.stringify(report, null, 2));
@@ -127,8 +157,7 @@ function main() {
   process.exit(0);
 }
 
-const isDirectEntry =
-  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isDirectEntry) {
   main();

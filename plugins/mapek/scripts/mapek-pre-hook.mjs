@@ -11,17 +11,15 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
 import { getAnalyticsDir, getBrainDir } from './mapek.mjs';
 import {
   isHumanConversationTranscript,
   isSubagentTranscriptHead
 } from '../../human-governor/scripts/governor-hook.mjs';
+import { isDirectCliEntrypoint } from '../../proactive-mentorship/scripts/session-miner.mjs';
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  import.meta.url.replace(/\\/g, '/') === pathToFileURL(resolve(process.argv[1])).href.replace(/\\/g, '/');
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isDirectEntry) {
   const safetyWatchdog = setTimeout(() => {

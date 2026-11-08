@@ -8,7 +8,10 @@ import {
   analyzeSessionTranscripts,
   resolveCatalogRepoRoot,
   verifyAndSyncGlobalPlugins,
-  inspectCatalogGitOutboundStatus
+  inspectCatalogGitOutboundStatus,
+  evaluatePromptForPreventiveReview,
+  discoverUnifiedBrainSessions,
+  recordCloudTurnEvent
 } from '../scripts/session-miner.mjs';
 import {
   readGitHeadSha,
@@ -198,5 +201,73 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
     assert.match(formatted, /`adaptive-router` \(`v1\.0\.0`\)/);
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('evaluates prompts preventively (NOTE-003), flagging unanchored broad mutations while passing anchored or read-only turns', () => {
+    for (const direct of [
+      'si',
+      '/memory-sync',
+      'non vedo più agire il plugin che analizza le sessioni è ancora attivo?',
+      'modifica @src/ui/params.mjs aggiungendo il reset e lancia npm test'
+    ]) {
+      const passRes = evaluatePromptForPreventiveReview(direct);
+      assert.equal(passRes.needsReview, false, `Expected needsReview=false for: ${direct}`);
+    }
+
+    const reviewRes = evaluatePromptForPreventiveReview('sistema tutta la pagina dei parametri e rifai il layout', {
+      workspace: 'ParagliderSim'
+    });
+    assert.equal(reviewRes.needsReview, true);
+    assert.ok(reviewRes.score >= 3);
+    assert.ok(reviewRes.signals.includes('missing_file_anchor'));
+    assert.match(reviewRes.improvedPromptDraftIt, /ParagliderSim/);
+    assert.equal(reviewRes.reviewOptionsIt.length, 3);
+  });
+
+  it('discovers nested Cloud jetski brain sessions and cloud-sessions-log.ndjson entries', () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-cloud-brain-'));
+    try {
+      const nestedConvDir = path.join(
+        tmpRoot,
+        'v1',
+        'default',
+        'jetski_remote_agents_3p',
+        '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae'
+      );
+      const tasksDir = path.join(nestedConvDir, '.system_generated', 'tasks');
+      fs.mkdirSync(tasksDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(nestedConvDir, 'implementation_plan.md.metadata.json'),
+        JSON.stringify({ summary: 'Piano revisione polare e UI /params' }),
+        'utf-8'
+      );
+      fs.writeFileSync(
+        path.join(tasksDir, 'task-1.log'),
+        '> node scripts/validate.mjs --all\n/home/antigravity/alessandroame/antigravity-plugins\n',
+        'utf-8'
+      );
+
+      const analyticsDir = path.join(tmpRoot, 'analytics');
+      recordCloudTurnEvent(
+        {
+          conversationId: 'cloud-conv-extra',
+          workspace: 'antigravity-plugins',
+          userText: 'verifica lo stato di mapek',
+          toolCalls: [{ name: 'run_command', args: { CommandLine: 'node plugins/mapek/scripts/mapek.mjs --digest' } }]
+        },
+        analyticsDir
+      );
+
+      const sessions = discoverUnifiedBrainSessions({
+        brainDir: tmpRoot,
+        analyticsDir,
+        includeCloudLog: true
+      });
+      assert.equal(sessions.length, 2);
+      assert.ok(sessions.some((s) => s.conversationId === '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae' && s.syntheticJsonl));
+      assert.ok(sessions.some((s) => s.conversationId === 'cloud-conv-extra' && s.syntheticJsonl));
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
   });
 });

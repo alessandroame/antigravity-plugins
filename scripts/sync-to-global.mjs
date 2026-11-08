@@ -263,10 +263,12 @@ export function buildCloudBootstrapContent(catalogItems = []) {
     '## 1. Turn-1 Active Standards (Always-On)',
     '1. **Language & Sobriety (`engineering-sobriety`)**: Always reply in plain Italian, opening directly with facts/diagnosis (`0` sycophantic preambles, `0` decorative emojis in headings).',
     '2. **Semantic Drill-Down (`L0 -> L1 -> L2`)**: Above 8 lines, emit a self-contained `L0` summary (`0-Click`, no unexplained acronyms), `2..4` closed `<details>` `L1` drawers (`<summary><strong>N. Tema — Conclusione in 1 frase</strong></summary>` followed by a mandatory blank line), and nested `<details>` `L2` drawers for code, logs, or tables (`>= 4` cols or `> 4` rows).',
-    '3. **Pre-Turn Triage & Model Routing (`skizzo` + `adaptive-router`)**:',
+    '3. **Pre-Turn Triage, Model Routing & Preventive Prompt Review (`skizzo` + `adaptive-router` + `proactive-mentorship`)**:',
     '   - Run `node ~/.gemini/config/plugins/skizzo/scripts/triage.mjs --prompt "<prompt>"` (`FAST-PASS` vs `2..4` ranked subagents).',
-    '   - Run `node ~/.gemini/config/plugins/adaptive-router/scripts/model-router.mjs --prompt "<prompt>"` (`LOW/MEDIUM/HIGH` effort & subagent model tier).',
-    '4. **Verification & Delivery Gate (`execution-guard` + `engineering-workflow`)**: Run tests and `node ~/.gemini/config/plugins/engineering-workflow/scripts/diff-triage.mjs` after the last code edit before ending the turn.',
+    '   - Run `node ~/.gemini/config/plugins/adaptive-router/scripts/model-router.mjs --prompt "<prompt>"` (`LOW/MEDIUM/HIGH` effort, `promptReview`, `selfLearning`, and `supervision`).',
+    '   - **Preventive Prompt Review (`NOTE-003`)**: If `promptReview.needsReview === true`, present `promptReview.improvedPromptDraftIt` via `ask_question` (`promptReview.reviewOptionsIt`) BEFORE modifying files so the user can approve the improved prompt in 1 click.',
+    '   - **Supervision & Self-Learning**: If `supervision.hasPendingAdvisories === true`, surface the pending `mapek` / `pattern-harvester` advisory; if `selfLearning.shouldLearn === true`, graduate the lesson (`L1..L3`) and emit the 1-line receipt.',
+    '4. **Verification & Delivery Gate (`execution-guard` + `engineering-workflow`)**: Run tests and `node ~/.gemini/config/plugins/engineering-workflow/scripts/diff-triage.mjs` after the last code edit before ending the turn (which also triggers `mapek` and `pattern-harvester` in background).',
     '5. **Telemetry Badge & Token Footer (`telemetry-analytics`)**: Emit `【🟢/🟡/🔴 ETA tot ~Ns】` in `toolSummary` on the first visible operational tool when remaining work `>= 15s`, and end every reply with `> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`.',
     '6. **Cloud FUSE Skill Resolution (Zero-Timeout)**: Do NOT call `list_skills` or `lookup_skill` if FUSE latency causes timeouts; read `~/.gemini/skills/<skill>/SKILL.md` or `~/.gemini/config/plugins/<plugin>/rules/AGENTS.md` directly via `view_file`.',
     '',
@@ -597,10 +599,19 @@ export function syncPluginsToGlobal(options = {}) {
   };
 }
 
-const isMain =
-  Boolean(process.argv[1]) &&
-  fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase() ===
-    path.resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase();
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    const a = fs.realpathSync(fileURLToPath(import.meta.url)).replace(/\\/g, '/').toLowerCase();
+    const b = fs.realpathSync(path.resolve(process.argv[1])).replace(/\\/g, '/').toLowerCase();
+    return a === b;
+  } catch {
+    return (
+      fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase() ===
+      path.resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase()
+    );
+  }
+})();
 
 if (isMain) {
   const autoPull = process.argv.includes('--auto-pull');

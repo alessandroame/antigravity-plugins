@@ -25,17 +25,17 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 
 ---
 
-## 2. Parsing Transcript, Windows NTFS & Connect-RPC
+## 2. Parsing Transcript, Cloud VM Symlinks, Windows NTFS & Connect-RPC
 
+- **Risoluzione Symlink CLI (`~/.gemini -> /shared/user/.gemini`) e Discovery Sessioni Unificata Desktop/Cloud (`session-miner.mjs`, `mapek`, `pattern-harvester`)**:
+  - *Insidia*: Sulle VM Cloud Linux `~/.gemini` è un symlink a `/shared/user/.gemini`: confrontare `fileURLToPath(import.meta.url)` con `resolve(process.argv[1])` senza `realpathSync` restituisce `false` e fa terminare gli script CLI a `0` byte; inoltre le sessioni Cloud risiedono in `~/.gemini/jetski/brain/v1/default/jetski_remote_agents_3p/<uuid>` senza `transcript.jsonl` e non invocano gli hook IDE `Stop`.
+  - *Regola*: Usare sempre `isDirectCliEntrypoint(import.meta.url, process.argv[1])` (con `realpathSync`), `discoverUnifiedBrainSessions` + `recordCloudTurnEvent` (`cloud-sessions-log.ndjson`) e `evaluatePromptForPreventiveReview` (`NOTE-003`) in [`session-miner.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs), cablando il Turn-1 in [`model-router.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/adaptive-router/scripts/model-router.mjs) e il fine turno in [`diff-triage.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs).
 - **Normalizzazione Percorsi e Argomenti Doppiamente Quotati nel Parsing di `transcript.jsonl` (`pattern-harvester`, `telemetry-analytics`)**:
   - *Insidia*: Gli argomenti tool su Windows contengono backslash raddoppiati (`\\\\`) e valori stringa doppiamente quotati in JSON (`"\"node ...\""`), per cui sostituire `"[^"]*"` con `"<str>"` prima dell'unwrapping collassa l'intero comando in `"<str>"`; inoltre i loop generici `READ:FILE -> EDIT:FILE` generano rumore nel pattern mining se non filtrati su azioni operative e script già presenti in `plugins/*/scripts/`.
   - *Regola*: Usare `unwrapTranscriptString` prima di normalizzare path e scheletri CLI (`normalizeCommandSkeleton`), richiedere almeno un token operativo strutturato negli n-grammi RLE (`extractToolChainNgrams`) e assegnare `scriptBonus = 0.75` (`ALREADY_COVERED`) quando uno scheletro CLI invoca uno script già censito nel catalogo (`evaluateCatalogOverlap` in `harvester-engine.mjs`).
-- **Rilevamento Conversazione Attiva su NTFS (`transcript.jsonl` mtime)**:
-  - *Insidia*: Su NTFS l'`mtime` di `brain/<conversation-id>` non si aggiorna quando viene scritto il file annidato `.system_generated/logs/transcript.jsonl`.
-  - *Regola*: In `set-chat-title.mjs`, ordinare le sessioni leggendo `statSync(join(fullPath, '.system_generated', 'logs', 'transcript.jsonl')).mtimeMs`.
-- **Ridenominazione Dinamica Chat via Connect-RPC (`set-chat-title.mjs`)**:
-  - *Insidia*: Modificare direttamente `conversation_summaries.db` non aggiorna la sidebar Electron in tempo reale.
-  - *Regola*: Invocare `POST https://127.0.0.1:<port>/exa.language_server_pb.LanguageServerService/UpdateConversationAnnotations` con `x-codeium-csrf-token` e payload `{"cascadeId": "<id>", "annotations": {"title": "<titolo>"}}`.
+- **Rilevamento Conversazione Attiva su NTFS (`transcript.jsonl` mtime) e Ridenominazione Connect-RPC (`set-chat-title.mjs`)**:
+  - *Insidia*: Su NTFS l'`mtime` di `brain/<conversation-id>` non si aggiorna quando viene scritto `.system_generated/logs/transcript.jsonl`, e modificare `conversation_summaries.db` non aggiorna la sidebar Electron in tempo reale.
+  - *Regola*: Ordinare le sessioni da `statSync(join(fullPath, '.system_generated', 'logs', 'transcript.jsonl')).mtimeMs` e invocare `POST https://127.0.0.1:<port>/exa.language_server_pb.LanguageServerService/UpdateConversationAnnotations` con `x-codeium-csrf-token`.
 
 ---
 

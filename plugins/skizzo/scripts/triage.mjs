@@ -11,6 +11,8 @@
  * Zero DOM/storage dependencies. Runs in < 5ms in pure Node.js.
  */
 
+import { realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MAX_TRACKS = 4;
@@ -449,10 +451,19 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
 }
 
 // CLI entrypoint for quick inspection: node plugins/skizzo/scripts/triage.mjs "<prompt>"
-const isMain =
-  process.argv[1] &&
-  fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase() ===
-    process.argv[1].replace(/\\/g, '/').toLowerCase();
+function isCliEntrypoint(metaUrl, argv1) {
+  if (!argv1) return false;
+  const metaPath = fileURLToPath(metaUrl).replace(/\\/g, '/').toLowerCase();
+  const rawArgPath = resolve(argv1).replace(/\\/g, '/').toLowerCase();
+  if (metaPath === rawArgPath) return true;
+  try {
+    return metaPath === realpathSync(argv1).replace(/\\/g, '/').toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+const isMain = isCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isMain) {
   const args = process.argv.slice(2);
@@ -465,7 +476,7 @@ if (isMain) {
   const promptParts = [];
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (['--force', '-f', '--skip', '--fast', '--mediator', '-m', '--sticky'].includes(arg)) {
+    if (['--force', '-f', '--skip', '--fast', '--mediator', '-m', '--sticky', '--prompt'].includes(arg)) {
       continue;
     }
     if ((arg === '--tracks' || arg === '--agents') && i + 1 < args.length && /^\d+$/.test(args[i + 1])) {
