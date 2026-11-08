@@ -1,0 +1,18 @@
+{
+  "adaptive-router-hooks": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ./scripts/router-pre-hook.mjs",
+        "timeout": 5
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./scripts/router-stop-hook.mjs",
+        "timeout": 5
+      }
+    ]
+  }
+}
