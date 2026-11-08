@@ -17,6 +17,7 @@ import {
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, basename } from 'node:path';
+import { discoverUnifiedBrainSessions } from '../../proactive-mentorship/scripts/session-miner.mjs';
 
 export const MAX_IDLE_GAP_MS = 15 * 60 * 1000; // 15 minutes max idle gap between active steps
 export const MIN_ACTIVE_SESSION_MS = 5000; // 5s floor for single-turn sessions
@@ -693,6 +694,39 @@ export function syncBrainSessionsIndex(options = {}) {
       } catch {
         // Ignore locked or unreadable transcript
       }
+    }
+  }
+
+  if (Object.keys(nextSessions).length === 0 && !options.brainDir) {
+    try {
+      const cloudEntries = discoverUnifiedBrainSessions(undefined, { analyticsDir, limit: 60 });
+      for (const ce of cloudEntries) {
+        if (!ce.jsonlText) continue;
+        totalFiles += 1;
+        const mtimeMs = Math.round(ce.mtimeMs || Date.now());
+        const size = Buffer.byteLength(ce.jsonlText, 'utf-8');
+        const prev = existingIndex.sessions[ce.conversationId];
+        if (
+          !options.forceRebuild &&
+          prev &&
+          prev._mtimeMs === mtimeMs &&
+          prev._size === size &&
+          prev.summary
+        ) {
+          nextSessions[ce.conversationId] = prev;
+          cached += 1;
+          continue;
+        }
+        const summary = parseTranscriptContent(ce.jsonlText, ce.conversationId, mtimeMs);
+        nextSessions[ce.conversationId] = {
+          _mtimeMs: mtimeMs,
+          _size: size,
+          summary
+        };
+        scanned += 1;
+      }
+    } catch {
+      // Ignore Cloud backfill fallback errors
     }
   }
 

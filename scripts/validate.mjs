@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readdirSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -951,6 +951,20 @@ function main() {
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  const metaPath = fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase();
+  const argPath = resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase();
+  if (metaPath === argPath) return true;
+  try {
+    const realMeta = realpathSync(fileURLToPath(import.meta.url)).replace(/\\/g, '/').toLowerCase();
+    const realArg = realpathSync(resolve(process.argv[1])).replace(/\\/g, '/').toLowerCase();
+    return realMeta === realArg;
+  } catch {
+    return false;
+  }
+})();
+
+if (isMain) {
   main();
 }

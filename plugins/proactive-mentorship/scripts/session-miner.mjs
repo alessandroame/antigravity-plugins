@@ -25,12 +25,14 @@ import {
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { discoverRepositoryTestFiles } from '../../engineering-workflow/core/review-guard-engine.mjs';
 
 const UUID_DIR_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_CLOUD_LOG_BYTES = 5 * 1024 * 1024;
+const CLOUD_CATALOG_REPO_URL = 'https://github.com/alessandroame/antigravity-plugins.git';
+const DEFAULT_CLOUD_SYNC_TTL_MS = 15 * 60 * 1000;
 
 export function isDirectCliEntrypoint(metaUrl, argv1) {
   if (!argv1) return false;
@@ -38,7 +40,9 @@ export function isDirectCliEntrypoint(metaUrl, argv1) {
   const rawArgPath = resolve(argv1).replace(/\\/g, '/').toLowerCase();
   if (metaPath === rawArgPath) return true;
   try {
-    return metaPath === realpathSync(argv1).replace(/\\/g, '/').toLowerCase();
+    const realMeta = realpathSync(fileURLToPath(metaUrl)).replace(/\\/g, '/').toLowerCase();
+    const realArg = realpathSync(resolve(argv1)).replace(/\\/g, '/').toLowerCase();
+    return realMeta === realArg;
   } catch {
     return false;
   }
@@ -80,11 +84,39 @@ const CROSS_REPO_SYNC_RX =
   /\b(?:npm\s+run\s+sync|sync-to-global|aggiorna\s+i\s+plugin\w*|sincronizza\s+i\s+plugin)\b/i;
 
 /**
+ * Ensures the canonical `antigravity-plugins` repository is cloned locally in Cloud VMs
+ * when working inside another project repository (e.g. GlideMind, ParagliderSim, Quiz_VDS-VL).
+ * @param {string} [targetDir]
+ * @returns {string | null}
+ */
+export function ensureCloudCatalogClone(targetDir) {
+  const cloneDest = targetDir || join(homedir(), 'alessandroame', 'antigravity-plugins');
+  if (existsSync(join(cloneDest, 'scripts', 'validate.mjs'))) {
+    return resolve(cloneDest);
+  }
+  try {
+    mkdirSync(dirname(cloneDest), { recursive: true });
+    const res = spawnSync('git', ['clone', '--depth', '1', CLOUD_CATALOG_REPO_URL, cloneDest], {
+      encoding: 'utf-8',
+      timeout: 25000,
+      windowsHide: true
+    });
+    if (res.status === 0 && existsSync(join(cloneDest, 'scripts', 'validate.mjs'))) {
+      return resolve(cloneDest);
+    }
+  } catch {
+    // Non-blocking fallback if offline
+  }
+  return null;
+}
+
+/**
  * Resolves the canonical `antigravity-plugins` repository root regardless of current working directory.
  * @param {string} [customRoot]
+ * @param {{ autoCloneInCloud?: boolean }} [options]
  * @returns {string}
  */
-export function resolveCatalogRepoRoot(customRoot) {
+export function resolveCatalogRepoRoot(customRoot, options = {}) {
   if (customRoot && existsSync(join(resolve(customRoot), 'scripts', 'validate.mjs'))) {
     return resolve(customRoot);
   }
@@ -115,6 +147,8 @@ export function resolveCatalogRepoRoot(customRoot) {
 
   const crossOsCandidates = [
     resolve(process.cwd(), '..', 'antigravity-plugins'),
+    join(homedir(), 'alessandroame', 'antigravity-plugins'),
+    join(homedir(), '.gemini', 'antigravity-plugins'),
     'c:/github/antigravity-plugins',
     join(homedir(), 'github', 'antigravity-plugins'),
     join(homedir(), 'antigravity-plugins'),
@@ -127,7 +161,65 @@ export function resolveCatalogRepoRoot(customRoot) {
     }
   }
 
+  if (options.autoCloneInCloud && existsSync('/shared/user/.gemini')) {
+    const cloned = ensureCloudCatalogClone();
+    if (cloned) return cloned;
+  }
+
   return resolve(process.cwd());
+}
+
+/**
+ * Triggers a non-blocking detached background sync (`git pull --ff-only` + `sync-to-global.mjs`)
+ * when `~/.gemini/GEMINI.md` is missing or the last sync check is older than `ttlMs` (15m).
+ * Ensures every Cloud project VM stays permanently aligned with `antigravity-plugins` `main`.
+ * @param {{ ttlMs?: number, nowMs?: number, analyticsDir?: string, geminiBootstrapFile?: string, dryRun?: boolean }} [options]
+ * @returns {{ triggered: boolean, reason: string }}
+ */
+export function triggerBackgroundCloudSyncIfNeeded(options = {}) {
+  const nowMs = options.nowMs || Date.now();
+  const ttlMs = options.ttlMs || DEFAULT_CLOUD_SYNC_TTL_MS;
+  const geminiBootstrapFile =
+    options.geminiBootstrapFile || join(homedir(), '.gemini', 'GEMINI.md');
+  const syncStatePath = join(getAnalyticsDir(options.analyticsDir), 'plugin-sync-state.json');
+
+  let shouldTrigger = !existsSync(geminiBootstrapFile);
+  let reason = shouldTrigger ? 'missing-gemini-bootstrap' : 'up-to-date';
+
+  if (!shouldTrigger) {
+    try {
+      if (!existsSync(syncStatePath)) {
+        shouldTrigger = true;
+        reason = 'missing-sync-state';
+      } else {
+        const parsed = JSON.parse(readFileSync(syncStatePath, 'utf-8'));
+        const lastCheck = Number(parsed?.lastCheckAtMs) || 0;
+        if (nowMs - lastCheck >= ttlMs) {
+          shouldTrigger = true;
+          reason = 'ttl-expired';
+        }
+      }
+    } catch {
+      shouldTrigger = true;
+      reason = 'corrupt-sync-state';
+    }
+  }
+
+  if (shouldTrigger && !options.dryRun) {
+    try {
+      const selfScript = fileURLToPath(import.meta.url);
+      const child = spawn(process.execPath, [selfScript, '--background-sync'], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      child.unref();
+    } catch {
+      // Non-blocking background spawn
+    }
+  }
+
+  return { triggered: shouldTrigger, reason };
 }
 
 /**
@@ -137,7 +229,7 @@ export function resolveCatalogRepoRoot(customRoot) {
  * @returns {{ ok: boolean, repoRoot: string, steps: Array<{ step: string, status: number, output: string }> }}
  */
 export function verifyAndSyncGlobalPlugins(options = {}) {
-  const repoRoot = resolveCatalogRepoRoot(options.repoRoot);
+  const repoRoot = resolveCatalogRepoRoot(options.repoRoot, { autoCloneInCloud: !options.dryRun });
   const validateScript = join(repoRoot, 'scripts', 'validate.mjs');
   const syncScript = join(repoRoot, 'scripts', 'sync-to-global.mjs');
 
@@ -982,6 +1074,19 @@ const isMain = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isMain) {
   const args = process.argv.slice(2);
+  if (args.includes('--background-sync')) {
+    const repoRoot = resolveCatalogRepoRoot(undefined, { autoCloneInCloud: true });
+    const syncScript = join(repoRoot, 'scripts', 'sync-to-global.mjs');
+    if (existsSync(syncScript)) {
+      spawnSync(process.execPath, [syncScript, '--auto-pull', '--if-needed', '--quiet'], {
+        cwd: repoRoot,
+        encoding: 'utf-8',
+        timeout: 30000,
+        windowsHide: true
+      });
+    }
+    process.exit(0);
+  }
   if (args.includes('--verify-and-sync')) {
     const res = verifyAndSyncGlobalPlugins();
     process.stdout.write(

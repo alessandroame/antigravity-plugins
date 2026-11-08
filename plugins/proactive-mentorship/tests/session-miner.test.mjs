@@ -11,7 +11,8 @@ import {
   inspectCatalogGitOutboundStatus,
   evaluatePromptForPreventiveReview,
   discoverUnifiedBrainSessions,
-  recordCloudTurnEvent
+  recordCloudTurnEvent,
+  triggerBackgroundCloudSyncIfNeeded
 } from '../scripts/session-miner.mjs';
 import {
   readGitHeadSha,
@@ -161,14 +162,18 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('synchronizes plugins, skills, config.json, and CLOUD_BOOTSTRAP.md into isolated target directories', () => {
+  it('synchronizes plugins, skills, config.json, GEMINI.md, and CLOUD_BOOTSTRAP.md while cleaning duplicate AGENTS.md', () => {
     const root = resolveCatalogRepoRoot();
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-cloud-sync-'));
     const globalPluginsDir = path.join(tmpDir, 'config', 'plugins');
     const globalSkillsDir = path.join(tmpDir, 'skills');
     const globalConfigFile = path.join(tmpDir, 'config', 'config.json');
     const cloudBootstrapFile = path.join(tmpDir, 'CLOUD_BOOTSTRAP.md');
+    const globalGeminiFile = path.join(tmpDir, 'GEMINI.md');
+    const duplicateGlobalAgentsFile = path.join(tmpDir, 'AGENTS.md');
     const stateFile = path.join(tmpDir, 'analytics', 'plugin-sync-state.json');
+
+    fs.writeFileSync(duplicateGlobalAgentsFile, '# Antigravity Cloud Cross-Project Bootstrap\nlegacy duplicate', 'utf-8');
 
     const res = syncPluginsToGlobal({
       repoRoot: root,
@@ -176,6 +181,8 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
       globalSkillsDir,
       globalConfigFile,
       cloudBootstrapFile,
+      globalGeminiFile,
+      duplicateGlobalAgentsFile,
       stateFile,
       quiet: true
     });
@@ -186,14 +193,37 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
     assert.equal(fs.existsSync(path.join(globalSkillsDir, 'model-router', 'SKILL.md')), true);
     assert.equal(fs.existsSync(globalConfigFile), true);
     assert.equal(fs.existsSync(cloudBootstrapFile), true);
+    assert.equal(fs.existsSync(globalGeminiFile), true);
+    assert.equal(fs.existsSync(duplicateGlobalAgentsFile), false);
 
     const cfg = JSON.parse(fs.readFileSync(globalConfigFile, 'utf-8'));
     assert.equal(cfg.plugins['adaptive-router'].enabled, true);
 
-    const bootstrap = fs.readFileSync(cloudBootstrapFile, 'utf-8');
+    const bootstrap = fs.readFileSync(globalGeminiFile, 'utf-8');
     assert.match(bootstrap, /Antigravity Cloud Cross-Project Bootstrap/);
+    assert.match(bootstrap, /Conversational Triggers & Domain Contracts/);
+    assert.match(bootstrap, /chiudi lavorazione/);
     assert.match(bootstrap, /adaptive-router/);
     assert.match(bootstrap, /\/model-router/);
+
+    const checkFresh = triggerBackgroundCloudSyncIfNeeded({
+      analyticsDir: path.join(tmpDir, 'analytics'),
+      geminiBootstrapFile: globalGeminiFile,
+      nowMs: Date.now(),
+      ttlMs: 15 * 60 * 1000,
+      dryRun: true
+    });
+    assert.equal(checkFresh.triggered, false);
+
+    const checkExpired = triggerBackgroundCloudSyncIfNeeded({
+      analyticsDir: path.join(tmpDir, 'analytics'),
+      geminiBootstrapFile: globalGeminiFile,
+      nowMs: Date.now() + 20 * 60 * 1000,
+      ttlMs: 15 * 60 * 1000,
+      dryRun: true
+    });
+    assert.equal(checkExpired.triggered, true);
+    assert.equal(checkExpired.reason, 'ttl-expired');
 
     const formatted = buildCloudBootstrapContent([
       { name: 'adaptive-router', version: '1.0.0', hasRules: true, skills: ['model-router'], scripts: ['model-router.mjs'] }

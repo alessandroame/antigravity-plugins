@@ -20,7 +20,8 @@ import {
   collectPendingSupervisionAdvisories,
   evaluatePromptForPreventiveReview,
   isDirectCliEntrypoint,
-  recordCloudTurnEvent
+  recordCloudTurnEvent,
+  triggerBackgroundCloudSyncIfNeeded
 } from '../../proactive-mentorship/scripts/session-miner.mjs';
 
 export function getAnalyticsDir(customDir) {
@@ -238,6 +239,7 @@ if (isDirectEntry) {
   const reg = loadCapabilityRegistry();
   const route = classifyPromptRoute(rawPrompt, { registry: reg, activeUiModel });
   recordCloudTurnEvent({ userText: rawPrompt, tier: route.tier });
+  triggerBackgroundCloudSyncIfNeeded();
   const promptReview = evaluatePromptForPreventiveReview(rawPrompt);
   const selfLearning = classifySelfLearningCandidate(rawPrompt);
   const supervision = collectPendingSupervisionAdvisories();

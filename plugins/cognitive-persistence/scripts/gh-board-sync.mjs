@@ -9,12 +9,14 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   statSync,
   symlinkSync,
   writeFileSync
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {
   detectProjectTestCommand,
   mergeDesiderataWithSidecar,
@@ -170,6 +172,46 @@ export function fetchRemoteIssuesSafe(options = {}) {
     return { mode: 'LOCAL_ONLY', reason: 'NO_GITHUB_REMOTE', issues: [] };
   }
 
+  if (process.env.GH_TOKEN) {
+    try {
+      const apiStdout = execFileSync(
+        'curl',
+        [
+          '-fsSL',
+          '--max-time',
+          '3',
+          '-H',
+          `Authorization: Bearer ${process.env.GH_TOKEN}`,
+          '-H',
+          'Accept: application/vnd.github+json',
+          `https://api.github.com/repos/${remote.slug}/issues?state=open&per_page=30`
+        ],
+        {
+          cwd: options.repoRoot || process.cwd(),
+          timeout: 3500,
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }
+      );
+      const apiParsed = JSON.parse(apiStdout);
+      if (Array.isArray(apiParsed)) {
+        const normalized = apiParsed
+          .filter((item) => !item.pull_request)
+          .map((item) => ({
+            issueNumber: String(item.number),
+            title: item.title,
+            body: item.body || '',
+            authorLogin: item.user?.login || item.author?.login || '',
+            labels: (item.labels || []).map((l) => (typeof l === 'string' ? l : l.name)),
+            updatedAt: item.updated_at ? Date.parse(item.updated_at) : 0
+          }));
+        return { mode: 'ONLINE_GH', remote, issues: normalized };
+      }
+    } catch {
+      // Fall through to gh CLI
+    }
+  }
+
   try {
     const stdout = execFileSync(
       'gh',
@@ -316,6 +358,20 @@ function main() {
   console.log(`Safe Inbox Pull  : ${report.inboxPlan.imported.length} new / ${report.inboxPlan.deferredOnGithub.length} deferred`);
 }
 
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+const isDirectEntry = (() => {
+  if (!process.argv[1]) return false;
+  const metaPath = fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase();
+  const argPath = resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase();
+  if (metaPath === argPath) return true;
+  try {
+    const realMeta = realpathSync(fileURLToPath(import.meta.url)).replace(/\\/g, '/').toLowerCase();
+    const realArg = realpathSync(resolve(process.argv[1])).replace(/\\/g, '/').toLowerCase();
+    return realMeta === realArg;
+  } catch {
+    return false;
+  }
+})();
+
+if (isDirectEntry) {
   main();
 }
