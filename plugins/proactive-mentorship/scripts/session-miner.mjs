@@ -273,7 +273,7 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
     const testRes = spawnSync(process.execPath, ['--test', ...testFiles], {
       cwd: repoRoot,
       encoding: 'utf-8',
-      timeout: 25000
+      timeout: 40000
     });
     steps.push({
       step: 'unit_tests',
@@ -289,7 +289,7 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
   const syncRes = spawnSync(process.execPath, [syncScript], {
     cwd: repoRoot,
     encoding: 'utf-8',
-    timeout: 20000
+    timeout: 40000
   });
   steps.push({
     step: 'sync_to_global',

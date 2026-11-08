@@ -229,15 +229,22 @@ function syncDirectoryContents(src, dest) {
     if (!fs.existsSync(parent)) {
       fs.mkdirSync(parent, { recursive: true });
     }
-    const buf = fs.readFileSync(src);
     if (fs.existsSync(dest)) {
       try {
+        const destSt = fs.statSync(dest);
+        if (destSt.size === st.size && destSt.mtimeMs >= st.mtimeMs - 50) {
+          return;
+        }
+        const buf = fs.readFileSync(src);
         const existing = fs.readFileSync(dest);
         if (Buffer.compare(buf, existing) === 0) return;
+        fs.writeFileSync(dest, buf);
+        return;
       } catch {
         // Overwrite if unreadable
       }
     }
+    const buf = fs.readFileSync(src);
     fs.writeFileSync(dest, buf);
   }
 }
@@ -264,8 +271,8 @@ export function buildCloudBootstrapContent(catalogItems = []) {
     '1. **Language & Sobriety (`engineering-sobriety`)**: Always reply in plain Italian, opening directly with facts/diagnosis (`0` sycophantic preambles, `0` decorative emojis in headings).',
     '2. **Semantic Drill-Down (`L0 -> L1 -> L2`)**: Above 8 lines, emit a self-contained `L0` summary (`0-Click`, no unexplained acronyms), `2..4` closed `<details>` `L1` drawers (`<summary><strong>N. Tema — Conclusione in 1 frase</strong></summary>` followed by a mandatory blank line), and nested `<details>` `L2` drawers for code, logs, or tables (`>= 4` cols or `> 4` rows).',
     '3. **Pre-Turn Triage, Model Routing & Preventive Prompt Review (`skizzo` + `adaptive-router` + `proactive-mentorship`)**:',
-    '   - Run `node ~/.gemini/config/plugins/skizzo/scripts/triage.mjs --prompt "<prompt>"` (`FAST-PASS` vs `2..4` ranked subagents).',
-    '   - Run `node ~/.gemini/config/plugins/adaptive-router/scripts/model-router.mjs --prompt "<prompt>"` (`LOW/MEDIUM/HIGH` effort, `promptReview`, `selfLearning`, `supervision`, and automatic background catalog sync).',
+    '   - **Zero Extra Round-Trip on Short Mechanical Turns (`LOW` Tier)**: On short confirmations or mechanical closings (`"si"`, `"ok"`, `"procedi"`, `"fallo"`, `"commit e push"`, `"chiudi lavorazione"`, `/memory-sync`, `/next-step`, `/take-note`), do NOT burn a separate pre-turn CLI round-trip; execute the target action directly (or chain `model-router.mjs` inline with `&&`).',
+    '   - On substantive requests, run `node ~/.gemini/config/plugins/skizzo/scripts/triage.mjs --prompt "<prompt>" && node ~/.gemini/config/plugins/adaptive-router/scripts/model-router.mjs --prompt "<prompt>"` in a **single** `run_command` call (`FAST-PASS` vs `2..4` ranked subagents, `LOW/MEDIUM/HIGH` effort, `promptReview`, `selfLearning`, `supervision`).',
     '   - **Preventive Prompt Review (`NOTE-003`)**: If `promptReview.needsReview === true`, present `promptReview.improvedPromptDraftIt` via `ask_question` (`promptReview.reviewOptionsIt`) BEFORE modifying files so the user can approve the improved prompt in 1 click.',
     '   - **Supervision & Self-Learning**: If `supervision.hasPendingAdvisories === true`, surface the pending `mapek` / `pattern-harvester` advisory; if `selfLearning.shouldLearn === true`, graduate the lesson (`L1..L3`) and emit the 1-line receipt.',
     '4. **Verification & Delivery Gate (`execution-guard` + `engineering-workflow`)**: Run tests and `node ~/.gemini/config/plugins/engineering-workflow/scripts/diff-triage.mjs` after the last code edit before ending the turn (which also triggers `mapek` and `pattern-harvester` in background).',
