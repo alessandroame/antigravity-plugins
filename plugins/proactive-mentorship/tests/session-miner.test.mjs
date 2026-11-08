@@ -12,7 +12,9 @@ import {
 } from '../scripts/session-miner.mjs';
 import {
   readGitHeadSha,
-  computeCatalogFingerprint
+  computeCatalogFingerprint,
+  syncPluginsToGlobal,
+  buildCloudBootstrapContent
 } from '../../../scripts/sync-to-global.mjs';
 import {
   evaluateCrossMachineSyncNeed
@@ -152,6 +154,48 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
     assert.equal(typeof outbound.dirty, 'boolean');
     assert.equal(typeof outbound.uncommittedCount, 'number');
     assert.equal(typeof outbound.unpushedCount, 'number');
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('synchronizes plugins, skills, config.json, and CLOUD_BOOTSTRAP.md into isolated target directories', () => {
+    const root = resolveCatalogRepoRoot();
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-cloud-sync-'));
+    const globalPluginsDir = path.join(tmpDir, 'config', 'plugins');
+    const globalSkillsDir = path.join(tmpDir, 'skills');
+    const globalConfigFile = path.join(tmpDir, 'config', 'config.json');
+    const cloudBootstrapFile = path.join(tmpDir, 'CLOUD_BOOTSTRAP.md');
+    const stateFile = path.join(tmpDir, 'analytics', 'plugin-sync-state.json');
+
+    const res = syncPluginsToGlobal({
+      repoRoot: root,
+      globalPluginsDir,
+      globalSkillsDir,
+      globalConfigFile,
+      cloudBootstrapFile,
+      stateFile,
+      quiet: true
+    });
+
+    assert.equal(res.synced, true);
+    assert.ok(res.syncedCount >= 15);
+    assert.ok(res.syncedSkillsCount >= 32);
+    assert.equal(fs.existsSync(path.join(globalSkillsDir, 'model-router', 'SKILL.md')), true);
+    assert.equal(fs.existsSync(globalConfigFile), true);
+    assert.equal(fs.existsSync(cloudBootstrapFile), true);
+
+    const cfg = JSON.parse(fs.readFileSync(globalConfigFile, 'utf-8'));
+    assert.equal(cfg.plugins['adaptive-router'].enabled, true);
+
+    const bootstrap = fs.readFileSync(cloudBootstrapFile, 'utf-8');
+    assert.match(bootstrap, /Antigravity Cloud Cross-Project Bootstrap/);
+    assert.match(bootstrap, /adaptive-router/);
+    assert.match(bootstrap, /\/model-router/);
+
+    const formatted = buildCloudBootstrapContent([
+      { name: 'adaptive-router', version: '1.0.0', hasRules: true, skills: ['model-router'], scripts: ['model-router.mjs'] }
+    ]);
+    assert.match(formatted, /`adaptive-router` \(`v1\.0\.0`\)/);
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
