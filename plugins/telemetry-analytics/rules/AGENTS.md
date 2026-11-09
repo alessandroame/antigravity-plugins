@@ -10,10 +10,10 @@ The ETA indicates **remaining time to complete the entire user request**:
 3. **Baselines**: File read/search `3–5s`; file edit `6–10s`; command/test `8–20s`; final synthesis `5–8s`.
 
 ## 2. Mandatory Per-Prompt, Context & Session Token Footer (End of Reply)
-1. **Compact 4-Value Format (`in`, `out`, `Contesto`, `Sessione`)**: At the very end of every chat reply to the user, append as the last line ONLY this minimal Italian format:
-   `> Prompt #<N>: <in> in / <out> out · Contesto: <ctx> · Sessione: <totSessione>`
-   *(Example: `> Prompt #6: 198k in / 41k out · Contesto: 142k · Sessione: 1.67M`). Here `<ctx>` is the active context window size reached in the turn (`input_tokens + cache_read_tokens` of the latest step). NEVER add cache %, steps, tools, or duration to the chat footer: show those details only when `/plugin-analytics` is invoked.*
-2. **Zero-Latency Calculation**: Use `transcript.jsonl` / `report.mjs` / `.eta_<id>.json` values if already read in the turn, or deterministic turn estimates (`in`, `out`, active context `<ctx>`, and cumulative session `in+out`) without running extra tool calls at reply end.
+1. **Compact 4-Value Format (`in`, `out`, `Contesto`, `Sessione`)**: At the very end of every chat reply to the user, append as the last line ONLY this minimal Italian format with `{percentuale} ({dimensione})` against the `1M` (`1,048,576` tokens) window:
+   `> Prompt #<N>: <in> in / <out> out · Contesto: <ctxPct>% (<ctx>) · Sessione: <sessPct>% (<totSessione>)`
+   *(Example: `> Prompt #6: 198k in / 41k out · Contesto: 14% (142k) · Sessione: 160% (1.67M)`). Here `<ctx>` is `input_tokens + cache_read_tokens` of the latest step, `<totSessione>` is cumulative session `in + out`, and both percentages are relative to `1,048,576` tokens. NEVER add cache %, steps, tools, or duration to the chat footer: show those details only when `/plugin-analytics` is invoked.*
+2. **Zero-Latency Calculation**: Use `transcript.jsonl` / `report.mjs` / `.eta_<id>.json` values if already read in the turn, or deterministic turn estimates (`in`, `out`, `<ctx>`, `<totSessione>`, and their `%` over `1M`) without running extra tool calls at reply end.
 
 ## 3. Metric Sobriety & Local Storage Governance (`~/.gemini/antigravity/analytics/`)
 1. **Objective Measurements**: Report real figures (`ms`/`s`, `calls`, `tokens`) and openly disclose tool failures.

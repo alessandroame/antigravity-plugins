@@ -7,7 +7,7 @@ Plugin di osservabilità, monitoraggio dell'utilizzo personale, rendicontazione 
 ## 1. Funzionalità Principali
 
 1. **Report Token per Singolo Prompt (`Prompt #1..#N`) e Riga Finale in Chat**:
-   - In calce a ogni risposta in chat mostra solo la riga compatta a 4 valori: `> Prompt #<N>: <in> in / <out> out · Contesto: <ctx> · Sessione: <totSessione>`.
+   - In calce a ogni risposta in chat mostra solo la riga compatta a 4 valori: `> Prompt #<N>: <in> in / <out> out · Contesto: <ctxPct>% (<ctx>) · Sessione: <sessPct>% (<totSessione>)`.
    - Quando si invoca `/plugin-analytics` (`--session <id>`) e nel tab **`Token per Prompt`** della Dashboard HTML, espone l'analisi completa per ogni prompt: **Token del singolo prompt** (`inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheHitPct`), **Crescita del contesto e cumulativo di sessione** (`contextTokens`, `cumulativeDirectTokens`, `cumulativeCacheTokens`) e **Costo operativo** (`plannerTurns`, `toolCalls`, `durationMs` al netto delle attese su `ask_question` e delle pause `> 15m`).
 2. **Backfill Incrementale dalle Sessioni Locali (`core/session-backfill.mjs`)**:
    - Scansiona tutte le conversazioni presenti in `~/.gemini/antigravity/brain/` e mantiene un indice incrementale (`~/.gemini/antigravity/analytics/sessions-index.json`, schema `v3`) basato su `mtimeMs` e `size` per rianalizzare solo i transcript nuovi o modificati (`< 100ms` a regime).

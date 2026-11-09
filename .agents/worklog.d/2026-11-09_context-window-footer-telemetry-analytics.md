@@ -8,7 +8,7 @@ Durante l'ispezione della capienza della finestra di contesto di **Gemini 4 Argo
 
 ## 2. Modifiche Implementate
 1. **Regola Canonica (`plugins/telemetry-analytics/rules/AGENTS.md`)**:
-   - Aggiornato il contratto da 3 a 4 valori: `> Prompt #<N>: <in> in / <out> out · Contesto: <ctx> · Sessione: <totSessione>`.
+   - Aggiornato il contratto da 3 a 4 valori con template `{percentuale} ({dimensione})` su `1M` (`1.048.576` token): `> Prompt #<N>: <in> in / <out> out · Contesto: <ctxPct>% (<ctx>) · Sessione: <sessPct>% (<totSessione>)`.
 2. **Bootstrap Globale & Cloud (`scripts/sync-to-global.mjs`)**:
    - Allineato il punto 5 degli standard Always-On generati in `~/.gemini/GEMINI.md` e `~/.gemini/CLOUD_BOOTSTRAP.md`.
 3. **Documentazione e Memoria (`plugins/telemetry-analytics/README.md`, `MEMORY.md`, `DESIDERATA.md`)**:
