@@ -1,18 +1,15 @@
 # Adaptive Model & Effort Routing Protocol (`adaptive-router`)
 
-Governs dynamic cognitive profile assignment (`LOW`, `MEDIUM`, `HIGH`), subagent model selection (`flash_lite`, `flash`, `pro`, `inherit`), and operational effort budget on every turn, automatically adapting to newly released models and modes. Always communicate with the user in plain Italian.
+Governs dynamic cognitive profile assignment (`LOW`, `MEDIUM`, `HIGH`), operational effort budget on every turn, and future-proof model auto-discovery. Always communicate with the user in plain Italian.
 
-## 1. User-Authorized Dynamic Subagent Model Routing (`invoke_subagent`)
-With this plugin enabled, the user explicitly authorizes selecting the `Model` parameter of `invoke_subagent` according to the prompt tier instead of defaulting exclusively to `inherit`:
-1. **`LOW` Tier (`T1_INSTANT` — Effort `low`)**:
-   - **Trigger**: mechanical operations (`git`, `npm test`, `/memory-sync`), surgical single-file micro-edits (`<= 14` words), and quick lookups.
-   - **Action**: `0` subagents (or `Model: 'flash_lite'` if strictly required), max `2` tool turns, direct concise execution.
-2. **`MEDIUM` Tier (`T2_BALANCED` — Effort `medium`)**:
-   - **Trigger**: structured code explanations (`/how-its-made`), single-module bugfixes, features, or unit tests without cross-domain conflicts (`score 2..3`).
-   - **Action**: direct execution or subagent delegation with `Model: 'flash'`, max `4` tool turns, and targeted module verification.
-3. **`HIGH` Tier (`T3_DEEP` — Effort `high`)**:
-   - **Trigger**: architectural design, multi-file refactoring, race conditions, or multi-perspective trade-offs (`score >= 4`).
-   - **Action**: delegate deep analysis or design tasks to subagents with `Model: 'pro'` (with automatic circuit-breaker fallback to `'inherit'` if a tier is marked inactive in `model-capabilities.json`).
+## 1. Native Subagent Model Inheritance (`Model: 'inherit'`)
+To guarantee full consistency between the UI settings chosen by the user and background tasks, subagent model routing follows the native Antigravity baseline:
+1. **Always Default to `Model: 'inherit'`**: Subagents MUST inherit the exact model and reasoning mode selected in the UI (`Model: 'inherit'`). Never downscale subagents automatically to `flash` or `flash_lite` based on prompt heuristics, preserving the user's active reasoning depth (`Low`, `Medium`, `High`).
+2. **Explicit Override Only**: Select an alternative model (`flash_lite`, `flash`, `pro`) ONLY when the user explicitly requests it in the prompt (e.g. *"con subagent veloci"*, *"usa flash per i subagent"*).
+3. **Turn-Level Operational Budget**:
+   - `LOW` Tier (`T1_INSTANT`): mechanical operations (`git`, `npm test`, `/memory-sync`, `commit e push`) -> `0` subagents, consolidated single-step execution.
+   - `MEDIUM` Tier (`T2_BALANCED`): single-module edits, structured explanations (`/how-its-made`) -> max `4` tool turns.
+   - `HIGH` Tier (`T3_DEEP`): multi-file refactoring, architectural trade-offs -> deep analysis with `skizzo` / subagents running on inherited UI model.
 
 ## 2. Future-Proof Auto-Discovery & UI Alignment
 1. **Continuous Passive Discovery (`Stop` Hook)**: `router-stop-hook.mjs` detects newly released models and modes from `<USER_SETTINGS_CHANGE>` and `PLANNER_RESPONSE` records in `transcript.jsonl`, classifying them at Day 0 via lexical family inference (`lite/mini/haiku` -> `LOW`, `flash/sonnet` -> `MEDIUM`, `pro/ultra/opus/thinking` -> `HIGH`) and empirically self-calibrating after `>= 5` real turns.
