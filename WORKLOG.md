@@ -13,6 +13,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-09 — Estensione Footer Token di Fine Risposta a 4 Valori con Dimensione Contesto (`Contesto: <ctx>`)
+- **Tipo**: Evoluzione Regola Telemetria & Bootstrap Cloud (`plugins/telemetry-analytics/rules/AGENTS.md`, `scripts/sync-to-global.mjs`, `MEMORY.md`, `DESIDERATA.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-09_context-window-footer-telemetry-analytics.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-11-09_context-window-footer-telemetry-analytics.md)
+- **Sintesi**:
+  - Aggiornato il formato del footer automatico di fine risposta da 3 a 4 valori (`> Prompt #<N>: <in> in / <out> out · Contesto: <ctx> · Sessione: <totSessione>`) per esporre in tempo reale l'occupazione della finestra di contesto (`input_tokens + cache_read_tokens` dell'ultimo passo) in [`plugins/telemetry-analytics/rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/rules/AGENTS.md) e nel bootstrap globale [`scripts/sync-to-global.mjs`](file:///c:/github/antigravity-plugins/scripts/sync-to-global.mjs).
+
+---
+
 ## 2026-11-08 — Bootstrap Cloud Permanente (`~/.gemini/GEMINI.md`), Bonifica Ricettoni (`Anti-Illusion` & `Anti-Example Hardcoding`), Guardia L3 `mandatory-exit-oracle-check` e Taglio Consumo Token (`LOW` Tier)
 - **Tipo**: Architettura Ibrida Desktop/Cloud, Bonifica Euristiche `Anti-Illusion`, Guardie L3 `mapek` & Ottimizzazione Token (`proactive-mentorship`, `skizzo`, `pattern-harvester`, `adaptive-router`, `engineering-workflow`, `telemetry-analytics`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-08_cloud-session-supervision-and-preventive-prompt-review.md`](file:///home/antigravity/alessandroame/antigravity-plugins/.agents/worklog.d/2026-11-08_cloud-session-supervision-and-preventive-prompt-review.md)
@@ -100,19 +108,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Sintesi**:
   - Attivata di serie in [`triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs) (`9/9 test PASS`) la modalità `Auto-Skizzo Silente` (`silentFastPass: true` a `0 byte` di banner sull'88% di turni diretti, auto-escalation `DUAL-TRACK` su `score >= 4`, guardia mid-sentence `non agire / solo una domanda`).
   - Creato [`session-miner.mjs`](file:///c:/github/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs) (`4/4 test PASS`) e integrato il ciclo di **Auto-Apprendimento Continuo (`L1..L3`)** con invarianti numerici anti-regressione, `validate.mjs --all`, `npm run sync` automatico e ricevuta a 1 riga.
-
----
-
-## 2026-10-21 — Collaudo Browser Gate 4 (`ui-geometry-probe.js`) e Ricevuta Visiva a 4 Misure (`engineering-workflow`, `laws-of-ux`)
-- **Tipo**: Evoluzione Governance Visiva & Verifica Browser (`plugins/engineering-workflow/`, `plugins/laws-of-ux/`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md)
-- **Sintesi**:
-  - Introdotta la sonda browser [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js) (`2/2 test PASS` in [`ui-geometry-probe.test.mjs`](file:///c:/github/antigravity-plugins/tests/ui-geometry-probe.test.mjs)) e la **Ricevuta Oggettiva a 4 Misure** (Budget schermo `>= 60%`, Gerarchia 3s + `nowrap` unità, Sonda `violations: 0`, Flusso `Prima -> Click -> Dopo` visibile senza scroll), vietando i giudizi generici "a occhio" e le quote artificiali di difetti (`0 modifiche` se già conforme).
-
----
-
-## 2026-10-20 — Evoluzione `cognitive-persistence` v1.5.0 (Kanban Remoto Universale, Coda Parallela Anti-Conflitto e Kit Vocale Gemini Live / AI Studio)
-- **Tipo**: Evoluzione Architettura Cognitiva & Esecuzione Parallela (`plugins/cognitive-persistence/` v1.5.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md)
-- **Sintesi**:
-  - Integrato nei 4 comandi esistenti (`/take-note`, `/review-notes`, `/next-step`, `/memory-sync`) il ponte Kanban remoto Git-native universale ([`board-engine.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/board-engine.mjs), [`gh-board-sync.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/gh-board-sync.mjs), `15/15 test PASS` in [`board-engine.test.mjs`](file:///c:/github/antigravity-plugins/tests/board-engine.test.mjs)) con auto-discovery cartelle/test multi-stack, sidecar `.agents/board-state.json` (preservando i `<= 160` char di `DESIDERATA.md`), scodamento parallelo su 2 Git Worktree con junction dipendenze `< 20ms`, auto-serializzazione dei conflitti e kit vocale [`voice-intake-kit.md`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/references/voice-intake-kit.md).

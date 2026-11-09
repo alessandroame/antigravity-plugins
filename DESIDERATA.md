@@ -25,7 +25,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `cognitive-persistence` (v1.6.0) | Plugin | `🟢 Completato` | Architettura 3+1, Kanban remoto, auto-distillazione skill `L1..L3` in `/memory-sync` e kit vocale ([README](./plugins/cognitive-persistence/README.md)). |
 | `proactive-mentorship` (v1.3.0) | Plugin | `🟢 Completato` | Revisione preventiva prompt (`NOTE-003`), zero telemetria fittizia Cloud e discovery (`session-miner.mjs`). |
 | `skill-governance` | Plugin | `🟢 Completato` | Two-phase token model, audit dimensionale (A-F) e `skill-collision-check` ([README](./plugins/skill-governance/README.md)). |
-| `telemetry-analytics` (v2.1.0) | Plugin | `🟢 Completato` | Backfill Desktop/Cloud (`39` sessioni), token per prompt (footer 3 valori + dashboard) ed ETA ([README](./plugins/telemetry-analytics/README.md)). |
+| `telemetry-analytics` (v2.1.0) | Plugin | `🟢 Completato` | Backfill Desktop/Cloud (`39` sessioni), token per prompt (footer 4 valori con Contesto + dashboard) ed ETA ([README](./plugins/telemetry-analytics/README.md)). |
 | `code-inspector` | Plugin | `🟢 Completato` | Modello IPO Esteso, `/how-its-made`, widget `<agent-embed>` dual-tab e cassetti `<details>` ([README](./plugins/code-inspector/README.md)). |
 | `skizzo` (v1.7.0) | Plugin | `🟢 Completato` | Orchestrazione `2..4` domini via LLM, `Auto-Skizzo Silente` e regex universali anti-hardcoding ([README](./plugins/skizzo/README.md)). |
 | `ab-bench` (v1.0.0) | Plugin | `🟢 Completato` | Sfida cieca A/B su 5 Dita (`/ab-bench`, `--skill`, `--stats`), sanitizer anti-bias, Rasoio di Occam e storico 5 MB ([README](./plugins/ab-bench/README.md)). |

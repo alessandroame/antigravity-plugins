@@ -4,6 +4,18 @@ Questo documento traccia la cronologia consolidata delle decisioni architettural
 
 ---
 
+## [2026-10-21] Collaudo Browser Gate 4 (`ui-geometry-probe.js`) e Ricevuta Visiva a 4 Misure (`engineering-workflow`, `laws-of-ux`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md)
+- **Sintesi**: Introdotta la sonda browser `ui-geometry-probe.js` (`2/2 test PASS` in `ui-geometry-probe.test.mjs`) e la **Ricevuta Oggettiva a 4 Misure** (Budget schermo `>= 60%`, Gerarchia 3s + `nowrap` unità, Sonda `violations: 0`, Flusso `Prima -> Click -> Dopo` visibile senza scroll), vietando i giudizi generici "a occhio" e le quote artificiali di difetti (`0 modifiche` se già conforme).
+
+---
+
+## [2026-10-20] Evoluzione `cognitive-persistence` v1.5.0 (Kanban Remoto Universale, Coda Parallela Anti-Conflitto e Kit Vocale Gemini Live / AI Studio)
+- **Dettagli**: [`.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md)
+- **Sintesi**: Integrato nei 4 comandi esistenti (`/take-note`, `/review-notes`, `/next-step`, `/memory-sync`) il ponte Kanban remoto Git-native universale (`board-engine.mjs`, `gh-board-sync.mjs`, `15/15 test PASS` in `board-engine.test.mjs`) con auto-discovery cartelle/test multi-stack, sidecar `.agents/board-state.json`, scodamento parallelo su 2 Git Worktree con junction dipendenze `< 20ms`, auto-serializzazione dei conflitti e kit vocale `voice-intake-kit.md`.
+
+---
+
 ## [2026-10-16] ADR: Governance Anti-Bloat e Distillazione In-Place per Dominio di `MEMORY.md` (`cognitive-persistence` v1.3.0)
 
 ### Contesto & Motivazione

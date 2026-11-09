@@ -9,11 +9,11 @@ The ETA indicates **remaining time to complete the entire user request**:
 2. **Anchor on Visible Tools**: Place the badge in `toolSummary` of a single visible operational tool in the turn (first `edit_file`, `write_file`, or `run_command`, since `read_file` collapses into `Explored N files >`). NEVER print `[ETA...]` lines in chat prose.
 3. **Baselines**: File read/search `3–5s`; file edit `6–10s`; command/test `8–20s`; final synthesis `5–8s`.
 
-## 2. Mandatory Per-Prompt & Session Token Footer (End of Reply)
-1. **Compact 3-Value Format (`in`, `out`, `Sessione`)**: At the very end of every chat reply to the user, append as the last line ONLY this minimal Italian format:
-   `> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`
-   *(Example: `> Prompt #6: 198k in / 41k out · Sessione: 1.67M`). NEVER add cache, context peak, steps, tools, or duration to the chat footer: show those details only when `/plugin-analytics` is invoked.*
-2. **Zero-Latency Calculation**: Use `transcript.jsonl` / `report.mjs` values if already read in the turn, or deterministic turn estimates (`in`, `out`, and cumulative session `in+out`) without running extra tool calls at reply end.
+## 2. Mandatory Per-Prompt, Context & Session Token Footer (End of Reply)
+1. **Compact 4-Value Format (`in`, `out`, `Contesto`, `Sessione`)**: At the very end of every chat reply to the user, append as the last line ONLY this minimal Italian format:
+   `> Prompt #<N>: <in> in / <out> out · Contesto: <ctx> · Sessione: <totSessione>`
+   *(Example: `> Prompt #6: 198k in / 41k out · Contesto: 142k · Sessione: 1.67M`). Here `<ctx>` is the active context window size reached in the turn (`input_tokens + cache_read_tokens` of the latest step). NEVER add cache %, steps, tools, or duration to the chat footer: show those details only when `/plugin-analytics` is invoked.*
+2. **Zero-Latency Calculation**: Use `transcript.jsonl` / `report.mjs` / `.eta_<id>.json` values if already read in the turn, or deterministic turn estimates (`in`, `out`, active context `<ctx>`, and cumulative session `in+out`) without running extra tool calls at reply end.
 
 ## 3. Metric Sobriety & Local Storage Governance (`~/.gemini/antigravity/analytics/`)
 1. **Objective Measurements**: Report real figures (`ms`/`s`, `calls`, `tokens`) and openly disclose tool failures.
