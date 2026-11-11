@@ -21,6 +21,7 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { verifyTranscriptDeliveryGate } from '../core/review-guard-engine.mjs';
+import { collectWorkspaceGitDiff } from './diff-triage.mjs';
 
 const isDirectEntry =
   Boolean(process.argv[1]) && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
@@ -91,10 +92,14 @@ function pruneStaleDeliveryState(analyticsDir) {
 
 function runCliCheck(argv) {
   let transcriptPath = '';
+  let repoPath = '';
+  const allowTestEdits = argv.includes('--allow-test-edits');
   const jsonOutput = argv.includes('--json');
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--transcript' && argv[i + 1]) {
       transcriptPath = resolve(argv[++i]);
+    } else if (argv[i] === '--repo' && argv[i + 1]) {
+      repoPath = resolve(argv[++i]);
     }
   }
 
@@ -104,7 +109,8 @@ function runCliCheck(argv) {
   }
 
   const steps = parseTranscriptSteps(transcriptPath);
-  const verdict = verifyTranscriptDeliveryGate(steps);
+  const diffText = repoPath && existsSync(repoPath) ? collectWorkspaceGitDiff(repoPath) : '';
+  const verdict = verifyTranscriptDeliveryGate(steps, { diffText, allowTestEdits });
 
   if (jsonOutput) {
     console.log(JSON.stringify(verdict, null, 2));
@@ -114,6 +120,7 @@ function runCliCheck(argv) {
     console.log(`Last Passing Test Step : ${verdict.lastPassingTestStep}`);
     console.log(`Last UI Edit Step      : ${verdict.lastUiEditStep}`);
     console.log(`Last UI Probe Step     : ${verdict.lastPassingUiVerifyStep}`);
+    console.log(`Test Integrity         : ${verdict.testIntegrityViolation ? 'BLOCK' : 'PASS'}`);
     if (!verdict.ok) {
       console.log(`Reason                 : ${verdict.reasonIt}`);
     }
@@ -172,8 +179,8 @@ async function runStopHook() {
     process.exit(0);
   }
 
-  // Circuit breaker: remind at most once per unique (lastCodeEditStep, lastUiEditStep) signature
-  const editSignature = `${verdict.lastCodeEditStep}:${verdict.lastUiEditStep}`;
+  // Circuit breaker: remind at most once per unique (lastCodeEditStep, lastUiEditStep, testIntegrityViolation) signature
+  const editSignature = `${verdict.lastCodeEditStep}:${verdict.lastUiEditStep}:${verdict.testIntegrityViolation ? 'tamper' : 'clean'}`;
   let prevState = { lastRemindedSignature: '', reminderCount: 0 };
   if (existsSync(stateFile)) {
     try {

@@ -13,6 +13,32 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-09 — Estensione Footer Token di Fine Risposta a 4 Valori con Dimensione Contesto (`Contesto: <ctx>`)
+- **Tipo**: Evoluzione Regola Telemetria & Bootstrap Cloud (`plugins/telemetry-analytics/rules/AGENTS.md`, `scripts/sync-to-global.mjs`, `MEMORY.md`, `DESIDERATA.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-09_context-window-footer-telemetry-analytics.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-11-09_context-window-footer-telemetry-analytics.md)
+- **Sintesi**:
+  - Aggiornato il formato del footer automatico di fine risposta da 3 a 4 valori (`> Prompt #<N>: <in> in / <out> out · Contesto: <ctx> · Sessione: <totSessione>`) per esporre in tempo reale l'occupazione della finestra di contesto (`input_tokens + cache_read_tokens` dell'ultimo passo) in [`plugins/telemetry-analytics/rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/rules/AGENTS.md) e nel bootstrap globale [`scripts/sync-to-global.mjs`](file:///c:/github/antigravity-plugins/scripts/sync-to-global.mjs).
+
+---
+
+## 2026-11-08 — Bootstrap Cloud Permanente (`~/.gemini/GEMINI.md`), Bonifica Ricettoni (`Anti-Illusion` & `Anti-Example Hardcoding`), Guardia L3 `mandatory-exit-oracle-check` e Taglio Consumo Token (`LOW` Tier)
+- **Tipo**: Architettura Ibrida Desktop/Cloud, Bonifica Euristiche `Anti-Illusion`, Guardie L3 `mapek` & Ottimizzazione Token (`proactive-mentorship`, `skizzo`, `pattern-harvester`, `adaptive-router`, `engineering-workflow`, `telemetry-analytics`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-08_cloud-session-supervision-and-preventive-prompt-review.md`](file:///home/antigravity/alessandroame/antigravity-plugins/.agents/worklog.d/2026-11-08_cloud-session-supervision-and-preventive-prompt-review.md)
+- **Sintesi**:
+  - Risolto il mancato caricamento dei plugin nelle sessioni Cloud (`jetski`) compilando i contratti Always-On in `~/.gemini/GEMINI.md`, tagliando i round-trip CLI separati sui turni meccanici `LOW` (`commit e push`, `si`, `procedi`, `/memory-sync`), velocizzando la sincronizzazione FUSE (`size + mtimeMs` in [`sync-to-global.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/scripts/sync-to-global.mjs)) e attivando la guardia deterministica L3 [`mandatory-exit-oracle-check.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/mapek/scripts/guards/mandatory-exit-oracle-check.mjs) (`mapek-353df5ce`).
+  - Bonificati 7 ricettoni cross-plugin: rimossi i `token_usage` sintetici (`18000/12000/950`) e il fallback `task:task-<num>.log` in [`session-miner.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs) e [`harvester-engine.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/pattern-harvester/core/harvester-engine.mjs) (eliminato il falso positivo `pat-1e65506c77`), rimossi i vocaboli 3D di `GlideMind` da [`triage.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/skizzo/scripts/triage.mjs), azzerate le durate fittizie `25000ms` in [`router-engine.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/adaptive-router/core/router-engine.mjs) e generalizzata la guardia `HEURISTIC_ALIAS_OR_MAGIC_SCALE` in [`review-guard-engine.mjs`](file:///home/antigravity/alessandroame/antigravity-plugins/plugins/engineering-workflow/core/review-guard-engine.mjs).
+
+---
+
+## 2026-11-07 — Benchmark A/B Cieco (`GO`, `-21,6%` Byte) e Migrazione Universale allo Standard Ibrido `EN/IT` (`EN` Logic / `IT` User-Facing)
+- **Tipo**: Migrazione Catalogo, Guardie Bilingui `L3` & Standard Permanente (`plugins/*`, `.agents/skills/*`, `templates/*`, `scripts/validate.mjs`, `MEMORY.md`, `DESIDERATA.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-07_hybrid-en-it-migration.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-11-07_hybrid-en-it-migration.md)
+- **Sintesi**:
+  - Eseguito il benchmark cieco `/ab-bench` su 3 scenari (`S1`, `S2`, `S3`) con verdetto **`GO`** (`-21,6%` byte combinati su `execution-guard` e `mapek`, `+1` dito guadagnato su `S2` `4/5 -> 5/5`, `lostFingers: []`, `Language Drift = 0`).
+  - Convertiti in auto-discovery tutti i `56` file normativi (`19` `rules/*.md`, `35` `SKILL.md`, `2` `agents/*.md`) in **Hybrid EN/IT** (`EN` imperativo + `IT` contratto visibile/trigger, zero path hardcoded `c:/github/...`), adeguate le guardie bilingui `L3` e codificato lo standard permanente in `skill-governance`, `proactive-mentorship`, `mapek`, `pattern-harvester`, `starter-plugin` e `MEMORY.md`.
+
+---
+
 ## 2026-10-30 — Automazione Pre-Review Cieca (`/review-diff`), Guardia Integrità Test, Runner UI Multi-Viewport e Gate `Stop` sul Transcript (`engineering-workflow` v1.3.0)
 - **Tipo**: Guardie Eseguibili `L3`, Hook `Stop` & Pre-Review Avversariale (`plugins/engineering-workflow/` v1.3.0, `scripts/run-all-tests.mjs`, `package.json`, `session-miner.mjs`)
 - **Dettagli**: [`.agents/worklog.d/2026-10-30_review-and-delivery-automation-gates.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-30_review-and-delivery-automation-gates.md)
@@ -82,43 +108,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Sintesi**:
   - Attivata di serie in [`triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs) (`9/9 test PASS`) la modalità `Auto-Skizzo Silente` (`silentFastPass: true` a `0 byte` di banner sull'88% di turni diretti, auto-escalation `DUAL-TRACK` su `score >= 4`, guardia mid-sentence `non agire / solo una domanda`).
   - Creato [`session-miner.mjs`](file:///c:/github/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs) (`4/4 test PASS`) e integrato il ciclo di **Auto-Apprendimento Continuo (`L1..L3`)** con invarianti numerici anti-regressione, `validate.mjs --all`, `npm run sync` automatico e ricevuta a 1 riga.
-
----
-
-## 2026-10-21 — Collaudo Browser Gate 4 (`ui-geometry-probe.js`) e Ricevuta Visiva a 4 Misure (`engineering-workflow`, `laws-of-ux`)
-- **Tipo**: Evoluzione Governance Visiva & Verifica Browser (`plugins/engineering-workflow/`, `plugins/laws-of-ux/`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-21_ui-geometry-probe-and-4-measure-receipt.md)
-- **Sintesi**:
-  - Introdotta la sonda browser [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js) (`2/2 test PASS` in [`ui-geometry-probe.test.mjs`](file:///c:/github/antigravity-plugins/tests/ui-geometry-probe.test.mjs)) e la **Ricevuta Oggettiva a 4 Misure** (Budget schermo `>= 60%`, Gerarchia 3s + `nowrap` unità, Sonda `violations: 0`, Flusso `Prima -> Click -> Dopo` visibile senza scroll), vietando i giudizi generici "a occhio" e le quote artificiali di difetti (`0 modifiche` se già conforme).
-
----
-
-## 2026-10-20 — Evoluzione `cognitive-persistence` v1.5.0 (Kanban Remoto Universale, Coda Parallela Anti-Conflitto e Kit Vocale Gemini Live / AI Studio)
-- **Tipo**: Evoluzione Architettura Cognitiva & Esecuzione Parallela (`plugins/cognitive-persistence/` v1.5.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-20_cognitive-persistence-remote-kanban-voice.md)
-- **Sintesi**:
-  - Integrato nei 4 comandi esistenti (`/take-note`, `/review-notes`, `/next-step`, `/memory-sync`) il ponte Kanban remoto Git-native universale ([`board-engine.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/board-engine.mjs), [`gh-board-sync.mjs`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/scripts/gh-board-sync.mjs), `15/15 test PASS` in [`board-engine.test.mjs`](file:///c:/github/antigravity-plugins/tests/board-engine.test.mjs)) con auto-discovery cartelle/test multi-stack, sidecar `.agents/board-state.json` (preservando i `<= 160` char di `DESIDERATA.md`), scodamento parallelo su 2 Git Worktree con junction dipendenze `< 20ms`, auto-serializzazione dei conflitti e kit vocale [`voice-intake-kit.md`](file:///c:/github/antigravity-plugins/plugins/cognitive-persistence/references/voice-intake-kit.md).
-
----
-
-## 2026-10-19 — Evoluzione Plugin `skizzo` v1.5.0 (Filtro Automatico a Priori `Gate 0: FAST-PASS vs DUAL-TRACK` e Motore `triage.mjs`)
-- **Tipo**: Evoluzione Protocollo Multi-Agente & Ottimizzazione Latenza (`plugins/skizzo/` v1.5.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-19_skizzo-auto-triage-fast-pass.md)
-- **Sintesi**:
-  - Introdotto il **Gate 0 di Triage Automatico a Priori** ([`triage.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs), `< 5ms`, `7/7 test PASS` in [`triage.test.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/tests/triage.test.mjs)) che mantiene `SKIZZO = ON` in sessione ma esegue `FAST-PASS` (`0` subagent, ~90–120s risparmiati + banner `[!NOTE]`) su comandi operativi/Git/memoria, sola lettura, conferme di piani già approvati e micro-edit, avviando `DUAL-TRACK` sulle scelte progettuali (con override `--force` e `--skip`).
-
----
-
-## 2026-10-18 — Creazione Plugin `human-governor` v1.0.0 (Tutela Cognitiva, Limite WIP Contemporanei, Anti-Thrashing e Coprifuoco)
-- **Tipo**: Nuovo Plugin di Governance Operatore & Hook `PreInvocation` (`plugins/human-governor/` v1.0.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-18_human-governor-plugin.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_human-governor-plugin.md)
-- **Sintesi**:
-  - Implementato il plugin `human-governor` (`/focus-audit`) con valutatore headless [`evaluator.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/core/evaluator.mjs), hook `PreInvocation` [`governor-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/governor-hook.mjs) (rilevamento WIP concorrenti in `brain/`, context-thrashing, maratone e coprifuoco `22:30–07:00` con blocco `ask_question` e notifica Windows) e CLI [`status.mjs`](file:///c:/github/antigravity-plugins/plugins/human-governor/scripts/status.mjs) (`5/5 test PASS`).
-
----
-
-## 2026-10-18 — Evoluzione Plugin `proactive-mentorship` v1.1.0 (Coaching Antigravity, Agent Training Ladder `L0..L3` e Guardie `L3` in `validate.mjs`)
-- **Tipo**: Evoluzione Plugin & Validatore Statico (`plugins/proactive-mentorship/` v1.1.0, `scripts/validate.mjs`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-18_proactive-mentorship-agy-and-training.md)
-- **Sintesi**:
-  - Espanso `proactive-mentorship` al coaching *just-in-time* sui comandi Antigravity (`/grill-me`, `/plan`, `/compact`, `/goal`, `/learn`, `/skizzo`, `/ab-bench`) e all'Agent Training Ladder (`L0..L3`) con Gate Anti-Disturbo, prontuari in `references/` e guardie `L3` in `scripts/validate.mjs` (`</summary>` e `references/`).

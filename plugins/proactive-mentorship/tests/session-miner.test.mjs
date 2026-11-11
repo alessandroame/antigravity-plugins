@@ -8,11 +8,17 @@ import {
   analyzeSessionTranscripts,
   resolveCatalogRepoRoot,
   verifyAndSyncGlobalPlugins,
-  inspectCatalogGitOutboundStatus
+  inspectCatalogGitOutboundStatus,
+  evaluatePromptForPreventiveReview,
+  discoverUnifiedBrainSessions,
+  recordCloudTurnEvent,
+  triggerBackgroundCloudSyncIfNeeded
 } from '../scripts/session-miner.mjs';
 import {
   readGitHeadSha,
-  computeCatalogFingerprint
+  computeCatalogFingerprint,
+  syncPluginsToGlobal,
+  buildCloudBootstrapContent
 } from '../../../scripts/sync-to-global.mjs';
 import {
   evaluateCrossMachineSyncNeed
@@ -154,5 +160,153 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
     assert.equal(typeof outbound.unpushedCount, 'number');
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('synchronizes plugins, skills, config.json, GEMINI.md, and CLOUD_BOOTSTRAP.md while cleaning duplicate AGENTS.md', () => {
+    const root = resolveCatalogRepoRoot();
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-cloud-sync-'));
+    const globalPluginsDir = path.join(tmpDir, 'config', 'plugins');
+    const globalSkillsDir = path.join(tmpDir, 'skills');
+    const globalConfigFile = path.join(tmpDir, 'config', 'config.json');
+    const cloudBootstrapFile = path.join(tmpDir, 'CLOUD_BOOTSTRAP.md');
+    const globalGeminiFile = path.join(tmpDir, 'GEMINI.md');
+    const duplicateGlobalAgentsFile = path.join(tmpDir, 'AGENTS.md');
+    const stateFile = path.join(tmpDir, 'analytics', 'plugin-sync-state.json');
+
+    fs.writeFileSync(duplicateGlobalAgentsFile, '# Antigravity Cloud Cross-Project Bootstrap\nlegacy duplicate', 'utf-8');
+
+    const res = syncPluginsToGlobal({
+      repoRoot: root,
+      globalPluginsDir,
+      globalSkillsDir,
+      globalConfigFile,
+      cloudBootstrapFile,
+      globalGeminiFile,
+      duplicateGlobalAgentsFile,
+      stateFile,
+      quiet: true
+    });
+
+    assert.equal(res.synced, true);
+    assert.ok(res.syncedCount >= 15);
+    assert.ok(res.syncedSkillsCount >= 32);
+    assert.equal(fs.existsSync(path.join(globalSkillsDir, 'model-router', 'SKILL.md')), true);
+    assert.equal(fs.existsSync(globalConfigFile), true);
+    assert.equal(fs.existsSync(cloudBootstrapFile), true);
+    assert.equal(fs.existsSync(globalGeminiFile), true);
+    assert.equal(fs.existsSync(duplicateGlobalAgentsFile), false);
+
+    const cfg = JSON.parse(fs.readFileSync(globalConfigFile, 'utf-8'));
+    assert.equal(cfg.plugins['adaptive-router'].enabled, true);
+
+    const bootstrap = fs.readFileSync(globalGeminiFile, 'utf-8');
+    assert.match(bootstrap, /Antigravity Cloud Cross-Project Bootstrap/);
+    assert.match(bootstrap, /Conversational Triggers & Domain Contracts/);
+    assert.match(bootstrap, /chiudi lavorazione/);
+    assert.match(bootstrap, /adaptive-router/);
+    assert.match(bootstrap, /\/model-router/);
+
+    const checkFresh = triggerBackgroundCloudSyncIfNeeded({
+      analyticsDir: path.join(tmpDir, 'analytics'),
+      geminiBootstrapFile: globalGeminiFile,
+      nowMs: Date.now(),
+      ttlMs: 15 * 60 * 1000,
+      dryRun: true
+    });
+    assert.equal(checkFresh.triggered, false);
+
+    const checkExpired = triggerBackgroundCloudSyncIfNeeded({
+      analyticsDir: path.join(tmpDir, 'analytics'),
+      geminiBootstrapFile: globalGeminiFile,
+      nowMs: Date.now() + 20 * 60 * 1000,
+      ttlMs: 15 * 60 * 1000,
+      dryRun: true
+    });
+    assert.equal(checkExpired.triggered, true);
+    assert.equal(checkExpired.reason, 'ttl-expired');
+
+    const formatted = buildCloudBootstrapContent([
+      { name: 'adaptive-router', version: '1.0.0', hasRules: true, skills: ['model-router'], scripts: ['model-router.mjs'] }
+    ]);
+    assert.match(formatted, /`adaptive-router` \(`v1\.0\.0`\)/);
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('evaluates prompts preventively (NOTE-003), flagging unanchored broad mutations while passing anchored or read-only turns', () => {
+    for (const direct of [
+      'si',
+      '/memory-sync',
+      'non vedo più agire il plugin che analizza le sessioni è ancora attivo?',
+      'modifica @src/ui/params.mjs aggiungendo il reset e lancia npm test'
+    ]) {
+      const passRes = evaluatePromptForPreventiveReview(direct);
+      assert.equal(passRes.needsReview, false, `Expected needsReview=false for: ${direct}`);
+    }
+
+    const reviewRes = evaluatePromptForPreventiveReview('sistema tutta la pagina dei parametri e rifai il layout', {
+      workspace: 'ParagliderSim'
+    });
+    assert.equal(reviewRes.needsReview, true);
+    assert.ok(reviewRes.score >= 3);
+    assert.ok(reviewRes.signals.includes('missing_file_anchor'));
+    assert.match(reviewRes.improvedPromptDraftIt, /ParagliderSim/);
+    assert.equal(reviewRes.reviewOptionsIt.length, 3);
+  });
+
+  it('discovers nested Cloud jetski brain sessions and cloud-sessions-log.ndjson entries', () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-cloud-brain-'));
+    try {
+      const nestedConvDir = path.join(
+        tmpRoot,
+        'v1',
+        'default',
+        'jetski_remote_agents_3p',
+        '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae'
+      );
+      const tasksDir = path.join(nestedConvDir, '.system_generated', 'tasks');
+      fs.mkdirSync(tasksDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(nestedConvDir, 'implementation_plan.md.metadata.json'),
+        JSON.stringify({ summary: 'Piano revisione polare e UI /params' }),
+        'utf-8'
+      );
+      fs.writeFileSync(
+        path.join(tasksDir, 'task-1.log'),
+        '> node scripts/validate.mjs --all\n/home/antigravity/alessandroame/antigravity-plugins\n',
+        'utf-8'
+      );
+
+      fs.writeFileSync(
+        path.join(tasksDir, 'task-2.log'),
+        'Background output without command header\n',
+        'utf-8'
+      );
+
+      const analyticsDir = path.join(tmpRoot, 'analytics');
+      recordCloudTurnEvent(
+        {
+          conversationId: 'cloud-conv-extra',
+          workspace: 'antigravity-plugins',
+          userText: 'verifica lo stato di mapek',
+          toolCalls: [{ name: 'run_command', args: { CommandLine: 'node plugins/mapek/scripts/mapek.mjs --digest' } }]
+        },
+        analyticsDir
+      );
+
+      const sessions = discoverUnifiedBrainSessions({
+        brainDir: tmpRoot,
+        analyticsDir,
+        includeCloudLog: true
+      });
+      assert.equal(sessions.length, 2);
+      assert.ok(sessions.some((s) => s.conversationId === '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae' && s.syntheticJsonl));
+      assert.ok(sessions.some((s) => s.conversationId === 'cloud-conv-extra' && s.syntheticJsonl));
+      const nestedSess = sessions.find((s) => s.conversationId === '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae');
+      assert.ok(!nestedSess.syntheticJsonl.includes('task:task-2.log'));
+      assert.ok(!nestedSess.syntheticJsonl.includes('18000'));
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
   });
 });

@@ -10,21 +10,21 @@
  * Always outputs `{}\n` on stdout to guarantee zero UI noise in Antigravity chat.
  */
 
-import { existsSync, readdirSync, statSync } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   getAnalyticsDir,
-  getBrainDir,
   isHumanConversationTranscript,
   loadHarvesterState,
   saveHarvesterState
 } from './pattern-harvester.mjs';
+import {
+  discoverUnifiedBrainSessions,
+  isDirectCliEntrypoint
+} from '../../proactive-mentorship/scripts/session-miner.mjs';
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  import.meta.url.replace(/\\/g, '/') === pathToFileURL(resolve(process.argv[1])).href.replace(/\\/g, '/');
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 // 5-second safety watchdog so the hook can never stall Antigravity
 if (isDirectEntry) {
@@ -66,10 +66,9 @@ export function evaluatePeriodicTrigger(state, nowMs = Date.now()) {
   return { shouldTrigger: false, reason: 'BELOW_THRESHOLD' };
 }
 
-function runPeriodicCheck() {
+export function runPeriodicCheck() {
   try {
     const analyticsDir = getAnalyticsDir();
-    const brainDir = getBrainDir();
     const nowMs = Date.now();
     const state = loadHarvesterState(analyticsDir);
 
@@ -77,22 +76,16 @@ function runPeriodicCheck() {
     const recentCutoffMs = nowMs - 60 * 60 * 1000;
     let newlyTouchedCount = 0;
 
-    if (existsSync(brainDir)) {
-      for (const ent of readdirSync(brainDir, { withFileTypes: true })) {
-        if (!ent.isDirectory()) continue;
-        const tPath = join(brainDir, ent.name, '.system_generated', 'logs', 'transcript.jsonl');
-        if (!existsSync(tPath)) continue;
-        try {
-          const st = statSync(tPath);
-          if (st.mtimeMs < recentCutoffMs) continue;
-          const prevMtime = Number(state.knownHumanSessions?.[ent.name]?.mtimeMs || 0);
-          if (st.mtimeMs > prevMtime && isHumanConversationTranscript(tPath)) {
-            state.knownHumanSessions[ent.name] = { mtimeMs: st.mtimeMs };
-            newlyTouchedCount++;
-          }
-        } catch {
-          // ignore
-        }
+    const sessions = discoverUnifiedBrainSessions({ analyticsDir });
+    for (const item of sessions) {
+      if (item.mtimeMs < recentCutoffMs) continue;
+      const prevMtime = Number(state.knownHumanSessions?.[item.conversationId]?.mtimeMs || 0);
+      const isHuman = item.transcriptPath
+        ? isHumanConversationTranscript(item.transcriptPath)
+        : Boolean(item.syntheticJsonl);
+      if (item.mtimeMs > prevMtime && isHuman) {
+        state.knownHumanSessions[item.conversationId] = { mtimeMs: item.mtimeMs };
+        newlyTouchedCount++;
       }
     }
 

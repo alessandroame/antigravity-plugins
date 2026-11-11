@@ -7,16 +7,25 @@
  * outputting {} on stdout to avoid polluting Antigravity tool output boxes.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase() ===
-    resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase();
+const isDirectEntry = (() => {
+  if (!process.argv[1]) return false;
+  const metaPath = fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase();
+  const argPath = resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase();
+  if (metaPath === argPath) return true;
+  try {
+    const realMeta = realpathSync(fileURLToPath(import.meta.url)).replace(/\\/g, '/').toLowerCase();
+    const realArg = realpathSync(resolve(process.argv[1])).replace(/\\/g, '/').toLowerCase();
+    return realMeta === realArg;
+  } catch {
+    return false;
+  }
+})();
 
 // Rigid safety watchdog to prevent hook freeze
 const WATCHDOG_TIMEOUT_MS = 5000;
@@ -40,9 +49,18 @@ export function resolveCatalogRepoRoot(customRoot) {
   ) {
     return resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT);
   }
-  const defaultWinPath = 'c:/github/antigravity-plugins';
-  if (existsSync(join(defaultWinPath, 'scripts', 'sync-to-global.mjs'))) {
-    return resolve(defaultWinPath);
+  const matchedCandidate = [
+    resolve(process.cwd(), '..', 'antigravity-plugins'),
+    join(homedir(), 'alessandroame', 'antigravity-plugins'),
+    join(homedir(), '.gemini', 'antigravity-plugins'),
+    'c:/github/antigravity-plugins',
+    join(homedir(), 'github', 'antigravity-plugins'),
+    join(homedir(), 'antigravity-plugins'),
+    '/tmp/antigravity-plugins',
+    '/workspaces/antigravity-plugins'
+  ].find((p) => existsSync(join(p, 'scripts', 'sync-to-global.mjs')));
+  if (matchedCandidate) {
+    return resolve(matchedCandidate);
   }
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const candidateFromScript = resolve(scriptDir, '..', '..', '..');

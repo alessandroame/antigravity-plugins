@@ -1,35 +1,34 @@
 ---
 name: review-diff
 description: >-
-  Esegue il triage deterministico di git diff, rileva test manomessi o faux-test
-  e avvia un subagent revisore cieco in sola lettura. Utilizza questa skill quando
-  l'utente invoca /review-diff o prima di consegnare modifiche multi-file.
+  Use this skill when the user invokes /review-diff or before delivering multi-file changes
+  to run deterministic git diff triage, detect tampered or faux tests, and launch a read-only Blind Diff Critic.
 ---
 
 # Blind Adversarial Diff Review & Test Integrity Triage (`/review-diff`)
 
-Riduce il carico di code review umana filtrando il rumore meccanico di `git diff`, bloccando alterazioni silenziose dei test esistenti e delegando la prima ispezione critica a un subagent revisore cieco (`research`, sola lettura) privo dei bias dell'autore della patch.
+Reduces human code-review fatigue by filtering mechanical `git diff` noise, blocking silent tampering of existing tests, and delegating initial adversarial inspection to an isolated read-only subagent (`research`). Always reply to the user in plain Italian.
 
 ---
 
-## Step 1: Triage Deterministico e Guardia Integrità Test (`0` Token LLM)
+## Step 1: Deterministic Diff Triage & Test Integrity Guard (`0` LLM Tokens)
 
-Esegui lo script di triage sul repository corrente prima di aprire i file a mano:
+Run the triage script on the current repository before inspecting files manually:
 
 ```bash
-node c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs --repo "<workspace-root>" --json
+node ~/.gemini/config/plugins/engineering-workflow/scripts/diff-triage.mjs --repo "<workspace-root>" --json
 ```
 
-Valuta immediatamente l'output JSON:
-1. **`testTamperAlerts` (`HIGH` / `MEDIUM`)**: se una modifica applicativa ha cancellato o alterato asserzioni preesistenti in `tests/` senza esplicita richiesta dell'utente (`--allow-test-edits`), **blocca la consegna** e ripristina il test originale con `git checkout -- <test-file>` per verificare se la patch nasconde una regressione.
-2. **`fauxTestAlerts`**: se compaiono asserzioni tautologiche (`assert.ok(true)`) o blocchi `it()` privi di asserzioni, sostituiscili subito con verifiche su oracolo indipendente.
-3. **`criticalHighlights` e `reductionPercent`**: estrai solo i blocchi classificati ad alto rischio (`ERROR_HANDLING`, `UNSAFE_SINK`, `IO_OR_PROCESS`, `STATE_MUTATION`, `PUBLIC_CONTRACT`, `UI_LAYOUT_GEOMETRY`).
+Evaluate the JSON output immediately:
+1. **`testTamperAlerts` (`HIGH` / `MEDIUM`)**: IF an application edit deleted or weakened pre-existing assertions in `tests/` without explicit user request (`--allow-test-edits`), **BLOCK delivery** and restore the original test via `git checkout -- <test-file>` to verify whether the patch hides a regression.
+2. **`fauxTestAlerts`**: IF tautological assertions (`assert.ok(true)`) or assertion-free `it()` blocks appear, replace them with independent oracle checks.
+3. **`criticalHighlights` & `reductionPercent`**: Extract only high-risk hunks (`ERROR_HANDLING`, `UNSAFE_SINK`, `IO_OR_PROCESS`, `STATE_MUTATION`, `PUBLIC_CONTRACT`, `UI_LAYOUT_GEOMETRY`).
 
 ---
 
-## Step 2: Subagent Revisore Cieco (`Blind Diff Critic` — Sola Lettura)
+## Step 2: Read-Only Blind Diff Critic Subagent (`Blind Diff Critic`)
 
-Se il diff tocca `>= 2` file di codice/UI (o supera `40` righe modificate), invoca `invoke_subagent` con `TypeName: "research"` e `Role: "Blind Diff Critic"` passando **esclusivamente** l'obiettivo utente e l'output di `diff-triage.mjs` (senza giustificazioni dell'autore):
+IF the diff touches `>= 2` code/UI files (or exceeds `40` modified lines), call `invoke_subagent` with `TypeName: "research"` and `Role: "Blind Diff Critic"`, passing **only** the user requirement and `diff-triage.mjs` output (without author justifications):
 
 ```markdown
 Agisci come **Blind Diff Critic** in sola lettura sul repository `<workspace-root>`.
@@ -42,14 +41,14 @@ Mandato (Max 3 Turni Tool):
 3. Restituisci: verdetto (`APPROVATO` | `RICHIEDE_FIX`), elenco puntato delle sole righe `#Lxx-Lyy` che richiedono attenzione umana (max 5 punti) o `0` anomalie se i contratti reggono.
 ```
 
-> Appena lanciato il subagent, termina il turno con `0` tool call aggiuntive attendendo il Reactive Wakeup nativo.
+> Immediately after launching the subagent, end the turn with `0` extra tool calls and wait for native Reactive Wakeup.
 
 ---
 
-## Step 3: Correzione Pre-Umana e Restituzione Sintetica (`~600px`)
+## Step 3: Pre-Human Fix & Compact Output (`~600px`, in Italian)
 
-1. Se il `Blind Diff Critic` individua un difetto reale o un caso limite scoperto, correggilo subito ed esegui nuovamente la suite di test **prima** di presentare il lavoro all'utente.
-2. Esponi in chat (*0-Click*) il verdetto sintetico (file analizzati, `%` di rumore scartato, stato integrità test e max 3 punti residui per l'occhio umano) racchiudendo la matrice completa in `<details>`:
+1. IF `Blind Diff Critic` finds a real bug or uncovered edge case, fix it and re-run the test suite **before** presenting the work to the user.
+2. Present the `0-Click` Italian verdict (analyzed files, filtered noise `%`, test integrity status, and max 3 human-attention points) with the full matrix inside `<details>`:
 
 ```markdown
 Verdetto Pre-Review: **[APPROVATO | BLOCCATO]** — Rumore diff filtrato del `<X>%` (`<K>` punti critici su `<N>` righe modificate), integrità test `PASS`.

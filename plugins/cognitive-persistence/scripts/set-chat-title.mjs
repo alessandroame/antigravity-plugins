@@ -10,7 +10,7 @@
  *   node set-chat-title.mjs --title "<titolo>" [--conversation-id "<id>"] [--port <porta>]
  */
 
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import https from 'node:https';
 import { execSync } from 'node:child_process';
@@ -238,6 +238,22 @@ async function run() {
 
   const port = findLsPort(portArg);
   if (!port) {
+    const cloudBrainDir = join(getHomeDir(), '.gemini', 'jetski', 'brain');
+    if (process.env.ANTIGRAVITY_CONVERSATION_ID || existsSync(cloudBrainDir)) {
+      try {
+        const metaDir = join(cloudBrainDir, targetId);
+        mkdirSync(metaDir, { recursive: true });
+        writeFileSync(
+          join(metaDir, '.chat-title.json'),
+          JSON.stringify({ conversationId: targetId, title: title.trim(), updatedAt: new Date().toISOString() }, null, 2) + '\n',
+          'utf-8'
+        );
+      } catch {
+        // Non-blocking on read-only paths
+      }
+      console.log(`[OK] Titolo della sessione Cloud "${targetId}" registrato a: "${title.trim()}"`);
+      return;
+    }
     console.error('Errore: impossibile rilevare la porta di ascolto di Antigravity Language Server.');
     process.exit(1);
   }

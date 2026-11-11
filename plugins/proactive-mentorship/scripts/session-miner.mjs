@@ -12,37 +12,111 @@
  * Zero DOM/browser dependencies.
  */
 
-import { readdirSync, existsSync, readFileSync, statSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  statSync,
+  writeFileSync
+} from 'node:fs';
 import { homedir } from 'node:os';
-import { join, resolve, dirname } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { basename, dirname, join, resolve } from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { discoverRepositoryTestFiles } from '../../engineering-workflow/core/review-guard-engine.mjs';
 
+const UUID_DIR_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_CLOUD_LOG_BYTES = 5 * 1024 * 1024;
+const CLOUD_CATALOG_REPO_URL = 'https://github.com/alessandroame/antigravity-plugins.git';
+const DEFAULT_CLOUD_SYNC_TTL_MS = 15 * 60 * 1000;
+
+export function isDirectCliEntrypoint(metaUrl, argv1) {
+  if (!argv1) return false;
+  const metaPath = fileURLToPath(metaUrl).replace(/\\/g, '/').toLowerCase();
+  const rawArgPath = resolve(argv1).replace(/\\/g, '/').toLowerCase();
+  if (metaPath === rawArgPath) return true;
+  try {
+    const realMeta = realpathSync(fileURLToPath(metaUrl)).replace(/\\/g, '/').toLowerCase();
+    const realArg = realpathSync(resolve(argv1)).replace(/\\/g, '/').toLowerCase();
+    return realMeta === realArg;
+  } catch {
+    return false;
+  }
+}
+
+export function getAnalyticsDir(customDir) {
+  if (customDir) return resolve(customDir);
+  if (process.env.ANTIGRAVITY_ANALYTICS_DIR) return resolve(process.env.ANTIGRAVITY_ANALYTICS_DIR);
+  return join(homedir(), '.gemini', 'antigravity', 'analytics');
+}
+
+export function getBrainDirs(customDir) {
+  if (customDir) return [resolve(customDir)];
+  if (process.env.ANTIGRAVITY_BRAIN_DIR) return [resolve(process.env.ANTIGRAVITY_BRAIN_DIR)];
+  const candidates = [
+    join(homedir(), '.gemini', 'antigravity', 'brain'),
+    join(homedir(), '.gemini', 'jetski', 'brain')
+  ];
+  const existing = candidates.filter((c) => existsSync(c));
+  return existing.length > 0 ? existing : [candidates[0]];
+}
+
 const SUBAGENT_MARKERS_RX =
-  /Skill Attive \((?:Alpha|Beta|Gamma)\)|Sei \*\*Subagent|Agisci esclusivamente come \*\*Subagent|Sfidante [AB]|Giudice Cieco/i;
+  /Skill Attive \((?:Alpha|Beta|Gamma|Delta|Epsilon)\)|Sei \*\*Subagent|Agisci esclusivamente come \*\*Subagent|Sfidante [AB]|Giudice Cieco/i;
 
 const SKILL_EVOLUTION_RX =
   /\b(?:aggiorna(?:re)?\s+(?:la\s+|le\s+)?skill|aggiorna(?:re)?\s+(?:i\s+)?plugin\w*|in\s+base\s+all'esperienza|auto[- ]?apprendimento|rendere\s+la\s+modalit[aà]|ricordati\s+sempre|d'ora\s+in\s+poi|non\s+fare\s+mai|implementare\s+nei\s+plugin)\b/i;
 
 const REGRESSION_FRICTION_RX =
-  /\b(?:avviene\s+ancora|ancora\s+presente|sembra\s+totalmente\s+assente|inchiodat\w+|scalin\w+|sparisc\w+|troppo\s+buono|a\s+occhio|non\s+funziona\s+ancora|stesso\s+errore)\b/i;
+  /\b(?:avviene\s+ancora|ancora\s+presente|non\s+funziona\s+ancora|stesso\s+errore|stesso\s+difetto|continua\s+a\s+non\s+funzionare|si\s+rompe\s+ancora|regression\w+|a\s+occhio)\b/i;
 
 const READONLY_CLAUSE_RX =
   /\b(?:non\s+agire|[eè]\s+solo\s+una?\s+domanda|solo\s+una?\s+domanda|senza\s+modificare)\b/i;
 
 const VISUAL_AUDIT_RX =
-  /\b(?:screenshot|replay\s+3d|inquadratur\w+|camera|360x800|overflow|sonda|geometr\w+|layout)\b/i;
+  /\b(?:screenshot|viewport|360x800|1280x800|overflow|sonda|geometr\w+|layout|responsive|interfaccia|canvas|svg)\b/i;
 
 const CROSS_REPO_SYNC_RX =
   /\b(?:npm\s+run\s+sync|sync-to-global|aggiorna\s+i\s+plugin\w*|sincronizza\s+i\s+plugin)\b/i;
 
 /**
+ * Ensures the canonical `antigravity-plugins` repository is cloned locally in Cloud VMs
+ * when working inside another project repository (e.g. GlideMind, ParagliderSim, Quiz_VDS-VL).
+ * @param {string} [targetDir]
+ * @returns {string | null}
+ */
+export function ensureCloudCatalogClone(targetDir) {
+  const cloneDest = targetDir || join(homedir(), 'alessandroame', 'antigravity-plugins');
+  if (existsSync(join(cloneDest, 'scripts', 'validate.mjs'))) {
+    return resolve(cloneDest);
+  }
+  try {
+    mkdirSync(dirname(cloneDest), { recursive: true });
+    const res = spawnSync('git', ['clone', '--depth', '1', CLOUD_CATALOG_REPO_URL, cloneDest], {
+      encoding: 'utf-8',
+      timeout: 25000,
+      windowsHide: true
+    });
+    if (res.status === 0 && existsSync(join(cloneDest, 'scripts', 'validate.mjs'))) {
+      return resolve(cloneDest);
+    }
+  } catch {
+    // Non-blocking fallback if offline
+  }
+  return null;
+}
+
+/**
  * Resolves the canonical `antigravity-plugins` repository root regardless of current working directory.
  * @param {string} [customRoot]
+ * @param {{ autoCloneInCloud?: boolean }} [options]
  * @returns {string}
  */
-export function resolveCatalogRepoRoot(customRoot) {
+export function resolveCatalogRepoRoot(customRoot, options = {}) {
   if (customRoot && existsSync(join(resolve(customRoot), 'scripts', 'validate.mjs'))) {
     return resolve(customRoot);
   }
@@ -59,12 +133,93 @@ export function resolveCatalogRepoRoot(customRoot) {
     return candidateFromScript;
   }
 
-  const defaultWinPath = 'c:/github/antigravity-plugins';
-  if (existsSync(join(defaultWinPath, 'scripts', 'validate.mjs'))) {
-    return resolve(defaultWinPath);
+  try {
+    const syncStatePath = join(getAnalyticsDir(), 'plugin-sync-state.json');
+    if (existsSync(syncStatePath)) {
+      const parsed = JSON.parse(readFileSync(syncStatePath, 'utf-8'));
+      if (parsed?.repoRoot && existsSync(join(resolve(parsed.repoRoot), 'scripts', 'validate.mjs'))) {
+        return resolve(parsed.repoRoot);
+      }
+    }
+  } catch {
+    // Ignore malformed state file
+  }
+
+  const crossOsCandidates = [
+    resolve(process.cwd(), '..', 'antigravity-plugins'),
+    join(homedir(), 'alessandroame', 'antigravity-plugins'),
+    join(homedir(), '.gemini', 'antigravity-plugins'),
+    'c:/github/antigravity-plugins',
+    join(homedir(), 'github', 'antigravity-plugins'),
+    join(homedir(), 'antigravity-plugins'),
+    '/tmp/antigravity-plugins',
+    '/workspaces/antigravity-plugins'
+  ];
+  for (const candidate of crossOsCandidates) {
+    if (existsSync(join(candidate, 'scripts', 'validate.mjs'))) {
+      return resolve(candidate);
+    }
+  }
+
+  if (options.autoCloneInCloud && existsSync('/shared/user/.gemini')) {
+    const cloned = ensureCloudCatalogClone();
+    if (cloned) return cloned;
   }
 
   return resolve(process.cwd());
+}
+
+/**
+ * Triggers a non-blocking detached background sync (`git pull --ff-only` + `sync-to-global.mjs`)
+ * when `~/.gemini/GEMINI.md` is missing or the last sync check is older than `ttlMs` (15m).
+ * Ensures every Cloud project VM stays permanently aligned with `antigravity-plugins` `main`.
+ * @param {{ ttlMs?: number, nowMs?: number, analyticsDir?: string, geminiBootstrapFile?: string, dryRun?: boolean }} [options]
+ * @returns {{ triggered: boolean, reason: string }}
+ */
+export function triggerBackgroundCloudSyncIfNeeded(options = {}) {
+  const nowMs = options.nowMs || Date.now();
+  const ttlMs = options.ttlMs || DEFAULT_CLOUD_SYNC_TTL_MS;
+  const geminiBootstrapFile =
+    options.geminiBootstrapFile || join(homedir(), '.gemini', 'GEMINI.md');
+  const syncStatePath = join(getAnalyticsDir(options.analyticsDir), 'plugin-sync-state.json');
+
+  let shouldTrigger = !existsSync(geminiBootstrapFile);
+  let reason = shouldTrigger ? 'missing-gemini-bootstrap' : 'up-to-date';
+
+  if (!shouldTrigger) {
+    try {
+      if (!existsSync(syncStatePath)) {
+        shouldTrigger = true;
+        reason = 'missing-sync-state';
+      } else {
+        const parsed = JSON.parse(readFileSync(syncStatePath, 'utf-8'));
+        const lastCheck = Number(parsed?.lastCheckAtMs) || 0;
+        if (nowMs - lastCheck >= ttlMs) {
+          shouldTrigger = true;
+          reason = 'ttl-expired';
+        }
+      }
+    } catch {
+      shouldTrigger = true;
+      reason = 'corrupt-sync-state';
+    }
+  }
+
+  if (shouldTrigger && !options.dryRun) {
+    try {
+      const selfScript = fileURLToPath(import.meta.url);
+      const child = spawn(process.execPath, [selfScript, '--background-sync'], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      child.unref();
+    } catch {
+      // Non-blocking background spawn
+    }
+  }
+
+  return { triggered: shouldTrigger, reason };
 }
 
 /**
@@ -74,7 +229,7 @@ export function resolveCatalogRepoRoot(customRoot) {
  * @returns {{ ok: boolean, repoRoot: string, steps: Array<{ step: string, status: number, output: string }> }}
  */
 export function verifyAndSyncGlobalPlugins(options = {}) {
-  const repoRoot = resolveCatalogRepoRoot(options.repoRoot);
+  const repoRoot = resolveCatalogRepoRoot(options.repoRoot, { autoCloneInCloud: !options.dryRun });
   const validateScript = join(repoRoot, 'scripts', 'validate.mjs');
   const syncScript = join(repoRoot, 'scripts', 'sync-to-global.mjs');
 
@@ -118,7 +273,7 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
     const testRes = spawnSync(process.execPath, ['--test', ...testFiles], {
       cwd: repoRoot,
       encoding: 'utf-8',
-      timeout: 25000
+      timeout: 40000
     });
     steps.push({
       step: 'unit_tests',
@@ -134,7 +289,7 @@ export function verifyAndSyncGlobalPlugins(options = {}) {
   const syncRes = spawnSync(process.execPath, [syncScript], {
     cwd: repoRoot,
     encoding: 'utf-8',
-    timeout: 20000
+    timeout: 40000
   });
   steps.push({
     step: 'sync_to_global',
@@ -350,43 +505,528 @@ export function analyzeSessionTranscripts(sessions) {
 }
 
 /**
- * Scans the local Antigravity brain directory and mines the most recent parent transcripts.
- * @param {string} [brainDir]
- * @param {{ limit?: number }} [options]
+ * Appends a structured turn event to `~/.gemini/antigravity/analytics/cloud-sessions-log.ndjson`
+ * so Cloud VM turns (where `.system_generated/logs/transcript.jsonl` is not exposed on disk)
+ * are tracked for `mapek`, `pattern-harvester`, and `session-miner.mjs`.
+ *
+ * @param {{
+ *   conversationId?: string,
+ *   workspace?: string,
+ *   timestampMs?: number,
+ *   userText?: string,
+ *   toolCalls?: Array<{ name: string, args?: Record<string, unknown> }>,
+ *   route?: string,
+ *   tier?: string
+ * }} event
+ * @param {string} [customAnalyticsDir]
  */
-export function mineBrainDirectory(brainDir, options = {}) {
-  const targetDir = brainDir || join(homedir(), '.gemini', 'antigravity', 'brain');
-  const limit = options.limit || 40;
-  if (!existsSync(targetDir)) {
-    return analyzeSessionTranscripts([]);
+export function recordCloudTurnEvent(event = {}, customAnalyticsDir) {
+  try {
+    const analyticsDir = getAnalyticsDir(customAnalyticsDir);
+    mkdirSync(analyticsDir, { recursive: true });
+    const logPath = join(analyticsDir, 'cloud-sessions-log.ndjson');
+    if (existsSync(logPath)) {
+      try {
+        const st = statSync(logPath);
+        if (st.size > MAX_CLOUD_LOG_BYTES) {
+          renameSync(logPath, join(analyticsDir, 'cloud-sessions-log.archive.ndjson'));
+        }
+      } catch {
+        // Ignore rotation race
+      }
+    }
+
+    const nowMs = Number(event.timestampMs || Date.now());
+    const convId =
+      event.conversationId ||
+      process.env.ANTIGRAVITY_CONVERSATION_ID ||
+      `cloud-${new Date(nowMs).toISOString().slice(0, 10)}`;
+    const workspace = event.workspace || basename(process.cwd()) || 'cloud-workspace';
+
+    const record = {
+      conversationId: String(convId),
+      workspace: String(workspace),
+      timestampMs: nowMs,
+      createdAt: new Date(nowMs).toISOString(),
+      userText: typeof event.userText === 'string' ? event.userText.trim() : '',
+      toolCalls: Array.isArray(event.toolCalls) ? event.toolCalls : [],
+      route: event.route || null,
+      tier: event.tier || null
+    };
+
+    appendFileSync(logPath, `${JSON.stringify(record)}\n`, 'utf-8');
+    return { ok: true, logPath, conversationId: record.conversationId };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/**
+ * Synthesizes a JSONL transcript string from a Cloud conversation directory in `jetski/brain/.../<uuid>`
+ * when `.system_generated/logs/transcript.jsonl` is not present on disk.
+ *
+ * @param {string} convDir
+ * @param {string} convId
+ * @returns {{ jsonl: string, mtimeMs: number, workspace: string } | null}
+ */
+function buildSyntheticJsonlFromCloudDir(convDir, convId) {
+  try {
+    const entries = readdirSync(convDir, { withFileTypes: true });
+    let maxMtimeMs = 0;
+    let workspace = '';
+    const promptTexts = [];
+    const toolCalls = [];
+
+    for (const ent of entries) {
+      const full = join(convDir, ent.name);
+      if (ent.isFile() && ent.name.endsWith('.metadata.json')) {
+        try {
+          const st = statSync(full);
+          if (st.mtimeMs > maxMtimeMs) maxMtimeMs = st.mtimeMs;
+          const meta = JSON.parse(readFileSync(full, 'utf-8'));
+          if (typeof meta.summary === 'string' && meta.summary.trim()) {
+            promptTexts.push(meta.summary.trim());
+          }
+        } catch {
+          // Ignore malformed metadata
+        }
+      } else if (ent.isFile() && ent.name.endsWith('.md')) {
+        try {
+          const st = statSync(full);
+          if (st.mtimeMs > maxMtimeMs) maxMtimeMs = st.mtimeMs;
+          const rawMd = readFileSync(full, 'utf-8').slice(0, 4096);
+          const wsMatch = rawMd.match(/\/home\/antigravity\/[^/]+\/([^/)\s`"]+)/i);
+          if (wsMatch && wsMatch[1] && !workspace) {
+            workspace = wsMatch[1];
+          }
+          const headingMatch = rawMd.match(/^#\s+(.+)$/m);
+          if (headingMatch && headingMatch[1] && promptTexts.length === 0) {
+            promptTexts.push(headingMatch[1].trim());
+          }
+          toolCalls.push({
+            name: 'write_to_file',
+            args: { TargetFile: full }
+          });
+        } catch {
+          // Ignore unreadable markdown
+        }
+      }
+    }
+
+    const tasksDir = join(convDir, '.system_generated', 'tasks');
+    if (existsSync(tasksDir)) {
+      const taskFiles = readdirSync(tasksDir, { withFileTypes: true })
+        .filter((e) => e.isFile() && e.name.endsWith('.log'))
+        .map((e) => {
+          const p = join(tasksDir, e.name);
+          try {
+            return { name: e.name, path: p, mtimeMs: statSync(p).mtimeMs };
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.mtimeMs - b.mtimeMs);
+
+      for (const tf of taskFiles) {
+        if (tf.mtimeMs > maxMtimeMs) maxMtimeMs = tf.mtimeMs;
+        try {
+          const head = readFileSync(tf.path, 'utf-8').slice(0, 4096);
+          const wsMatch = head.match(/\/home\/antigravity\/[^/]+\/([^/\s`"]+)/i);
+          if (wsMatch && wsMatch[1] && !workspace) {
+            workspace = wsMatch[1];
+          }
+          const cmdMatch = head.match(/^>\s*(.+)$/gm);
+          const cmdLine =
+            cmdMatch && cmdMatch.length > 0
+              ? cmdMatch[cmdMatch.length - 1].replace(/^>\s*/, '').trim()
+              : '';
+          if (cmdLine) {
+            toolCalls.push({
+              name: 'run_command',
+              args: { CommandLine: cmdLine }
+            });
+          }
+        } catch {
+          // Ignore locked task log
+        }
+      }
+    }
+
+    if (promptTexts.length === 0 && toolCalls.length === 0) {
+      return null;
+    }
+
+    const effectiveMtime = maxMtimeMs || Date.now();
+    const isoTs = new Date(effectiveMtime).toISOString();
+    const userPrompt = promptTexts[0] || `Sessione Cloud (${workspace || convId.slice(0, 8)})`;
+    const jsonlLines = [
+      JSON.stringify({
+        type: 'USER_INPUT',
+        source: 'USER_EXPLICIT',
+        created_at: isoTs,
+        content: `Command Working Directory: /home/antigravity/${workspace || 'cloud-workspace'}\n<USER_REQUEST>${userPrompt}</USER_REQUEST>`
+      }),
+      JSON.stringify({
+        type: 'PLANNER_RESPONSE',
+        created_at: isoTs,
+        tool_calls: toolCalls
+      })
+    ];
+
+    return {
+      jsonl: jsonlLines.join('\n'),
+      mtimeMs: Math.round(effectiveMtime),
+      workspace: workspace || 'cloud-workspace'
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Discovers human conversation sessions across both Desktop (`~/.gemini/antigravity/brain`),
+ * Cloud (`~/.gemini/jetski/brain/**`), and `analytics/cloud-sessions-log.ndjson`.
+ *
+ * @param {{ brainDir?: string, analyticsDir?: string, includeCloudLog?: boolean }} [options]
+ * @returns {Array<{ conversationId: string, transcriptPath: string | null, syntheticJsonl: string | null, mtimeMs: number, workspace: string }>}
+ */
+export function discoverUnifiedBrainSessions(options = {}) {
+  const roots = getBrainDirs(options.brainDir);
+  const byId = new Map();
+
+  function walkDir(dir, depth = 0) {
+    if (depth > 5 || !existsSync(dir)) return;
+    let entries = [];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const ent of entries) {
+      if (!ent.isDirectory()) continue;
+      if (ent.name === '.system_generated' || ent.name === 'node_modules' || ent.name === 'scratch') continue;
+      const full = join(dir, ent.name);
+      const tPath = join(full, '.system_generated', 'logs', 'transcript.jsonl');
+
+      if (existsSync(tPath)) {
+        try {
+          const st = statSync(tPath);
+          byId.set(ent.name, {
+            conversationId: ent.name,
+            transcriptPath: tPath,
+            syntheticJsonl: null,
+            mtimeMs: Math.round(st.mtimeMs),
+            workspace: ''
+          });
+        } catch {
+          // Ignore inaccessible transcript
+        }
+        continue;
+      }
+
+      if (UUID_DIR_RX.test(ent.name)) {
+        const synth = buildSyntheticJsonlFromCloudDir(full, ent.name);
+        if (synth) {
+          byId.set(ent.name, {
+            conversationId: ent.name,
+            transcriptPath: null,
+            syntheticJsonl: synth.jsonl,
+            mtimeMs: synth.mtimeMs,
+            workspace: synth.workspace
+          });
+        }
+        continue;
+      }
+
+      walkDir(full, depth + 1);
+    }
   }
 
-  const entries = readdirSync(targetDir)
-    .map((id) => {
-      const p = join(targetDir, id, '.system_generated', 'logs', 'transcript.jsonl');
-      if (!existsSync(p)) return null;
+  for (const r of roots) {
+    walkDir(r, 0);
+  }
+
+  const shouldReadCloudLog =
+    options.includeCloudLog !== undefined ? Boolean(options.includeCloudLog) : !options.brainDir;
+
+  if (shouldReadCloudLog) {
+    const analyticsDir = getAnalyticsDir(options.analyticsDir);
+    const cloudLogPath = join(analyticsDir, 'cloud-sessions-log.ndjson');
+    if (existsSync(cloudLogPath)) {
       try {
-        const st = statSync(p);
-        return { id, path: p, mtimeMs: st.mtimeMs };
+        const grouped = new Map();
+        const lines = readFileSync(cloudLogPath, 'utf-8').split(/\r?\n/).filter(Boolean);
+        for (const line of lines) {
+          try {
+            const ev = JSON.parse(line);
+            if (!ev || !ev.conversationId) continue;
+            if (!grouped.has(ev.conversationId)) {
+              grouped.set(ev.conversationId, []);
+            }
+            grouped.get(ev.conversationId).push(ev);
+          } catch {
+            // Skip malformed NDJSON line
+          }
+        }
+
+        for (const [convId, events] of grouped.entries()) {
+          if (byId.has(convId) && byId.get(convId).transcriptPath) continue;
+          const jsonlLines = [];
+          let latestMs = 0;
+          let ws = 'cloud-workspace';
+
+          for (const ev of events) {
+            const ts = Number(ev.timestampMs || Date.now());
+            if (ts > latestMs) latestMs = ts;
+            if (ev.workspace) ws = ev.workspace;
+            const iso = new Date(ts).toISOString();
+            if (ev.userText) {
+              jsonlLines.push(
+                JSON.stringify({
+                  type: 'USER_INPUT',
+                  source: 'USER_EXPLICIT',
+                  created_at: iso,
+                  content: `Command Working Directory: /home/antigravity/${ws}\n<USER_REQUEST>${ev.userText}</USER_REQUEST>`
+                })
+              );
+            }
+            if (Array.isArray(ev.toolCalls) && ev.toolCalls.length > 0) {
+              jsonlLines.push(
+                JSON.stringify({
+                  type: 'PLANNER_RESPONSE',
+                  created_at: iso,
+                  tool_calls: ev.toolCalls,
+                  ...(ev.tokenUsage ? { token_usage: ev.tokenUsage } : {})
+                })
+              );
+            }
+          }
+
+          if (jsonlLines.length > 0) {
+            const existing = byId.get(convId);
+            const combinedJsonl = existing?.syntheticJsonl
+              ? `${existing.syntheticJsonl}\n${jsonlLines.join('\n')}`
+              : jsonlLines.join('\n');
+            byId.set(convId, {
+              conversationId: convId,
+              transcriptPath: null,
+              syntheticJsonl: combinedJsonl,
+              mtimeMs: Math.max(latestMs, existing?.mtimeMs || 0),
+              workspace: ws
+            });
+          }
+        }
       } catch {
-        return null;
+        // Ignore unreadable cloud log
       }
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+    }
+  }
+
+  return [...byId.values()].sort((a, b) => b.mtimeMs - a.mtimeMs);
+}
+
+const PREVENTIVE_BYPASS_RX =
+  /^(?:\/[a-z0-9-]+|s[iì]|no|ok|vai|procedi|fallo|applica(?:\s+il\s+piano)?|esegui(?:\s+il\s+piano)?|git\s+|npm\s+|node\s+|spiega(?:mi)?|mostra(?:mi)?|perch[eé]|come\s+(?:funziona|mai)|dove\s+si\s+trova|a\s+che\s+punto|non\s+vedo|qual\s+[eè]|quali\s+sono)\b/i;
+
+const PREVENTIVE_MUTATION_INTENT_RX =
+  /\b(?:sistema(?:re)?|modifica(?:re)?|rifai|rifare|cambia(?:re)?|migliora(?:re)?|aggiungi|aggiungere|crea(?:re)?|implementa(?:re)?|ottimizza(?:re)?|fixa(?:re)?|correggi|correggere|ristruttura(?:re)?|rifattorizza(?:re)?|refactor\w*)\b/i;
+
+const FILE_OR_SYMBOL_ANCHOR_RX =
+  /@[a-zA-Z0-9_./\\-]+|\b[a-zA-Z0-9_.-]+\.(?:[cm]?[jt]sx?|py|cs|dart|go|rs|md|json|html|css|scss|yml|yaml|sh)\b|`[^`]{2,50}`/i;
+
+const VERIFICATION_CRITERIA_RX =
+  /\b(?:test|validat\w+|sonda|probe|assert\w*|verific\w+|360x800|1280x800|senza\s+rompere|invariante|npm\s+test|dotnet\s+test)\b/i;
+
+const BROAD_MULTI_COMPONENT_RX =
+  /\b(?:tutt[oaie]|intera?\s+pagina|intero\s+progetto|architettura|flusso\s+completo|da\s+zero|pi[uù]\s+file|ovunque|generale|sistema\s+il\s+layout)\b/i;
+
+/**
+ * Evaluates a user prompt BEFORE execution (`NOTE-003` — Preventive Prompt Review Advisor).
+ * Returns `needsReview: true` with an optimized Italian prompt draft and 1-click `ask_question`
+ * options ONLY when the request is a broad/ambiguous code mutation lacking file anchors or verification criteria.
+ *
+ * @param {unknown} rawPrompt
+ * @param {{ workspace?: string }} [options]
+ */
+export function evaluatePromptForPreventiveReview(rawPrompt, options = {}) {
+  const clean = typeof rawPrompt === 'string' ? rawPrompt.trim() : '';
+  const defaultPass = {
+    needsReview: false,
+    score: 0,
+    signals: [],
+    frictionReasonsIt: [],
+    recommendedAgyMove: null,
+    improvedPromptDraftIt: null,
+    reviewQuestionIt: null,
+    reviewOptionsIt: []
+  };
+
+  if (!clean || clean.length < 4) return defaultPass;
+  if (PREVENTIVE_BYPASS_RX.test(clean) || READONLY_CLAUSE_RX.test(clean)) return defaultPass;
+  if (clean.endsWith('?') && !PREVENTIVE_MUTATION_INTENT_RX.test(clean)) return defaultPass;
+
+  const hasMutationIntent = PREVENTIVE_MUTATION_INTENT_RX.test(clean);
+  if (!hasMutationIntent) return defaultPass;
+
+  const hasFileAnchor = FILE_OR_SYMBOL_ANCHOR_RX.test(clean);
+  const hasVerification = VERIFICATION_CRITERIA_RX.test(clean);
+  const isBroadScope = BROAD_MULTI_COMPONENT_RX.test(clean);
+  const wordCount = clean.split(/\s+/).filter(Boolean).length;
+
+  let score = 0;
+  const signals = [];
+  const frictionReasonsIt = [];
+
+  if (!hasFileAnchor) {
+    score += 2;
+    signals.push('missing_file_anchor');
+    frictionReasonsIt.push('Manca il riferimento esplicito ai file o moduli bersaglio (`@file`).');
+  }
+  if (wordCount < 15 && !hasFileAnchor) {
+    score += 1;
+    signals.push('terse_unanchored_mutation');
+    frictionReasonsIt.push(`Richiesta sintetica (${wordCount} parole) ad alto rischio di modifiche fuori perimetro.`);
+  }
+  if (isBroadScope) {
+    score += 1;
+    signals.push('broad_multi_component_scope');
+    frictionReasonsIt.push('Perimetro ampio o multi-componente senza confini di non-regressione.');
+  }
+  if (!hasVerification && (isBroadScope || !hasFileAnchor)) {
+    score += 1;
+    signals.push('missing_verification_oracle');
+    frictionReasonsIt.push('Manca il criterio oggettivo di verifica finale (test unitari o sonda UI).');
+  }
+
+  if (score < 3) {
+    return {
+      ...defaultPass,
+      score,
+      signals
+    };
+  }
+
+  const wsName = options.workspace || basename(process.cwd()) || 'progetto attivo';
+  const isUiRelated = VISUAL_AUDIT_RX.test(clean) || /\b(?:ui|pagina| pulsante|bottone|pannell\w+| grafica|schermata|css|html)\b/i.test(clean);
+
+  const recommendedAgyMove = isBroadScope
+    ? {
+        command: `/plan ${clean}`,
+        reasonIt: 'Genera prima un piano di intervento verificato sui file esatti prima di toccare il codice.'
+      }
+    : {
+        command: `/grill-me ${clean}`,
+        reasonIt: 'Chiarisce in 1 turno i requisiti impliciti e i file bersaglio.'
+      };
+
+  const verificationClause = isUiRelated
+    ? 'esegui i test automatici (`npm test`) e la sonda geometrica `ui-geometry-probe.js` su `360x800` e `1280x800` (`violations: 0`)'
+    : 'esegui la suite di test automatici (`npm test`) e `diff-triage.mjs` verificando zero regressioni';
+
+  const improvedPromptDraftIt =
+    `${clean} — Perimetro: individua e limita le modifiche ai soli file strettamente necessari in \`${wsName}\` ` +
+    `(elencando i \`@file\` prima di editarli), preserva le API e i test esistenti, e in chiusura ${verificationClause}.`;
+
+  return {
+    needsReview: true,
+    score,
+    signals,
+    frictionReasonsIt,
+    recommendedAgyMove,
+    improvedPromptDraftIt,
+    reviewQuestionIt:
+      'Ho analizzato il tuo prompt e ho preparato una versione più precisa con perimetro e test di verifica: come preferisci procedere?',
+    reviewOptionsIt: [
+      '(Recommended) Esegui il prompt migliorato proposto',
+      'Esegui direttamente il mio prompt originale senza modifiche',
+      'Fai prima un piano dettagliato sui file coinvolti (/plan)'
+    ]
+  };
+}
+
+/**
+ * Reads any pending `mapek` process decisions or high-ROI `pattern-harvester` candidates
+ * from `~/.gemini/antigravity/analytics/` so Cloud turns can surface them without Desktop hooks.
+ *
+ * @param {string} [customAnalyticsDir]
+ */
+export function collectPendingSupervisionAdvisories(customAnalyticsDir) {
+  const analyticsDir = getAnalyticsDir(customAnalyticsDir);
+  let mapekDecision = null;
+  let topPatternRecommendation = null;
+
+  const pendingFile = join(analyticsDir, 'mapek-pending-decisions.json');
+  if (existsSync(pendingFile)) {
+    try {
+      const data = JSON.parse(readFileSync(pendingFile, 'utf-8'));
+      const list = Array.isArray(data?.decisions) ? data.decisions : [];
+      const nowMs = Date.now();
+      mapekDecision =
+        list.find(
+          (d) =>
+            d &&
+            d.status === 'PENDING_APPROVAL' &&
+            Number(d.snoozedUntilMs || 0) <= nowMs
+        ) || null;
+    } catch {
+      // Ignore malformed pending decisions
+    }
+  }
+
+  const recFile = join(analyticsDir, 'pattern-recommendations.json');
+  if (existsSync(recFile)) {
+    try {
+      const data = JSON.parse(readFileSync(recFile, 'utf-8'));
+      const recs = Array.isArray(data?.recommendations) ? data.recommendations : [];
+      if (recs.length > 0) {
+        topPatternRecommendation = recs[0];
+      }
+    } catch {
+      // Ignore malformed pattern recommendations
+    }
+  }
+
+  return {
+    hasPendingAdvisories: Boolean(mapekDecision || topPatternRecommendation),
+    mapekDecision,
+    topPatternRecommendation
+  };
+}
+
+/**
+ * Scans the local and Cloud Antigravity brain directories and mines the most recent parent transcripts.
+ * @param {string} [brainDir]
+ * @param {{ limit?: number, analyticsDir?: string }} [options]
+ */
+export function mineBrainDirectory(brainDir, options = {}) {
+  const limit = options.limit || 40;
+  const discovered = discoverUnifiedBrainSessions({
+    brainDir,
+    analyticsDir: options.analyticsDir,
+    includeCloudLog: !brainDir
+  });
+
+  if (discovered.length === 0) {
+    return analyzeSessionTranscripts([]);
+  }
 
   const parsedSessions = [];
   let parentsFound = 0;
 
-  for (const entry of entries) {
+  for (const entry of discovered) {
     if (parentsFound >= limit) break;
     try {
-      const lines = readFileSync(entry.path, 'utf-8').trim().split(/\r?\n/).filter(Boolean);
+      const rawContent = entry.transcriptPath
+        ? readFileSync(entry.transcriptPath, 'utf-8')
+        : entry.syntheticJsonl || '';
+      const lines = rawContent.trim().split(/\r?\n/).filter(Boolean);
       if (lines.length === 0) continue;
 
       const firstLine = lines[0];
       if (SUBAGENT_MARKERS_RX.test(firstLine)) {
-        parsedSessions.push({ id: entry.id, userPrompts: [], isSubagent: true });
+        parsedSessions.push({ id: entry.conversationId, userPrompts: [], isSubagent: true });
         continue;
       }
 
@@ -409,6 +1049,7 @@ export function mineBrainDirectory(brainDir, options = {}) {
             .replace(/<ADDITIONAL_METADATA>[\s\S]*?<\/ADDITIONAL_METADATA>/g, '')
             .replace(/<USER_SETTINGS_CHANGE>[\s\S]*?<\/USER_SETTINGS_CHANGE>/g, '')
             .replace(/<\/?USER_REQUEST>/g, '')
+            .replace(/^Command Working Directory:[^\r\n]*\r?\n?/i, '')
             .trim();
           if (raw && !raw.includes('<SYSTEM_MESSAGE>')) {
             userPrompts.push(raw);
@@ -417,10 +1058,10 @@ export function mineBrainDirectory(brainDir, options = {}) {
       }
 
       if (isSubagent) {
-        parsedSessions.push({ id: entry.id, userPrompts: [], isSubagent: true });
+        parsedSessions.push({ id: entry.conversationId, userPrompts: [], isSubagent: true });
       } else if (userPrompts.length > 0) {
         parentsFound++;
-        parsedSessions.push({ id: entry.id, userPrompts, isSubagent: false });
+        parsedSessions.push({ id: entry.conversationId, userPrompts, isSubagent: false });
       }
     } catch {
       // Ignore unreadable transcript files
@@ -430,13 +1071,24 @@ export function mineBrainDirectory(brainDir, options = {}) {
   return analyzeSessionTranscripts(parsedSessions);
 }
 
-const isMain =
-  process.argv[1] &&
-  fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase() ===
-    resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase();
+const isMain = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isMain) {
-  if (process.argv.includes('--verify-and-sync')) {
+  const args = process.argv.slice(2);
+  if (args.includes('--background-sync')) {
+    const repoRoot = resolveCatalogRepoRoot(undefined, { autoCloneInCloud: true });
+    const syncScript = join(repoRoot, 'scripts', 'sync-to-global.mjs');
+    if (existsSync(syncScript)) {
+      spawnSync(process.execPath, [syncScript, '--auto-pull', '--if-needed', '--quiet'], {
+        cwd: repoRoot,
+        encoding: 'utf-8',
+        timeout: 30000,
+        windowsHide: true
+      });
+    }
+    process.exit(0);
+  }
+  if (args.includes('--verify-and-sync')) {
     const res = verifyAndSyncGlobalPlugins();
     process.stdout.write(
       `${JSON.stringify(
@@ -457,8 +1109,32 @@ if (isMain) {
     }
     process.exit(0);
   }
-  const limitIdx = process.argv.indexOf('--limit');
-  const limit = limitIdx !== -1 && process.argv[limitIdx + 1] ? Number(process.argv[limitIdx + 1]) : 40;
-  const report = mineBrainDirectory(undefined, { limit });
+
+  const reviewIdx = args.indexOf('--review-prompt');
+  if (reviewIdx !== -1 && args[reviewIdx + 1] !== undefined) {
+    const rawPrompt = args[reviewIdx + 1];
+    recordCloudTurnEvent({ userText: rawPrompt });
+    const promptReview = evaluatePromptForPreventiveReview(rawPrompt);
+    const selfLearning = classifySelfLearningCandidate(rawPrompt);
+    const supervision = collectPendingSupervisionAdvisories();
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          promptReview,
+          selfLearning,
+          supervision
+        },
+        null,
+        2
+      )}\n`
+    );
+    process.exit(0);
+  }
+
+  const brainIdx = args.indexOf('--brain');
+  const customBrain = brainIdx !== -1 && args[brainIdx + 1] ? args[brainIdx + 1] : undefined;
+  const limitIdx = args.indexOf('--limit');
+  const limit = limitIdx !== -1 && args[limitIdx + 1] ? Number(args[limitIdx + 1]) : 40;
+  const report = mineBrainDirectory(customBrain, { limit });
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }

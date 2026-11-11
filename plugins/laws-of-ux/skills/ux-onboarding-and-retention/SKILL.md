@@ -2,46 +2,29 @@
 name: ux-onboarding-and-retention
 description: >-
   Use this skill when designing onboarding flows, product walkthroughs, profile completion,
-  gamified progress bars, and user retention journeys. Applies Jakob's Law, Paradox of the Active User,
-  Goal-Gradient Effect, Zeigarnik Effect, and Flow.
+  gamified progress bars, and user retention journeys using Jakob Law, Goal-Gradient, and Zeigarnik Effect.
 ---
 
 # Onboarding & User Retention Skill
 
-Questa skill guida l'agente nella progettazione di flussi di benvenuto, guide interattive, progress tracker e meccaniche di fidelizzazione dell'utente.
+Guides the design of welcome flows, contextual walkthroughs, progress trackers, and user retention mechanics. Always reply to the user in plain Italian.
 
-## Problemi Tipici Risolti da questa Skill
-- Utenti che saltano tutorial iniziali lunghi e si perdono nell'applicazione.
-- Profili utente lasciati incompleti al 20%.
-- Interruzioni brusche durante l'utilizzo dell'app che spezzano la concentrazione (flow).
-- Utenti che non comprendono il funzionamento dell'interfaccia a causa di convenzioni stravaganti.
+## Applied Laws & Core Rules
 
----
-
-## Leggi Applicate & Regole Chiave
-
-1. **Jakob's Law (Convenzioni Familiari)**:
-   - Gli utenti preferiscono che la tua applicazione funzioni nello stesso modo di tutte le altre che già conoscono.
-   - Non reinventare la ruota: mantieni standard la collocazione delle affordance e le interazioni chiave.
-
-2. **Paradox of the Active User (Nessuno Legge le Istruzioni)**:
-   - Gli utenti non leggono le guide: vogliono usare subito l'app per risolvere il loro compito immediato.
-   - *Strategia*: Sostituisci i modal di benvenuto con guide contestuali just-in-time (tooltip contestuali che compaiono solo al primo click su una feature).
-
+1. **Jakob's Law (Familiar Conventions)**:
+   - Users expect your application to work like the products they already know. Keep core affordances and navigation patterns standard.
+2. **Paradox of the Active User (Nobody Reads Manuals)**:
+   - Replace blocking multi-slide welcome modals with just-in-time contextual tooltips triggered on first use.
 3. **Goal-Gradient Effect & Endowed Progress**:
-   - L'utente accelera man mano che si avvicina alla meta.
-   - *Strategia*: Nel tracker del profilo o nel form di registrazione, mostra il progresso già avviato (es. 'Profilo completato al 25%' grazie alla semplice email inserita).
-
-4. **Zeigarnik Effect (Memoria dei Compiti Incompiuti)**:
-   - I task lasciati in sospeso restano impressi nella memoria e creano un impulso a essere terminati.
-   - *Strategia*: Mostra widget con '2 passaggi rimanenti per completare il setup' con link diretti per concluderli.
-
-5. **Flow (Stato di Flusso)**:
-   - Mantieni l'utente immerso bilanciando la difficoltà del compito con la chiarezza del feedback, senza pop-up o interruzioni non richieste.
+   - Users accelerate as they near completion. Start progress bars with endowed progress (e.g., `'Profilo completato al 25%'` once account creation finishes).
+4. **Zeigarnik Effect (Unfinished Task Recall)**:
+   - Highlight incomplete setup checklists with direct 1-click links (`'2 passaggi rimanenti per completare il setup'`).
+5. **Flow State Preservation**:
+   - Never interrupt active user tasks with unrequested modals or pop-ups.
 
 ---
 
-## Procedura Operativa per l'Agente
-1. **Rimozione degli Ostacoli Iniziali**: Consenti all'utente di provare l'applicazione o vedere il valore (Time-to-Value) prima di forzare registrazioni complesse.
-2. **Configurazione Guidata Progressiva**: Usa progress bar visibili con checklist di passi chiari (1. Account, 2. Preferenze, 3. Primo Progetto).
-3. **Incentivi al Completamento**: Applica la Zeigarnik rule mostrando visivamente cosa manca per sbloccare la funzionalità completa.
+## Agent Operational Procedure
+1. **Minimize Time-to-Value**: Let users experience core app value before requiring complex registration or setup.
+2. **Progressive Setup Checklist**: Use a compact progress bar with 3–4 clear steps (`1. Account`, `2. Preferenze`, `3. Primo Progetto`).
+3. **Zeigarnik Completion Prompts**: Show non-intrusive inline indicators for remaining setup steps.

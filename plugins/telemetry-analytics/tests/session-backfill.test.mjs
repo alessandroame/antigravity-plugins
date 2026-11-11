@@ -279,4 +279,37 @@ describe('Telemetry Analytics v2.0 — Local Brain Session Backfill Core', () =>
       rmSync(tempRoot, { recursive: true, force: true });
     }
   });
+
+  it('extracts Cloud/Linux workspaces and nested token_usage from synthetic Cloud transcripts', () => {
+    const cloudWs = extractWorkspaceCandidateFromPath(
+      '/home/antigravity/alessandroame/ParagliderSim/ui/app.mjs'
+    );
+    assert.deepEqual(cloudWs, {
+      workspace: 'paraglidersim',
+      workspaceName: 'ParagliderSim'
+    });
+
+    const cloudLines = [
+      JSON.stringify({
+        type: 'USER_INPUT',
+        source: 'USER_EXPLICIT',
+        created_at: '2026-11-08T10:00:00.000Z',
+        content:
+          'Command Working Directory: /home/antigravity/GlideMind\n<USER_REQUEST>verifica timeline</USER_REQUEST>'
+      }),
+      JSON.stringify({
+        type: 'PLANNER_RESPONSE',
+        created_at: '2026-11-08T10:01:00.000Z',
+        tool_calls: [{ name: 'replace_file_content', args: { TargetFile: 'ui/views/ForecastView.js' } }],
+        token_usage: { input_tokens: 18000, cache_read_tokens: 12000, output_tokens: 950 }
+      })
+    ];
+
+    const summary = parseTranscriptContent(cloudLines.join('\n'), 'cloud-conv-1');
+    assert.equal(summary.workspace, 'glidemind');
+    assert.equal(summary.workspaceName, 'GlideMind');
+    assert.equal(summary.tokens.input, 18000);
+    assert.equal(summary.tokens.output, 950);
+    assert.equal(summary.tokens.cacheRead, 12000);
+  });
 });

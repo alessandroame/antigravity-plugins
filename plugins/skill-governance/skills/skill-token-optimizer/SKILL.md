@@ -1,91 +1,64 @@
 ---
 name: skill-token-optimizer
 description: >-
-  Utilizza questa skill quando devi ottimizzare il consumo di token di una skill condensando la description per il system prompt e scomponendo file monolitici in references, examples e scripts.
+  Use this skill when optimizing a skill or rule token budget by compressing the YAML description,
+  modularizing monolithic files into references/scripts, and applying the Hybrid EN/IT standard.
 ---
 
-# Procedura di Ottimizzazione del Budget Token delle Skill
+# Skill Token Budget Optimization Procedure (`skill-token-optimizer`)
 
-Questa skill guida l'agente nella rifattorizzazione di skill pesanti o monolitiche per minimizzare il consumo di token sia nel system prompt globale sia nel corpo del runbook on-demand.
-
----
-
-## 1. Diagnosi del Consumo Token
-
-Eseguire l'ispezione preliminare del file `SKILL.md`:
-1. **Misurazione Frontmatter**:
-   - Estrarre il blocco `description` e calcolarne la lunghezza in caratteri.
-   - *Soglia critica*: Se supera i 250 caratteri, deve essere condensata.
-2. **Misurazione Corpo del Runbook**:
-   - Contare il numero di righe complessive del file.
-   - *Soglia critica*: Se supera le 200 righe, identificare blocchi informativi candidati alla modularizzazione.
+Guides refactoring of heavy or monolithic skills and rules to minimize token consumption both in the always-on system prompt and in on-demand runbooks. Always reply to the user in plain Italian.
 
 ---
 
-## 2. Fase 1: Compressione del Frontmatter (System Prompt Economy)
+## 1. Token Consumption Diagnosis
 
-La `description` deve contenere solo le informazioni strettamente necessarie al motore di routing per decidere l'attivazione della skill:
+Inspect the target `SKILL.md` or `rules/AGENTS.md`:
+1. **Frontmatter Measurement**: Measure `description` length (`> 250` chars MUST be compressed into `[80, 250]` chars).
+2. **Body Measurement**: Count lines (`SKILL.md > 200` lines, `agents/*.md > 180` lines) and bytes (`rules/AGENTS.md > 6,000 B`).
 
-### Schema di Riscrittura Ottimizzata:
+---
+
+## 2. Step 1: Frontmatter Compression (System Prompt Economy)
+
+Keep only the routing signals required to trigger the skill:
+
 ```yaml
 ---
 name: <kebab-case-name>
-description: <Azione principale in 10-15 parole>. Use this skill when <condizione/trigger 1>, <trigger 2> or <trigger 3>.
+description: >-
+  Use this skill when <trigger 1>, <trigger 2>, or <Italian user keyword> to <core action in 10-15 words>.
 ---
 ```
 
-### Regole di Compressione:
-- Eliminare spiegazioni introduttive ("Questa skill è stata creata per permettere all'utente di...").
-- Eliminare dettagli implementativi ("Utilizza la libreria X con il comando Y passando il parametro Z").
-- Mantenere le parole chiave discriminanti e i casi d'uso concreti.
+- Strip introductory fluff and low-level implementation details.
+- Preserve `/slash` commands and Italian user trigger keywords.
 
 ---
 
-## 3. Fase 2: Scomposizione Architetturale a Divulgazione Progressiva
+## 3. Step 2: Hybrid EN/IT Conversion & Progressive Disclosure Decomposition
 
-Quando `SKILL.md` supera le 200 righe, scorporare i contenuti secondo la seguente tassonomia:
+1. **Apply Hybrid Language Standard (`EN` Logic / `IT` User-Facing)**:
+   - Convert imperative logic, conditions, thresholds, and `Step 1..N` instructions to concise English (`~18–25%` byte reduction) with `Always reply to the user in plain Italian.`.
+   - Keep all user-visible Markdown templates, banners, `<summary><strong>...</strong></summary>` titles, and `ask_question` options verbatim in Italian.
+2. **Offload Heavy Blocks (`> 200` lines)**:
 
 ```text
-skills/<nome-skill>/
-├── SKILL.md                   # Solo la procedura sequenziale essenziale (< 150 righe)
-├── references/                # Consultati solo se l'agente necessita approfondimenti
-│   ├── api-catalog.md         # Liste esaustive di endpoint, tabelle dati, schemi
-│   └── architecture-notes.md  # Dettagli di design e vincoli
-├── examples/                  # Consultati solo se l'utente richiede esempi
-│   └── sample-usage.md        # Snippet di codice complessi, template, Before/After
-└── scripts/                   # Script eseguibili dal terminale
-    └── helper.mjs             # Automazioni complesse che risparmiano token di generazione
+skills/<skill-name>/
+├── SKILL.md                   # Core sequential procedure only (<= 150-200 lines)
+├── references/                # On-demand schemas, API catalogs, deep notes
+├── examples/                  # On-demand code snippets and Before/After samples
+└── scripts/                   # Executable CLI helpers (0 generation tokens)
 ```
 
-### Procedura di Scorporo:
-1. Creare la directory target (`references/` o `examples/`) all'interno della cartella della skill.
-2. Trasferire i blocchi di testo estesi, le tabelle di riferimento e i lunghi snippet di codice nei file dedicati.
-3. Sostituire in `SKILL.md` il contenuto rimosso con un'istruzione di consultazione on-demand:
-   ```markdown
-   > Per consultare il catalogo completo dei parametri o esempi dettagliati:
-   > leggere `references/api-catalog.md` con il tool `view_file`.
-   ```
+Replace offloaded sections in `SKILL.md` with an explicit on-demand pointer (`Read references/<file>.md via view_file when needed`).
 
 ---
 
-## 4. Fase 3: Riorganizzazione del Runbook Essenziale
+## 4. Step 3: Verification & Before/After Report (in Italian)
 
-Il file `SKILL.md` risultante deve contenere solo:
-1. **Scopo Sintetico** (1 paragrafo).
-2. **Pre-requisiti e Dipendenze** (elenco puntato).
-3. **Flusso Operativo Numerato** (Step 1 -> Step 2 -> Step 3 con comandi diretti).
-4. **Criteri di Validazione ed Expected Output**.
-5. **Riferimenti ai file ausiliari**.
-
----
-
-## 5. Verifica e Collaudo Finale
-
-1. Verificare che i file creati abbiano percorsi validi e che i link interni funzionino.
-2. Eseguire la suite di conformità del repository:
+1. Verify all internal links and run full validation:
    ```bash
-   npm test
+   npm run validate && npm test
    ```
-3. Mostrare all'utente il bilancio Before vs After:
-   - Caratteri della description risparmiati nel system prompt.
-   - Righe di `SKILL.md` ridotte e file modulari generati.
+2. Report the **Before vs After** byte/line savings to the user in plain Italian.

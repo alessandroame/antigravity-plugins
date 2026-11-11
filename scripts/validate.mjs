@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readdirSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -172,7 +172,7 @@ export function validateContentAndSense(content, relPath, pluginHasGenerativeUiD
       !isMetaCollisionDoc &&
       /<agent-embed\b/.test(line) &&
       /\b(?:100vh|h-screen|min-h-screen)\b/.test(line) &&
-      !/\b(?:mai|never|vietato|no|divieto|evitare)\b/i.test(line)
+      !/\b(?:mai|never|not|no|avoid|forbid|forbidden|prohibited|vietato|divieto|evitare)\b/i.test(line)
     ) {
       errors.push(
         `${relPath}:${lineNum}: contraddizione normativa P0 con 'generative_ui' (prescrive 100vh/h-screen su <agent-embed>)`
@@ -192,6 +192,28 @@ export function validateContentAndSense(content, relPath, pluginHasGenerativeUiD
     }
   }
 
+  return errors;
+}
+
+export function validateHybridLanguageStandard(content, relPath) {
+  const errors = [];
+  if (!content || relPath === 'README.md' || relPath.includes('references/')) return errors;
+  const itProceduralHeadingRx =
+    /^#{1,4}\s+.*\b(?:Regole|Procedura|Obiettivo|Passaggi|Vincoli|Flusso|Esecuzione|Gestione|Struttura|Formato|Divieto|Obbligo)\b/i;
+  const lines = content.split(/\r?\n/);
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (!inFence && itProceduralHeadingRx.test(line)) {
+      errors.push(
+        `${relPath}:${i + 1}: violazione Hybrid Language Standard (Dimensione F: intestazione procedurale in italiano fuori da blocco codice; usare inglese per la logica imperativa)`
+      );
+    }
+  }
   return errors;
 }
 
@@ -504,6 +526,7 @@ export function validatePlugin(pluginDir, existingNames = new Set(), seenSkillNa
         const rel = `rules/${rEnt.name}`;
         errors.push(...validateMarkdownHygiene(rContent, rel));
         errors.push(...validateContentAndSense(rContent, rel, pluginHasGenerativeUiDelegation));
+        errors.push(...validateHybridLanguageStandard(rContent, rel));
         for (const c of extractTechnicalConcepts(rContent)) pluginConcepts.add(c);
       }
     }
@@ -541,6 +564,7 @@ export function validatePlugin(pluginDir, existingNames = new Set(), seenSkillNa
           const relSkill = `skills/${ent.name}/SKILL.md`;
           errors.push(...validateMarkdownHygiene(content, relSkill));
           errors.push(...validateContentAndSense(content, relSkill, pluginHasGenerativeUiDelegation));
+          errors.push(...validateHybridLanguageStandard(content, relSkill));
           for (const c of extractTechnicalConcepts(content)) pluginConcepts.add(c);
 
           for (const refMatch of content.matchAll(/\]\(\.?\/?(references\/[a-zA-Z0-9_./-]+\.md)\)/g)) {
@@ -609,6 +633,7 @@ export function validatePlugin(pluginDir, existingNames = new Set(), seenSkillNa
       }
       errors.push(...validateMarkdownHygiene(agContent, relAg));
       errors.push(...validateContentAndSense(agContent, relAg, pluginHasGenerativeUiDelegation));
+      errors.push(...validateHybridLanguageStandard(agContent, relAg));
       for (const c of extractTechnicalConcepts(agContent)) pluginConcepts.add(c);
 
       const agFm = parseFrontmatter(agContent);
@@ -894,6 +919,17 @@ function main() {
         totalErrors++;
         console.log(`\n[✖ FALLITO] DESIDERATA.md: ${desLines.length} righe (tetto massimo: 150 righe)`);
       }
+      desLines.forEach((line, idx) => {
+        if (line.startsWith('|') && !line.includes('---') && !line.includes('Note ')) {
+          const cols = line.split('|').map((c) => c.trim()).filter(Boolean);
+          if (cols.length >= 4 && cols[3].length > 160) {
+            totalErrors++;
+            console.log(
+              `\n[✖ FALLITO] DESIDERATA.md:${idx + 1}: cella Note di ${cols[3].length} caratteri (tetto massimo: 160 caratteri)`
+            );
+          }
+        }
+      });
     }
     const notesPath = join(root, 'NOTES.md');
     if (existsSync(notesPath)) {
@@ -915,6 +951,20 @@ function main() {
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  const metaPath = fileURLToPath(import.meta.url).replace(/\\/g, '/').toLowerCase();
+  const argPath = resolve(process.argv[1]).replace(/\\/g, '/').toLowerCase();
+  if (metaPath === argPath) return true;
+  try {
+    const realMeta = realpathSync(fileURLToPath(import.meta.url)).replace(/\\/g, '/').toLowerCase();
+    const realArg = realpathSync(resolve(process.argv[1])).replace(/\\/g, '/').toLowerCase();
+    return realMeta === realArg;
+  } catch {
+    return false;
+  }
+})();
+
+if (isMain) {
   main();
 }

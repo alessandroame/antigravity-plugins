@@ -41,13 +41,13 @@ import {
   updateOperatorMastery
 } from '../core/mastery-ledger.mjs';
 import {
+  discoverUnifiedBrainSessions,
+  isDirectCliEntrypoint,
   resolveCatalogRepoRoot,
   verifyAndSyncGlobalPlugins
 } from '../../proactive-mentorship/scripts/session-miner.mjs';
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  import.meta.url.replace(/\\/g, '/') === pathToFileURL(resolve(process.argv[1])).href.replace(/\\/g, '/');
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isDirectEntry) {
   const safetyTimer = setTimeout(() => {
@@ -68,7 +68,14 @@ export function getBrainDir() {
   if (process.env.ANTIGRAVITY_BRAIN_DIR) {
     return resolve(process.env.ANTIGRAVITY_BRAIN_DIR);
   }
-  return join(homedir(), '.gemini', 'antigravity', 'brain');
+  const candidates = [
+    join(homedir(), '.gemini', 'antigravity', 'brain'),
+    join(homedir(), '.gemini', 'jetski', 'brain')
+  ];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return candidates[0];
 }
 
 function readJsonOrFallback(filePath, fallback) {
@@ -109,13 +116,12 @@ export function measureCatalogInlineRulesBytes(repoRoot) {
 }
 
 /**
- * Scans human conversation transcripts in `brain/` (strictly read-only on workspaces/plugins).
+ * Scans human conversation transcripts in `brain/` and Cloud sessions (strictly read-only on workspaces/plugins).
  *
  * @param {{ brainDir?: string, analyticsDir?: string, repoRoot?: string, limit?: number, nowMs?: number }} [opts]
  * @returns {object}
  */
 export function runReadOnlyMapekAnalysis(opts = {}) {
-  const brainDir = opts.brainDir || getBrainDir();
   const analyticsDir = opts.analyticsDir || getAnalyticsDir();
   const repoRoot = opts.repoRoot ? resolve(opts.repoRoot) : resolveCatalogRepoRoot();
   const limit = Number(opts.limit || 45);
@@ -132,32 +138,23 @@ export function runReadOnlyMapekAnalysis(opts = {}) {
   const sessionsIndex = readJsonOrFallback(join(analyticsDir, 'sessions-index.json'), { sessions: {} });
   const indexedMap = sessionsIndex?.sessions && typeof sessionsIndex.sessions === 'object' ? sessionsIndex.sessions : {};
 
-  const candidates = [];
-  if (existsSync(brainDir)) {
-    for (const ent of readdirSync(brainDir, { withFileTypes: true })) {
-      if (!ent.isDirectory()) continue;
-      const tPath = join(brainDir, ent.name, '.system_generated', 'logs', 'transcript.jsonl');
-      if (!existsSync(tPath)) continue;
-      try {
-        const st = statSync(tPath);
-        candidates.push({ conversationId: ent.name, transcriptPath: tPath, mtimeMs: Math.round(st.mtimeMs) });
-      } catch {
-        // Ignore inaccessible files
-      }
-    }
-  }
-
-  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  const candidates = discoverUnifiedBrainSessions({
+    brainDir: opts.brainDir,
+    analyticsDir,
+    includeCloudLog: !opts.brainDir
+  });
   const analyzedSessions = [];
 
   for (const item of candidates) {
     if (analyzedSessions.length >= limit) break;
     try {
-      const raw = readFileSync(item.transcriptPath, 'utf-8');
+      const raw = item.transcriptPath
+        ? readFileSync(item.transcriptPath, 'utf-8')
+        : item.syntheticJsonl || '';
       const idxEntry = indexedMap[item.conversationId] || {};
       const parsed = parseSessionTrajectoryFromJsonl(raw, {
         conversationId: item.conversationId,
-        workspace: idxEntry.workspace || '',
+        workspace: idxEntry.workspace || item.workspace || '',
         mtimeMs: item.mtimeMs
       });
       if (!parsed) continue;

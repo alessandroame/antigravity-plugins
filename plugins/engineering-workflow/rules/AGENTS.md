@@ -1,24 +1,24 @@
-# Standard di Ingegneria: Version Control, Trace Debugging & Shift-Left Governance (`engineering-workflow`)
+# Engineering Standards: Version Control, Trace Debugging & Shift-Left Governance (`engineering-workflow`)
 
-Definisce gli standard per il controllo di versione, la localizzazione deterministica dei guasti, l'architettura headless, la code review avversariale su `git diff` e la verifica meccanica delle consegne.
+Defines standards for surgical version control, deterministic fault localization, headless core isolation, adversarial `git diff` review, and mechanical delivery verification. Always reply to the user in plain Italian.
 
 ## 1. Version Control Governance (Git Pro)
-1. **Staging Chirurgico (Divieto di `git add .` / `git add -A` / `git commit -a`)**: aggiungere i file per percorso esplicito e verificare `git status --porcelain` e `git diff --cached` prima del commit.
-2. **Conventional Commits in Inglese**: `feat(scope): ...`, `fix(scope): ...`, `refactor(scope): ...`, `test(scope): ...`, `docs(scope): ...`, `chore(scope): ...`. Non fare commit/merge sul branch principale senza conferma utente; usare Git Worktrees per task concorrenti.
+1. **Surgical Staging (`git add .` / `git add -A` / `git commit -a` are FORBIDDEN)**: Stage files by explicit path and verify `git status --porcelain` and `git diff --cached` before committing.
+2. **Conventional Commits in English**: `feat(scope): ...`, `fix(scope): ...`, `refactor(scope): ...`, `test(scope): ...`, `docs(scope): ...`, `chore(scope): ...`. NEVER commit/merge to the main branch without user confirmation; use Git Worktrees for concurrent tasks.
 
-## 2. Trace Debugging, Inglese nel Codice e Architettura Headless
-1. **Deterministic Trace Debugging**: vietato procedere a tentativi; iniettare checkpoint `[DEBUG-TRACE #X]` lungo la catena (Ingresso -> Guardia -> Calcolo -> Stato -> Render) e rimuoverli prima della consegna.
-2. **Inglese Esclusivo nel Codice**: identificatori, commenti, JSDoc, test (`describe`/`it`) e log interni in inglese (UI copy nella lingua di prodotto).
-3. **Headless Core (`core/` o `src/core/`)**: zero riferimenti a `window`, `document`, `HTMLElement`, `navigator` o selettori CSS (`100%` eseguibile in Node.js puro); iniettare `storageAdapter` (`createInMemoryStorageAdapter` nei test, `createLocalStorageAdapter` nella UI).
+## 2. Trace Debugging, English in Code & Headless Architecture
+1. **Deterministic Trace Debugging**: Guessing is FORBIDDEN; inject numbered `[DEBUG-TRACE #X]` checkpoints along the causal chain (Entry -> Guard -> Compute -> State -> Render) and remove them before delivery.
+2. **English-Only Code**: Identifiers, comments, JSDoc, tests (`describe`/`it`), and internal logs MUST be in English (UI copy follows product language).
+3. **Headless Core (`core/` or `src/core/`)**: Zero references to `window`, `document`, `HTMLElement`, `navigator`, or CSS selectors (`100%` runnable in pure Node.js); inject `storageAdapter` (`createInMemoryStorageAdapter` in tests, `createLocalStorageAdapter` in UI).
 
-## 3. I 5 Gate di Qualità Shift-Left e Guardie Anti-Fatica di Review
-1. **Gate 1 (Pre-Design UX)**: zero controlli ridondanti, touch target `>= 48px`, `white-space: nowrap` su `valore + unità` e contrasto WCAG AA/AAA.
-2. **Gate 2 (Rigore In-Flight)**: isolamento headless del core, store reattivo unico (SSOT) e inglese nel codice.
-3. **Gate 3 (Test Suite Auto-Discovered, Integrità Test & Anti-Overfitting `L3`)**:
-   - Eseguire `npm test` (con auto-discovery di tutti i `*.test.*`, vietate liste hardcoded parziali). Per ogni fix su fisica, camera 3D, smoothing o calcoli di dominio, aggiungere nello stesso turno un test unitario sull'invariante matematico/geometrico.
-   - **Divieto di Addomesticare Test Esistenti & Divieto di Overfitting per Accontentare Soglie Empiriche**: vietato rimuovere o alterare asserzioni preesistenti in `tests/` senza consenso utente. Tuttavia, quando la rimozione di un'euristica sposta una soglia numerica empirica pur preservando gli invarianti qualitativi e di conservazione, è **vietato stratificare gate/toppe nel codice applicativo per forzare i vecchi numeri**: esporre lo scarto e chiedere il consenso utente per riallineare la soglia. Su patch multi-file eseguire [`diff-triage.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/diff-triage.mjs) (o `/review-diff` con subagent `Blind Diff Critic`).
-4. **Gate 4 (Collaudo Browser, Runner Multi-Viewport & Flusso Reale)**:
-   - Per ogni modifica UI (`.html`, `.css`, `ui/`), verificare mobile (`360x800`) e desktop/embedded (`1280x800` / `800x480`) tramite [`ui-smoke-runner.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/ui-smoke-runner.mjs) (`.agents/smoke-flows.json`) o iniettando [`ui-geometry-probe.js`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js): `0` overflow orizzontale, `0` controlli coperti (`elementFromPoint`), `0` testi troncati, touch target `>= 44px`, area libera `>= 60%` e almeno **1 flusso (`Prima -> Click/Input -> Dopo`)** con `0` errori console.
-5. **Gate 5 (Verifica Meccanica sul Transcript `Stop` Hook & Ricevuta a 4 Misure)**:
-   - L'hook `Stop` ([`delivery-gate-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/engineering-workflow/scripts/delivery-gate-hook.mjs)) verifica sul `transcript.jsonl` che test e sonda UI siano stati eseguiti **dopo** l'ultimo `edit_file`/`write_file`, riaprendo il turno (`decision: "continue"`, circuit breaker 1-retry) in caso di ritocchi finali non verificati.
-   - In chiaro esporre max 3–5 bullet; in `<details>` allegare la **Ricevuta Oggettiva a 4 Misure** (se tutte passano al primo colpo, applicare **0 modifiche** per il Rasoio di Occam): (1) `%` schermo libera (`>= 60%`), (2) scala tipografica + `nowrap`, (3) JSON sonda (`violations: 0`), (4) flusso `Prima -> Click -> Dopo`.
+## 3. The 5 Shift-Left Quality Gates & Review-Fatigue Guards
+1. **Gate 1 (Pre-Design UX)**: Zero redundant controls, touch targets `>= 48px`, `white-space: nowrap` on `value + unit`, and WCAG AA/AAA contrast.
+2. **Gate 2 (In-Flight Rigor)**: Headless core isolation, single reactive store (SSOT), and English in code.
+3. **Gate 3 (Auto-Discovered Test Suite, Test Integrity & `L3` Diff Triage)**:
+   - Run `npm test` (auto-discovering all `*.test.*`; partial hardcoded lists are FORBIDDEN). For every fix on physics, 3D camera, smoothing, or domain math, add an invariant unit test in the same turn.
+   - **No Test Tampering**: NEVER delete or weaken pre-existing assertions in `tests/` during an app fix without user consent. On multi-file patches, run `node ~/.gemini/config/plugins/engineering-workflow/scripts/diff-triage.mjs` (or `/review-diff` with `Blind Diff Critic`) to block tampered/faux tests and highlight high-risk lines.
+4. **Gate 4 (Browser Probe, Multi-Viewport Runner & Live User Flow)**:
+   - For every UI edit (`.html`, `.css`, `ui/`), verify mobile (`360x800`) and desktop/embedded (`1280x800` / `800x480`) via `node ~/.gemini/config/plugins/engineering-workflow/scripts/ui-smoke-runner.mjs` (`.agents/smoke-flows.json`) or `~/.gemini/config/plugins/engineering-workflow/skills/shift-left-governance/scripts/ui-geometry-probe.js`: `0` horizontal overflow, `0` covered controls (`elementFromPoint`), `0` clipped text, touch targets `>= 44px`, free canvas `>= 60%`, and at least **1 flow (`Prima -> Click/Input -> Dopo`)** with `0` console errors.
+5. **Gate 5 (Transcript-Verified `Stop` Hook & 4-Measure Receipt)**:
+   - The `Stop` hook (`~/.gemini/config/plugins/engineering-workflow/scripts/delivery-gate-hook.mjs`) checks `transcript.jsonl` to ensure tests and UI probes ran **after** the last `edit_file`/`write_file`, reopening the turn (`decision: "continue"`, 1-retry circuit breaker) on unverified late edits.
+   - At `L0` show max 3–5 Italian bullets; inside `<details>` attach the **Ricevuta Oggettiva a 4 Misure** (apply **0 changes** if already compliant per Occam's Razor): (1) free screen `%` (`>= 60%`), (2) typographic scale + `nowrap`, (3) probe JSON (`violations: 0`), (4) `Prima -> Click -> Dopo` flow.

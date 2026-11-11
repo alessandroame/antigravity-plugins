@@ -11,17 +11,15 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
 import { getAnalyticsDir, getBrainDir } from './mapek.mjs';
 import {
   isHumanConversationTranscript,
   isSubagentTranscriptHead
 } from '../../human-governor/scripts/governor-hook.mjs';
+import { isDirectCliEntrypoint } from '../../proactive-mentorship/scripts/session-miner.mjs';
 
-const isDirectEntry =
-  Boolean(process.argv[1]) &&
-  import.meta.url.replace(/\\/g, '/') === pathToFileURL(resolve(process.argv[1])).href.replace(/\\/g, '/');
+const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isDirectEntry) {
   const safetyWatchdog = setTimeout(() => {
@@ -128,7 +126,7 @@ async function main() {
     `Evidenza: ${candidate.observedEvidenceIt} | Motivazione: ${candidate.decisionRationaleIt}. ` +
     `REGOLA OBBLIGATORIA (HUMAN-GATED MAPE-K): Non applicare alcuna modifica ai file dei plugin di nascosto. ` +
     `Comunica all'utente questa decisione in stile Semantic Drill-Down (Livello 0 sintetico + cassetto <details> con evidenza e alternative scartate) ` +
-    `e usa ask_question per chiedergli se (1) Approvare e applicare ora eseguendo 'node c:/github/antigravity-plugins/plugins/mapek/scripts/mapek.mjs --apply ${candidate.decisionId} --confirm-user-approval', ` +
+    `e usa ask_question per chiedergli se (1) Approvare e applicare ora eseguendo 'node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --apply ${candidate.decisionId} --confirm-user-approval', ` +
     `(2) Vedere/modificare prima la bozza ('--show ${candidate.decisionId}'), ` +
     `(3) Rifiutare per 30 giorni ('--reject ${candidate.decisionId}'), oppure ` +
     `(4) Rimandare di 24 ore ('--snooze ${candidate.decisionId}').`;

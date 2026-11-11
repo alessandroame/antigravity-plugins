@@ -13,7 +13,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -291,6 +291,9 @@ async function executeSmokeFlowsViaNativeCdp(normalizedConfig) {
     exePath,
     [
       '--headless=new',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--proxy-bypass-list=127.0.0.1;localhost',
       `--remote-debugging-port=${port}`,
       `--user-data-dir=${profileDir}`,
       '--no-first-run',
@@ -301,7 +304,15 @@ async function executeSmokeFlowsViaNativeCdp(normalizedConfig) {
       '--allow-file-access-from-files',
       'about:blank'
     ],
-    { stdio: 'ignore', windowsHide: true }
+    {
+      stdio: 'ignore',
+      windowsHide: true,
+      env: {
+        ...process.env,
+        NO_PROXY: [process.env.NO_PROXY, '127.0.0.1', 'localhost'].filter(Boolean).join(','),
+        no_proxy: [process.env.no_proxy, '127.0.0.1', 'localhost'].filter(Boolean).join(',')
+      }
+    }
   );
 
   let cdp = null;
@@ -641,8 +652,17 @@ async function main() {
   process.exit(receipt.overallPass ? 0 : 2);
 }
 
-const isDirectEntry =
-  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+const isDirectEntry = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return (
+      import.meta.url === pathToFileURL(resolve(process.argv[1])).href ||
+      realpathSync(fileURLToPath(import.meta.url)) === realpathSync(resolve(process.argv[1]))
+    );
+  } catch {
+    return import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+  }
+})();
 
 if (isDirectEntry) {
   main().catch((err) => {

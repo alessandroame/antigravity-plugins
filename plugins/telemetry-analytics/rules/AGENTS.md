@@ -1,20 +1,20 @@
-# Regole di Telemetria, Stima ETA In-Flight, Token per Prompt e Riservatezza (`telemetry-analytics`)
+# Telemetry, In-Flight ETA Badge, Per-Prompt Token Footer & Privacy Rules (`telemetry-analytics`)
 
-Definisce i criteri per le metriche di utilizzo, il badge di stima ETA complessiva, il report token di fine risposta per singolo prompt e la riservatezza dei dati locali.
+Defines rules for usage metrics, overall remaining ETA badge, per-prompt end-of-reply token footer, and local data privacy. Always reply to the user in plain Italian.
 
-## 1. Stima ETA Complessiva (`【🟢/🟡/🔴 ETA tot ~Ns】`)
-L'ETA indica **il tempo residuo per completare l'intera lavorazione richiesta dall'utente**:
-- `【🟢 ETA tot ~15s】` (Fascia Breve: `15–20s`) · `【🟡 ETA tot ~40s】` (Fascia Media: `21–60s`) · `【🔴 ETA tot ~90s】` (Fascia Lunga: `> 60s`).
-1. **Quando Emettere**: silenzio al 1° turno esplorativo, su `ask_question` o per task `< 15s`. Entro il **2° turno operativo** (se residuo `>= 15s`), emettere il badge.
-2. **Ancoraggio sui Tool Visibili**: scrivere il badge in `toolSummary` di un singolo tool del turno (sul primo `edit_file`, `write_file` o `run_command`, poiché i `read_file` vengono collassati in `Explored N files >`). Non stampare righe `[ETA...]` nel testo della chat.
-3. **Baseline**: lettura/ricerca `3–5s`; modifica file `6–10s`; comandi/test `8–20s`; sintesi finale `5–8s`.
+## 1. Overall Remaining ETA Badge (`【🟢/🟡/🔴 ETA tot ~Ns】`)
+The ETA indicates **remaining time to complete the entire user request**:
+- `【🟢 ETA tot ~15s】` (Short: `15–20s`) · `【🟡 ETA tot ~40s】` (Medium: `21–60s`) · `【🔴 ETA tot ~90s】` (Long: `> 60s`).
+1. **When to Emit**: Stay silent on Turn 1 exploratory reads, on `ask_question`, or for tasks `< 15s`. By the **2nd operational turn** (if remaining time `>= 15s`), emit the badge.
+2. **Anchor on Visible Tools**: Place the badge in `toolSummary` of a single visible operational tool in the turn (first `edit_file`, `write_file`, or `run_command`, since `read_file` collapses into `Explored N files >`). NEVER print `[ETA...]` lines in chat prose.
+3. **Baselines**: File read/search `3–5s`; file edit `6–10s`; command/test `8–20s`; final synthesis `5–8s`.
 
-## 2. Riga Finale Token per Prompt e Sessione (Obbligatoria a Fine Risposta)
-1. **Formato Compatto (3 Soli Valori: `in`, `out`, `Sessione`)**: al termine di ogni risposta all'utente in chat, aggiungere come ultima riga esclusivamente il formato minimale:
-   `> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`
-   *(Esempio: `> Prompt #6: 198k in / 41k out · Sessione: 1.67M`). Vietato aggiungere cache, contesto, step, tool o durata in calce alla chat: tali dettagli vanno mostrati solo quando l'utente invoca `/plugin-analytics`.*
-2. **Calcolo Senza Latenza Aggiuntiva**: usare i valori di `transcript.jsonl` / `report.mjs` quando già letti nel turno, oppure la stima deterministica del turno (`in`, `out` e cumulativo `in+out` di sessione) senza eseguire tool extra a fine risposta.
+## 2. Mandatory Per-Prompt, Context & Session Token Footer (End of Reply)
+1. **Compact 4-Value Format (`in`, `out`, `Contesto`, `Sessione`)**: At the very end of every chat reply to the user, append as the last line ONLY this minimal Italian format with `{percentuale} ({dimensione})` against the `1M` (`1,048,576` tokens) window:
+   `> Prompt #<N>: <in> in / <out> out · Contesto: <ctxPct>% (<ctx>) · Sessione: <sessPct>% (<totSessione>)`
+   *(Example: `> Prompt #6: 198k in / 41k out · Contesto: 14% (142k) · Sessione: 160% (1.67M)`). Here `<ctx>` is `input_tokens + cache_read_tokens` of the latest step, `<totSessione>` is cumulative session `in + out`, and both percentages are relative to `1,048,576` tokens. NEVER add cache %, steps, tools, or duration to the chat footer: show those details only when `/plugin-analytics` is invoked.*
+2. **Zero-Latency Calculation**: Use `transcript.jsonl` / `report.mjs` / `.eta_<id>.json` values if already read in the turn, or deterministic turn estimates (`in`, `out`, `<ctx>`, `<totSessione>`, and their `%` over `1M`) without running extra tool calls at reply end.
 
-## 3. Sobrietà Metrica e Governance Locale (`~/.gemini/antigravity/analytics/`)
-1. **Misurazioni Oggettive**: riportare tempi reali (`ms`/`s`, `calls`, `tokens`) e dichiarare apertamente i fallimenti dei tool.
-2. **Riservatezza e Rotazione**: tutti i dati restano in locale (`sessions-index.json`, `metrics-summary.json`, `events.ndjson`). `collector.mjs` applica il TTL Garbage Collection (`7 giorni`) sui cursori `.cursor_*`/`.eta_*` e ruota `events.ndjson` in `events.archive.ndjson` oltre **5 MB**.
+## 3. Metric Sobriety & Local Storage Governance (`~/.gemini/antigravity/analytics/`)
+1. **Objective Measurements**: Report real figures (`ms`/`s`, `calls`, `tokens`) and openly disclose tool failures.
+2. **Privacy & Log Rotation**: All telemetry stays local (`sessions-index.json`, `metrics-summary.json`, `events.ndjson`). `collector.mjs` applies a `7-day` TTL GC on `.cursor_*`/`.eta_*` files and rotates `events.ndjson` to `events.archive.ndjson` above **5 MB**.

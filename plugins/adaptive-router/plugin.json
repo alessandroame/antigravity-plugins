@@ -1,0 +1,11 @@
+{
+  "name": "adaptive-router",
+  "displayName": "Adaptive Model & Effort Router",
+  "description": "Seleziona in base al prompt il miglior modello AI (flash_lite, flash, pro o modelli futuri scoperti automaticamente) e il livello di impegno operativo (Low, Medium, High), adattandosi in automatico a nuovi modelli e modalità.",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Mostra lo stato del registro modelli e le capacità scoperte (/model-router --status)",
+    "Valuta quale modello e livello High/Medium/Low useresti per questo prompt",
+    "Scansiona le sessioni recenti per scoprire nuovi modelli o modalità e calibrare le soglie"
+  ]
+}

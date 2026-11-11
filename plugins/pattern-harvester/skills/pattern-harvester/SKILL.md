@@ -1,60 +1,60 @@
 ---
 name: pattern-harvester
 description: >-
-  Scansiona periodicamente le sessioni di lavoro e le interazioni utente-agente per rilevare pattern ricorrenti ad alto ROI e trasformarli in Skill, Regole o Plugin. Utilizza questa skill quando l'utente invoca /pattern-harvester.
+  Use this skill when the user invokes /pattern-harvester to scan work sessions and user-agent
+  interactions for high-ROI recurring patterns and scaffold them into Skills, Rules, or Plugins.
 ---
 
 # Pattern Harvester & Automation Advisor (`/pattern-harvester`)
 
-Runbook operativo per analizzare le sessioni di lavoro reali (`transcript.jsonl`), individuare sequenze operative o interazioni manuali ripetute, filtrare le collisioni con il catalogo installato e generare lo scaffold di nuove **Skill (`L2b`)**, **Estensioni (`L3`)** o **Plugin**.
+Operational runbook to mine real work sessions (`transcript.jsonl`), detect recurring operational chains or manual interactions, filter catalog collisions, and scaffold new **Skills (`L2b`)**, **Extensions (`L3`)**, or **Plugins** in Hybrid EN/IT format. Always reply to the user in plain Italian.
 
 ---
 
-## Step 1 — Esecuzione dello Scanner Incrementale
+## Step 1 — Run Incremental Scanner
 
-1. Eseguire lo script CLI di analisi sulle conversazioni umane recenti (default: ultimi `14` giorni, fino a `40` sessioni umane, escludendo automaticamente i subagent allo step 0):
-   ```powershell
-   node c:/github/antigravity-plugins/plugins/pattern-harvester/scripts/pattern-harvester.mjs
+1. Run the CLI analyzer on recent human conversations (default: last `14` days, up to `40` human sessions, excluding subagents at step 0):
+   ```bash
+   node ~/.gemini/config/plugins/pattern-harvester/scripts/pattern-harvester.mjs
    ```
-2. Per ottenere l'output strutturato JSON (utile per ispezionare metriche granulari o i pattern filtrati sotto soglia):
-   ```powershell
-   node c:/github/antigravity-plugins/plugins/pattern-harvester/scripts/pattern-harvester.mjs --json
-   ```
-
----
-
-## Step 2 — Interpretazione della Matrice Decisionale ROI e Anti-Collisione
-
-Consultare [`references/pattern-mining-methodology.md`](./references/pattern-mining-methodology.md) per le formule dettagliate. Ogni pattern rilevato nei 3 canali (`TOOL_CHAIN`, `CLI_SEQUENCE`, `INTERACTION_ARCHETYPE`) viene classificato in 5 esiti:
-
-1. **`IGNORE`**: `< 3` occorrenze, `< 2` sessioni distinte, risparmio netto `< 120s` su 15 sessioni (dedotto il costo di setup `40s`) oppure overlap `>= 0.75` con una skill/plugin già installato.
-2. **`RULE_OR_GUARD` (`L2a` / `L3`)**: correzione ripetuta su invarianti o stile in `>= 2` sessioni -> codificare come guardia statica in `scripts/validate.mjs` o regola in `rules/AGENTS.md`.
-3. **`SKILL_EXTENSION` (`L2b + L3`)**: overlap `0.45..0.74` con una skill esistente oppure esecuzione sistematica di `>= 3` step manuali dopo l'invocazione della skill -> aggiornare la skill esistente o incapsulare gli step manuali in uno script `scripts/`.
-4. **`NEW_SKILL` (`L2b`)**: procedura multi-step con `>= 3` occorrenze su `>= 2` sessioni e risparmio netto `>= 120s` -> creare una nuova `SKILL.md` (`<= 200` righe).
-5. **`NEW_PLUGIN`**: dominio multi-componente con `>= 4` occorrenze su `>= 3` sessioni e risparmio netto `>= 240s` che richiede hook (`hooks.json`), regole permanenti e script dedicati.
-
----
-
-## Step 3 — Generazione dello Scaffold Pre-Validato (`--scaffold`) o Silenziamento (`--dismiss`)
-
-1. **Generazione Bozza Pronta all'Uso**:
-   Per generare automaticamente i file conformi a `scripts/validate.mjs` (`description` YAML `80–250` caratteri con blocco `>-`, trigger `"Utilizza questa skill quando..."`, zero `: ` inline):
-   ```powershell
-   node c:/github/antigravity-plugins/plugins/pattern-harvester/scripts/pattern-harvester.mjs --scaffold <patternId> --slug <nome-kebab-case>
-   ```
-2. **Silenziamento Pattern Non Desiderati (Cooldown 30 Giorni)**:
-   Se l'utente decide di non automatizzare un pattern segnalato:
-   ```powershell
-   node c:/github/antigravity-plugins/plugins/pattern-harvester/scripts/pattern-harvester.mjs --dismiss <patternId>
+2. For structured JSON output (to inspect granular metrics or sub-threshold patterns):
+   ```bash
+   node ~/.gemini/config/plugins/pattern-harvester/scripts/pattern-harvester.mjs --json
    ```
 
 ---
 
-## Step 4 — Presentazione in Chat e Sincronizzazione Catalogo
+## Step 2 — Interpret ROI Decision Matrix & Anti-Collision Gate
 
-1. Mostrare in chiaro (**Livello 0-Click**, max `3–5` bullet) solo i candidati promossi con il relativo risparmio stimato in secondi.
-2. Inserire nel cassetto `<details>` (**Livello 1-Click**, con riga vuota obbligatoria dopo `</summary>`) la tabella a 4 colonne fisse (`# Pattern & Frequenza | Sequenza / Scheletro | Destinazione | ROI Netto`) e la bozza dello scaffold.
-3. Dopo la conferma utente e la scrittura dei file nel repository canonico `c:/github/antigravity-plugins`, eseguire sempre il ponte di verifica e sincronizzazione:
-   ```powershell
-   node c:/github/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs --verify-and-sync
+See [`references/pattern-mining-methodology.md`](./references/pattern-mining-methodology.md) for full KLM/GOMS formulas. Every pattern detected across the 3 channels (`TOOL_CHAIN`, `CLI_SEQUENCE`, `INTERACTION_ARCHETYPE`) is routed to 1 of 5 outcomes:
+
+1. **`IGNORE`**: `< 3` occurrences, `< 2` distinct sessions, net savings `< 120s` over 15 sessions (after `40s` setup cost), or overlap `>= 0.75` with an installed skill/plugin.
+2. **`RULE_OR_GUARD` (`L2a` / `L3`)**: Repeated invariant/style correction across `>= 2` sessions -> encode as a static guard in `scripts/validate.mjs` or a rule in `rules/AGENTS.md` (Hybrid EN/IT).
+3. **`SKILL_EXTENSION` (`L2b + L3`)**: Overlap `0.45..0.74` with an existing skill or `>= 3` manual steps systematically executed after a skill -> extend the skill or add a `scripts/` helper.
+4. **`NEW_SKILL` (`L2b`)**: Multi-step procedure with `>= 3` occurrences across `>= 2` sessions and net savings `>= 120s` -> create a new `SKILL.md` (`<= 200` lines) in Hybrid EN/IT format.
+5. **`NEW_PLUGIN`**: Multi-component domain with `>= 4` occurrences across `>= 3` sessions and net savings `>= 240s` requiring hooks, permanent rules, and dedicated scripts.
+
+---
+
+## Step 3 — Generate Pre-Validated Scaffold (`--scaffold`) or Dismiss (`--dismiss`)
+
+1. **Generate Ready-to-Use Hybrid EN/IT Draft**:
+   To generate files compliant with `scripts/validate.mjs` (`description` `80–250` chars with `>-`, `Use this skill when...`, zero unquoted inline `: `, Hybrid EN/IT body):
+   ```bash
+   node ~/.gemini/config/plugins/pattern-harvester/scripts/pattern-harvester.mjs --scaffold <patternId> --slug <kebab-case-name>
+   ```
+2. **Dismiss Unwanted Patterns (30-Day Cooldown)**:
+   ```bash
+   node ~/.gemini/config/plugins/pattern-harvester/scripts/pattern-harvester.mjs --dismiss <patternId>
+   ```
+
+---
+
+## Step 4 — Chat Presentation (in Italian) & Catalog Sync
+
+1. Show at **Level 0-Click** (max `3–5` Italian bullets) only promoted candidates with estimated net saved seconds.
+2. Place the 4-column table (`# Pattern & Frequenza | Sequenza / Scheletro | Destinazione | ROI Netto`) and scaffold draft inside `<details>` (**Level 1-Click**, with a mandatory blank line after `</summary>`).
+3. After user confirmation and writing files to the canonical `antigravity-plugins` repository, run verification and global sync:
+   ```bash
+   node ~/.gemini/config/plugins/proactive-mentorship/scripts/session-miner.mjs --verify-and-sync
    ```

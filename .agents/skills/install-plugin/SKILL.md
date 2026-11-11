@@ -1,62 +1,56 @@
 ---
 name: install-plugin
-description: Procedura per installare o associare uno dei plugin di antigravity-plugins all'interno di un altro progetto, inclusa l'analisi automatica di conflitti, skill/regole concorrenti o duplicate e proposte di bonifica.
+description: >-
+  Use this skill when installing or linking an antigravity-plugins plugin into another project,
+  running automated conflict and duplicate skill/rule analysis and proposing cleanup actions.
 ---
 
-# Procedura di Installazione Plugin e Audit Concorrenza
+# Plugin Installation & Conflict Audit Procedure (`install-plugin`)
 
-Questa procedura standardizza l'associazione di un plugin della raccolta a una directory di progetto esterna, eseguendo un audit sistematico delle personalizzazioni preesistenti per evitare collisioni e ridondanze.
-
----
-
-## 1. Risoluzione dei Parametri
-- **Plugin sorgente**: verificare l'esistenza in `c:\github\antigravity-plugins\plugins\<nome-plugin>`.
-- **Progetto destinazione**: individuare la cartella radice del progetto target (es. `c:\github\<nome-progetto>`).
+Standardizes linking a catalog plugin to an external project while auditing pre-existing customizations to prevent shadowing, collisions, and redundancies. Always reply to the user in plain Italian.
 
 ---
 
-## 2. Audit Concorrenza e Sovrapposizioni (Pre- o Post-Installazione)
-
-Prima o contestualmente al collegamento, analizzare le personalizzazioni già presenti nel target (`.agents/skills/`, `.agents/rules/`, `.agents/plugins/`):
-
-1. **Collisioni di Nome / Identificativo**:
-   - Verificare se esistono skill o file con lo stesso nome (`name:` nel frontmatter YAML o cartelle omonime). In Antigravity, nomi duplicati provocano override prioritari o scarti silenti.
-2. **Duplicati Semantici e Frammentazione**:
-   - Identificare regole o skill "loose" preesistenti create in precedenza come prototipi o workaround che svolgono lo stesso compito ora incapsulato nel plugin.
-3. **Incongruenze e Contrasti Normativi**:
-   - Verificare se regole esistenti nel target contengono direttive in contraddizione con il nuovo plugin (ad es. uso di termini vietati dalla nuova blacklist del plugin).
-
-### Matrice di Valutazione e Azioni Proposte:
-Per ogni elemento concorrente identificato, proporre all'utente una tra le seguenti azioni:
-- **Deprecazione / Rimozione**: se la regola o skill locale è un duplicato esatto o reso obsoleto dal plugin.
-- **Sfoltimento (Refactoring)**: se una regola locale conteneva sia parti generiche (ora nel plugin) sia parti specifiche di dominio (da preservare nel progetto).
-- **Risoluzione Conflitto**: bonificare file del progetto che violano le nuove direttive del plugin.
+## 1. Parameter Resolution
+- **Source Plugin**: Verify existence in `plugins/<plugin-name>`.
+- **Target Project**: Locate the root directory of the target project.
 
 ---
 
-## 3. Modalità di Installazione e Sincronizzazione
+## 2. Pre/Post-Installation Overlap & Conflict Audit
+
+Inspect existing customizations in the target workspace (`.agents/skills/`, `.agents/rules/`, `.agents/plugins/`):
+1. **Name / ID Collisions (`P0`)**: Check whether local skills or files share the same YAML `name:` or folder name (which causes silent shadowing).
+2. **Semantic Duplicates (`P1`)**: Identify loose prototype rules or skills that duplicate responsibilities now encapsulated in the plugin.
+3. **Normative Contradictions (`P1`)**: Check whether existing local rules contradict the plugin's directives.
+
+### Proposed Remediation Actions (User-Facing in Italian):
+For each conflicting item, propose one of:
+- **Deprecazione / Rimozione**: Exact duplicate or superseded local rule/skill.
+- **Sfoltimento (Refactoring)**: Strip generic boilerplate covered by the plugin while keeping domain-specific project constraints.
+- **Risoluzione Conflitto**: Sanitize project files violating the plugin's rules.
+
+---
+
+## 3. Physical Installation & Global Synchronization
 
 > [!CAUTION]
-> **Divieto Assoluto di Directory Junction su Windows**:
-> Il Language Server di Antigravity ignora i reparse points e symlink su Windows. Inoltre, Antigravity non carica plugin da `.agents/plugins/` di progetto. I plugin devono essere sempre sincronizzati o installati come directory fisiche reali in `~/.gemini/config/plugins/`.
+> **No Directory Junctions for Plugins on Windows**:
+> The Antigravity Language Server ignores NTFS junctions/reparse points on Windows, and does not load plugins from project-local `.agents/plugins/`. Plugins MUST be physically synced into `~/.gemini/config/plugins/`.
 
-1. **Sincronizzazione Globale Automatica (Consigliata)**:
-   Dalla cartella principale del repository `antigravity-plugins`:
+1. **Automated Global Sync (Recommended)**:
+   From the `antigravity-plugins` root:
    ```bash
    npm run sync
    ```
-   Lo script `scripts/sync-to-global.mjs` rimuove eventuali junction obsolete e clona fisicamente le cartelle dei plugin in `~/.gemini/config/plugins/`.
-
-2. **Abilitazione nel Runtime (`config.json`)**:
-   Verificare o invocare l'RPC `JetboxWriteState` per garantire che il plugin sia `"enabled": true` in `~/.gemini/config/config.json`.
-
-3. **Skill di Workspace Specifiche (Non Plugin)**:
-   Se una skill deve risiedere unicamente in un progetto isolato e non a livello globale per tutta la macchina, copiarla fisicamente in `<target>\.agents\skills\<nome-skill>\SKILL.md` anziché usare i plugin.
+   `scripts/sync-to-global.mjs` removes stale junctions, physically copies plugin directories into `~/.gemini/config/plugins/`, and updates `~/.gemini/config/config.json`.
+2. **Workspace-Specific Skills (Non-Plugin)**:
+   If a skill belongs strictly to a single project, copy it to `<target>/.agents/skills/<skill-name>/SKILL.md`.
 
 ---
 
-## 4. Report all'Utente
-Fornire un output strutturato contenente:
-- Esito del collegamento (percorso e componenti attivati).
-- Tabella delle skill/regole concorrenti o duplicate rilevate.
-- Piano di bonifica proposto, in attesa di autorizzazione prima di modificare o eliminare file nel progetto target.
+## 4. User Report (in Italian)
+Present a structured summary in plain Italian:
+- Sync outcome (target path and enabled components).
+- Table of conflicting or duplicate local skills/rules detected.
+- Proposed cleanup plan, waiting for user confirmation before deleting or editing target project files.

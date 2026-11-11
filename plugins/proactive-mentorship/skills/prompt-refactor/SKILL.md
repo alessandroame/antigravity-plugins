@@ -1,60 +1,57 @@
 ---
 name: prompt-refactor
 description: >-
-  Utilizza questa skill quando un prompt presenta ambiguità, attrito di workflow Antigravity,
-  regressioni o correzioni all'agente, applicando auto-apprendimento continuo L0-L3,
-  session-miner.mjs e refactoring Before/After.
+  Use this skill when a prompt has high-impact ambiguity, Antigravity workflow friction,
+  regressions ("avviene ancora"), or agent corrections ("d'ora in poi") to apply L0-L3 self-learning.
 ---
 
 # Prompt Refactoring, Antigravity Coaching & Autonomous Self-Learning Runbook
 
-## 1. Obiettivo e Architettura a 3 Dimensioni
+## 1. Objective & 3-Dimensional Architecture
 
-Questa skill trasforma un momento di attrito (prompt vago, regressione ricorrente o lezione emersa in sessione) in **auto-apprendimento immediato dell'agente (`Zero-Prompt Self-Learning`)** e in un kit operativo su 3 dimensioni:
-1. **Prompt Refactoring (Determinismo 1-Shot & Token Economy)**: iniezione dei percorsi esatti `@file`, perimetro chiuso e comando oggettivo di verifica.
-2. **Antigravity Workflow Coaching (Just-in-Time)**: selezione dell'**unica** scorciatoia nativa di Antigravity che dimezza i passaggi manuali per il task corrente (prontuario completo in [agy-commands-and-context.md](./references/agy-commands-and-context.md)).
-3. **Autonomous Self-Learning & Harness Engineering (`L0..L3`)**: estrazione automatica delle lezioni apprese nella sessione (tramite [`scripts/session-miner.mjs`](./scripts/session-miner.mjs) e [agent-training-ladder.md](./references/agent-training-ladder.md)) con promozione diretta in test/sonde `L3`, skill `L2b`, regole `L2a` o `MEMORY.md` (`L1`), validazione `validate.mjs --all` e sincronizzazione `npm run sync`.
+Turns workflow friction (ambiguous prompt, recurring regression, or session lesson) into **immediate agent self-learning (`Zero-Prompt Self-Learning`)** across 3 dimensions (always replying to the user in plain Italian):
+1. **Prompt Refactoring (1-Shot Determinism & Token Economy)**: Inject exact `@file` paths, bounded scope, and an objective verification command.
+2. **Antigravity Workflow Coaching (Just-in-Time)**: Select the **single** native Antigravity shortcut that halves manual effort (see [agy-commands-and-context.md](./references/agy-commands-and-context.md)).
+3. **Autonomous Self-Learning & Harness Engineering (`L0..L3`)**: Mine session lessons via [`scripts/session-miner.mjs`](./scripts/session-miner.mjs) and [agent-training-ladder.md](./references/agent-training-ladder.md), promoting them into `L3` tests/probes, `L2b` skills, `L2a` rules (in Hybrid EN/IT format), or `L1` `MEMORY.md`, followed by `validate.mjs --all` and `npm run sync`.
 
 ---
 
-## 2. Procedura Operativa Sequenziale (Step 1 -> Step 4)
+## 2. Sequential Operational Procedure (Step 1 -> Step 4)
 
-### Step 1 — Verifica del Gate Anti-Disturbo
-Prima di emettere qualsiasi suggerimento, verifica la **Clausola di Silenzio**:
-- Il prompt cita già il file bersaglio (`@file` o funzione), tocca `<= 2 file` e non presenta rischi architetturali né correzioni o lezioni da apprendere?
-  - **SÌ**: **Taci (`0 byte` di coaching)** ed esegui direttamente il task richiesto.
-  - **NO**: Procedi allo **Step 2**.
+### Step 1 — Anti-Noise Silence Gate & Preventive Prompt Review (`NOTE-003`)
+Run `node ~/.gemini/config/plugins/proactive-mentorship/scripts/session-miner.mjs --review-prompt "<prompt>"` (or inspect `promptReview` from `model-router.mjs --prompt "<prompt>"`):
+- **IF `promptReview.needsReview === false`** (prompt already cites target `@file`/symbols, touches `<= 2` files, or is a question/confirmation) AND no regression/self-learning trigger is present:
+  - **Stay silent (`0 bytes` of coaching)** and execute the requested task directly.
+- **IF `promptReview.needsReview === true`** (broad/unanchored mutation lacking `@file` or verification criteria):
+  - **BEFORE modifying files**, show `promptReview.improvedPromptDraftIt` inside the Mentorship Box and call `ask_question` with `promptReview.reviewOptionsIt` so the user can approve the improved prompt in 1 click.
 
-### Step 2 — Selezione della Singola Mossa Antigravity (Legge di Hick)
-Identifica il collo di bottiglia principale dell'utente e seleziona **1 solo comando nativo** (consulta [agy-commands-and-context.md](./references/agy-commands-and-context.md) per i template compilati):
+### Step 2 — Single Antigravity Move Selection (Hick's Law)
+Select **at most 1 native command** matching the primary bottleneck:
 
-| Sintomo Rilevato nel Messaggio Utente | Mossa Antigravity Prioritaria | Perché Risparmia Tempo e Token |
+| User Message Symptom | Priority Antigravity Move | Why It Saves Time & Tokens |
 | :--- | :--- | :--- |
-| **Requisito ampio con scelte di design implicite** | `/grill-me <obiettivo>` | L'agente intervista l'utente sui buchi logici prima di scrivere codice errato. |
-| **Modifica su `>= 3 file` o refactoring strutturale** | `/plan <obiettivo>` | Produce un piano d'azione approvabile prima di toccare il codice sorgente. |
-| **Confronto critico tra purezza tecnica e UX** | `/skizzo <obiettivo>` | Attivo di serie in `Auto-Skizzo Silente` sui bivi `score >= 4` (forzabile con `--force`). |
-| **Prompt telegrafico di poche parole da strutturare** | `/boost <bozza>` | Espande la richiesta con vincoli, casi limite e criteri di accettazione. |
-| **Task lungo autonomo con test di uscita chiaro** | `/goal <obiettivo e test>` | L'agente itera in autonomia finché tutti i controlli non sono verdi. |
-| **Progetto esteso divisibile tra agenti autonomi** | `/teamwork <obiettivo>` | Coordina un team di agenti autonomi su moduli indipendenti (distinto da `/skizzo` che risolve bivi dialettici nel turno). |
-| **Chat oltre 25-30 turni o cambio di argomento** | `/compact` | Comprime lo storico liberando la finestra di contesto dalle scorie precedenti. |
-| **Dubbio su quale prompt o skill funzioni meglio** | `/ab-bench <compito>` | Esegue una sfida cieca A/B misurando il Test delle 5 Dita e il tempo reale. |
+| **Broad requirement with implicit design choices** | `/grill-me <obiettivo>` | Interviews the user on logical gaps before writing wrong code. |
+| **Edit across `>= 3` files or structural refactor** | `/plan <obiettivo>` | Produces an approvable action plan before touching source files. |
+| **Critical tradeoff between technical purity and UX** | `/skizzo <obiettivo>` | Active by default in `Auto-Skizzo Silente` on `score >= 4` (`--force` to override). |
+| **Terse draft prompt needing structure** | `/boost <bozza>` | Expands request with constraints, edge cases, and acceptance criteria. |
+| **Long autonomous task with clear exit test** | `/goal <obiettivo e test>` | Iterates autonomously until all verification gates pass. |
+| **Large project divisible across autonomous agents** | `/teamwork <obiettivo>` | Coordinates autonomous agents on independent modules. |
+| **Chat exceeding 25–30 turns or topic switch** | `/compact` | Compresses history to free context window capacity. |
+| **Doubt over which prompt or skill performs better** | `/ab-bench <compito>` | Runs a blind 5-Finger A/B challenge with real timing metrics. |
 
-### Step 3 — Auto-Apprendimento Autonomo sull'Agent Training Ladder (`L0..L3`)
-Quando l'utente corregge l'agente, segnala una regressione (`"avviene ancora"`, `"non funziona"`) o chiede di analizzare le sessioni passate:
-1. **Mining Deterministico delle Sessioni (`session-miner.mjs`)**:
-   - Esegui `node plugins/proactive-mentorship/scripts/session-miner.mjs --limit 40` per estrarre le statistiche sui pattern ricorrenti (`sessionToPluginEvolution`, `repeatedRegressionOrFriction`, `readonlyQuestionWithClause`) e i candidati `L1..L3`.
-2. **Applicazione Autonoma sul Gradino Minimo Efficace (`Act -> Verify -> Sync -> 1-Line Receipt`)**:
-   - **L0 (Prompt 1-Shot + Esempio Prima/Dopo)**: ambiguità isolata nel turno corrente.
-   - **L1 (`MEMORY.md` + Test Invariante Locale)**: insidia specifica di questo codebase -> aggiorna *in-place* `MEMORY.md` **e** aggiungi un test unitario numerico/geometrico nel progetto per bloccare la regressione.
-   - **L2b (`skills/<nome>/SKILL.md` o `references/`)**: procedura riutilizzabile multi-step (`0 token` fissi nel System Prompt, `<= 200` righe).
-   - **L2a (`rules/AGENTS.md` — Regola Sempre Attiva)**: preferenza universale -> aggiorna *in-place* compattando il file sotto `<= 6.500 byte`.
-   - **L3 (`scripts/validate.mjs`, `triage.mjs`, `ui-geometry-probe.js`, Test Unitario — Zero-Token Guard)**: se può diventare un controllo eseguibile in `< 20 righe`, **codificalo sempre in `L3`**.
-3. **Validazione e Sync Automatico**:
-   - Esegui `node scripts/validate.mjs --all` e `npm run sync` (`scripts/sync-to-global.mjs`).
-   - Se la validazione fallisce, applica il rollback immediato (`git checkout --`) senza lasciare file rotti.
+### Step 3 — Autonomous Self-Learning on the Agent Training Ladder (`L0..L3`)
+WHEN the user corrects the agent, flags a regression (`"avviene ancora"`, `"non funziona"`), or says `"d'ora in poi"` / `"ricordati sempre"`:
+1. **Deterministic Session Mining (`session-miner.mjs`)**:
+   - Run `node ~/.gemini/config/plugins/proactive-mentorship/scripts/session-miner.mjs --limit 40` to extract recurring patterns and `L1..L3` candidates.
+2. **Minimum Effective Rung Application (`Act -> Verify -> Sync -> 1-Line Receipt`)**:
+   - **L0 (1-Shot Prompt + Before/After)**: Isolated single-turn ambiguity.
+   - **L1 (`MEMORY.md` + Local Invariant Test)**: Repo-specific pitfall -> update `MEMORY.md` *in-place* **and** add a local numeric/geometric unit test.
+   - **L2b (`skills/<name>/SKILL.md`) / L2a (`rules/AGENTS.md <= 6,000 B`)**: Reusable cross-workspace procedure or rule -> write natively in **Hybrid EN/IT format** (`EN` logic / `IT` user-facing templates).
+   - **L3 (`scripts/validate.mjs`, `triage.mjs`, `ui-geometry-probe.js`, Unit Test — Zero-Token Guard)**: IF checkable in `< 20` lines, **always encode in `L3`**.
+3. **Atomic Verification & Sync**:
+   - Run `node ~/.gemini/config/plugins/proactive-mentorship/scripts/session-miner.mjs --verify-and-sync` (auto-rollback via `git checkout --` on validation failure).
 
-### Step 4 — Ricevuta a 1 Riga (0-Click) e Dettagli in `<details>` (1-Click)
-Mostra in chiaro una sola riga con la ricevuta dell'auto-apprendimento (e l'opzione `"annulla regola"`) e racchiudi il diff e il kit in `<details>` (con **riga vuota obbligatoria dopo `</summary>`**):
+### Step 4 — 1-Line Receipt (`0-Click`) & `<details>` (`1-Click`, in Italian)
 
 ```markdown
 > [!IMPORTANT]

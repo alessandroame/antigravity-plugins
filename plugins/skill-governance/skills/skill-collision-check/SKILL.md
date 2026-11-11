@@ -1,82 +1,69 @@
 ---
 name: skill-collision-check
 description: >-
-  Utilizza questa skill quando devi rilevare collisioni di nome, shadowing prioritario e duplicati semantici tra skill in workspace, plugin, configurazione globale e builtin.
+  Use this skill when detecting name collisions, priority shadowing, semantic duplicates,
+  and post-update built-in overlaps across workspace, plugin, global, and built-in skills.
 ---
 
-# Procedura di Rilevamento Collisioni e Duplicati tra Skill
+# Skill Collision & Duplicate Detection Procedure (`skill-collision-check`)
 
-Questa skill analizza l'intero panorama di personalizzazioni attive per identificare omonimie, oscuramenti prioritari (shadowing) e sovrapposizioni concettuali che compromettono la prevedibilità del comportamento dell'agente.
-
----
-
-## 1. Mappatura delle Sorgenti di Skill
-
-Identificare tutte le directory di skill presenti nei livelli di configurazione di Antigravity:
-
-1. **Livello 1: Workspace di Progetto (Priorità Massima)**:
-   - `<repository-root>/.agents/skills/`
-   - `<repository-root>/.agents/plugins/*/skills/`
-2. **Livello 2: Configurazione Globale Macchina**:
-   - `~/.gemini/config/skills/`
-   - `~/.gemini/config/plugins/*/skills/`
-3. **Livello 3: Skill Integrate di Sistema (Built-in)**:
-   - Identificate dai riferimenti al percorso di sistema `/builtin/skills/`.
+Analyzes active customizations across all Antigravity hierarchy levels to detect name collisions, silent priority shadowing, semantic trigger overlaps, and post-update built-in duplication. Always present the report to the user in plain Italian.
 
 ---
 
-## 2. Tipologie di Anomalie da Rilevare
+## 1. Skill Source Hierarchy
 
-### Anomalia 1: Omonimia Diretta e Shadowing Silente (P0)
-- **Definizione**: Due cartelle di skill diverse condividono lo stesso identico valore nel campo `name` del frontmatter YAML.
-- **Impatto**: In Antigravity, il livello gerarchicamente superiore (es. Workspace) sovrascrive totalmente la skill globale o integrata con lo stesso nome, senza emettere warning. La versione a priorità inferiore non sarà mai invocata.
-- **Risoluzione**: Rinominare la skill secondaria in `kebab-case` esplicitando il contesto (es. `custom-git-log` invece di `git-log`).
-
-### Anomalia 2: Duplicati Semantici e Concorrenza di Trigger (P1)
-- **Definizione**: Due skill con nomi diversi contengono trigger o descrizioni che intercettano lo stesso intento operativo (es. una skill `code-review` e una skill `pr-audit` che si attivano entrambe su "fai la review di questo codice").
-- **Impatto**: Comportamento non-deterministico. L'LLM può alternare casualmente l'attivazione tra le due skill o invocare quella meno aggiornata.
-- **Risoluzione**:
-  - **Fusione (Merge)**: Unificare le due skill in una procedura modulare.
-  - **Specializzazione**: Riscrivere le rispettive `description` specificando condizioni mutualmente esclusive.
-
-### Anomalia 3: Contrasti Normativi e Incompatibilità (P1)
-- **Definizione**: Le istruzioni operative di una skill prescrivono convenzioni o strumenti contrari a quelli di un'altra skill attiva contemporaneamente (es. una skill impone `npm` e l'altra impone `pnpm`).
-- **Risoluzione**: Allineare gli standard al playbook di progetto o definire guardie di compatibilità condizionali.
-
-### Anomalia 4: Skill Orfane o Puntamento Invalido (P2)
-- **Definizione**: File `SKILL.md` che contengono comandi o script di supporto che non esistono sul disco o puntano a percorsi assoluti hardcoded riferiti ad altre macchine.
-- **Risoluzione**: Convertire i percorsi assoluti in percorsi relativi al repository.
-
-### Anomalia 5: Sovrapposizione Funzionale Post-Update con Antigravity Nativo (P1)
-- **Definizione**: Una regola (`AGENTS.md`) o skill custom replica, contraddice o sovrascrive meccanismi divenuti nativi dopo un aggiornamento di Antigravity (es. *Reactive Wakeup* sui task in background, vincoli CSS di `generative_ui`, o comandi slash integrati come `/learn`, `/boost`, `/teamwork`, `/schedule`).
-- **Impatto**: Esecuzione doppia della stessa logica, avvisi ridondanti in chat, conflitti con le direttive dei tool nativi e spreco di token nel system prompt a ogni turno.
-- **Risoluzione**: Rimuovere dalle regole custom il boilerplate ormai garantito dal motore nativo, delegare alle skill *Built-in* (`agy-customizations`, `plugin`, `generative_ui`, `automation`) le funzioni standard e confinare il plugin al solo valore aggiunto differenziale.
+Scan all skill directories across Antigravity's precedence tiers (`Workspace > Plugins > Global > Built-in`):
+1. **Tier 1 — Project Workspace (Highest Priority)**: `<repo-root>/.agents/skills/`
+2. **Tier 2 — Installed Plugins & Global Config**: `~/.gemini/config/plugins/*/skills/` and `~/.gemini/config/skills/`
+3. **Tier 3 — System Built-in Skills**: `~/.gemini/antigravity/builtin/skills/`
 
 ---
 
-## 3. Flusso Operativo di Ispezione
+## 2. Anomaly Classes
 
-1. **Scansione**: Censire tutte le sottocartelle contenenti un file `SKILL.md`.
-2. **Estrazione Metadati**:
-   - Estrarre `name` e `description` dal frontmatter YAML.
-   - Tracciare il percorso assoluto e il livello gerarchico (Workspace vs Globale).
-3. **Verifica Collisioni**:
-   - Confrontare i valori di `name` in una mappa per rilevare collisioni esatte.
-   - Confrontare i token chiave delle descrizioni per rilevare cluster semantici sovrapposti.
-4. **Ispezione Script & Tool**:
-   - Verificare che eventuali file referenziati nei comandi esistano su disco.
-5. **Analisi Deterministica del Contenuto, Senso d'Uso e Diff Post-Update (`validate.mjs`)**:
-   - Eseguire `node c:/github/antigravity-plugins/scripts/validate.mjs --all --report-builtin-overlaps` per analizzare il contenuto di `rules/AGENTS.md`, `SKILL.md` e `references/*.md` rispetto ai 19 file *Built-in* (`scripts/builtin-baseline.json`), distinguendo tra **Delega Esplicita** (valida), **Duplicazione di Boilerplate (`P1`)** e **Contraddizione Normativa (`P0`)**. Dopo aver verificato un aggiornamento di Antigravity, riallineare l'impronta con `node c:/github/antigravity-plugins/scripts/validate.mjs --update-builtin-baseline`.
+### Class 1: Direct Name Collision & Silent Shadowing (`P0`)
+- **Cause**: Two skills share the exact same YAML `name`. The higher-priority tier silently shadows the lower one.
+- **Fix**: Rename the custom skill in `kebab-case` with an explicit domain prefix.
+
+### Class 2: Semantic Duplicates & Trigger Competition (`P1`)
+- **Cause**: Distinct skill names target the same user intent in their `description`.
+- **Fix**: Merge into one modular skill or specialize their `Use this skill when...` clauses to be mutually exclusive.
+
+### Class 3: Normative Contradictions (`P0` / `P1`)
+- **Cause**: A custom rule/skill prescribes tools or patterns conflicting with another active rule or native Antigravity behavior.
+- **Fix**: Align with project governance and remove conflicting directives.
+
+### Class 4: Orphaned References or Hardcoded Machine Paths (`P2`)
+- **Cause**: `SKILL.md` references missing files or non-portable hardcoded paths (`C:\Users\...`, `/home/...`).
+- **Fix**: Convert to relative repository paths or `~/.gemini/config/plugins/...`.
+
+### Class 5: Post-Update Overlap with Native Antigravity Built-ins (`P1`)
+- **Cause**: A custom rule/skill duplicates boilerplate or contradicts mechanisms guaranteed natively by Antigravity updates (e.g., native *Reactive Wakeup*, `generative_ui` CSS tokens, or built-in slash commands `/learn`, `/boost`, `/teamwork`, `/schedule`).
+- **Fix**: Strip duplicated built-in boilerplate, delegate explicitly to built-in skills (`agy-customizations`, `plugin`, `generative_ui`, `automation`), and retain only differential value.
 
 ---
 
-## 4. Report di Conflitto e Matrice di Risoluzione
+## 3. Inspection Workflow
 
-Restituire all'utente una matrice strutturata:
+1. **Inventory**: Enumerate all `SKILL.md`, `rules/*.md`, and `agents/*.md` files.
+2. **Extract Metadata**: Parse YAML `name`, `description`, and hierarchy tier.
+3. **Run Deterministic Content & Built-in Evolution Check (`validate.mjs`)**:
+   ```bash
+   node scripts/validate.mjs --all --report-builtin-overlaps
+   ```
+   Compares `rules/AGENTS.md`, `SKILL.md`, and `references/*.md` against the 19 built-in files (`scripts/builtin-baseline.json`), distinguishing **Explicit Delegation** (valid), **Boilerplate Duplication (`P1`)**, and **Normative Contradiction (`P0`)**. After verifying an Antigravity update, refresh the baseline via:
+   ```bash
+   node scripts/validate.mjs --update-builtin-baseline
+   ```
+
+---
+
+## 4. Conflict Matrix Output (User-Facing in Italian)
+
+Present the findings in plain Italian and wait for user confirmation before modifying repository files:
 
 | Skill A (Percorso) | Skill B (Percorso) | Tipo Conflitto | Gravità | Azione Risolutiva Consigliata |
 | :--- | :--- | :--- | :---: | :--- |
 | `plugins/foo/skills/x` | `plugins/bar/skills/x` | Omonimia (Shadowing) | **P0** | Rinomina una delle due skill |
 | `skills/check-code` | `skills/lint-audit` | Concorrenza Semantica | **P1** | Fondi o specializza i trigger |
-
-Attendere la conferma dell'utente prima di applicare modifiche strutturali ai file del repository.

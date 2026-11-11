@@ -7,28 +7,22 @@ description: >-
 
 # Outdoor, Field & Harsh-Environment HMI Ergonomics
 
-Questa skill guida l'ottimizzazione di interfacce web e mobile destinate all'uso sul campo, all'aperto, sotto luce solare diretta o in contesti operativi complessi (sport, logistica, nautica, cantieri).
+Guides optimization of web and mobile interfaces for outdoor, direct-sunlight, high-glare, and glove-operated field environments (aviation, sports, logistics, marine, construction). Always reply to the user in plain Italian.
 
 ---
 
-## 1. Vincoli Operativi sul Campo (Field Operational Factors)
+## 1. Field Operational Constraints
 
-1. **Luce Solare Diretta e Riverbero**:
-   - I riflessi riducono drasticamente il contrasto percepito e rendono invisibili i grigi chiari o le sottili ombreggiature.
-2. **Uso con Guanti o Mani Fredde**:
-   - Impossibilità di puntamento micrometrico (precisione < 5mm).
-3. **Finestra Decisionale Rapida (< 3s)**:
-   - L'operatore non può leggere testi lunghi; lo stato primario deve essere percepibile a colpo d'occhio (*glanceability*).
-4. **Schermi Ristretti (360px–390px) e Vibrazioni**:
-   - L'interfaccia deve prevenire click accidentali e trappole di gesto.
+1. **Direct Sunlight & Glare**: Washes out low-contrast grays and subtle shadows; requires WCAG AAA (`>= 7:1`) on critical telemetry.
+2. **Glove / Cold-Hand Operation**: Precludes fine-grained pointing (`< 5mm`); requires `>= 48x48 px` touch targets with `>= 8px` gaps.
+3. **Sub-3-Second Glanceability**: Operators cannot read long prose; primary state MUST be readable at a glance with `>= 60%` free canvas height on `360x800`.
+4. **Narrow Viewports (`360px–390px`) & Vibration**: Prevent accidental taps and scroll/gesture traps.
 
 ---
 
-## 2. Pattern Implementativi di Riferimento
+## 2. Reference Implementation Patterns
 
-### A. Target Tattili Estesi (>= 48px) con Hit-Area Trasparente
-Quando un elemento visivo ha dimensioni compatte (es. icona 16px o badge), estendere l'area di tocco con uno pseudo-elemento senza alterare il layout:
-
+### A. Extended Touch Targets (`>= 48px`) with Transparent Hit-Area
 ```css
 .field-touch-target {
   position: relative;
@@ -39,7 +33,6 @@ Quando un elemento visivo ha dimensioni compatte (es. icona 16px o badge), esten
   justify-content: center;
 }
 
-/* Espansione hit-area trasparente per elementi compatti */
 .field-touch-compact {
   position: relative;
 }
@@ -54,9 +47,8 @@ Quando un elemento visivo ha dimensioni compatte (es. icona 16px o badge), esten
 }
 ```
 
-### B. Caroselli Orizzontali a Riga Singola (`touch-action: pan-x`)
-Evitare `flex-wrap: wrap` per filtri o pulsanti frequenti:
-
+### B. Single-Row Horizontal Carousels (`touch-action: pan-x`)
+NEVER use `flex-wrap: wrap` on frequent filter/time pills:
 ```css
 .field-carousel {
   display: flex;
@@ -76,25 +68,20 @@ Evitare `flex-wrap: wrap` per filtri o pulsanti frequenti:
 }
 ```
 
-### C. Prevenzione Trappole di Gesto su Grafici e Mappe
-- **Grafici con scrubber orizzontale**: `touch-action: pan-y` (consente lo scorrimento verticale naturale della pagina se l'utente scorre in verticale).
-- **Mappe e canvas 3D**: implementare modalità cooperativa a due dita (*cooperative gestures*) o pulsante esplicito di ingaggio cartografico.
+### C. Gesture-Trap Prevention on Charts & Maps
+- **Horizontal-scrubber charts**: Set `touch-action: pan-y` to preserve vertical page scrolling.
+- **Maps & 3D canvases**: Use two-finger cooperative gestures or an explicit map-lock toggle.
 
-### D. Viewport Dinamico Senza Barre Parassite
+### D. Dynamic Viewport (`100dvh`) & Tri-Modal Safety Feedback
 ```css
-/* Eliminazione clipping da barre mobili */
 .field-viewport-container {
   min-height: 100dvh;
   height: 100dvh;
   box-sizing: border-box;
 }
 ```
-
-### E. Feedback Tri-Modale di Sicurezza
-Non affidare la comunicazione dello stato critico unicamente alla tonalità cromatica:
-
 ```html
-<!-- Pattern Corretto: Colore + Icona Funzionale + Testo Esplicito -->
+<!-- Tri-Modal Pattern: Color + Functional Symbol + Explicit Italian Text -->
 <div class="status-badge status-warning" role="status">
   <span class="status-icon" aria-hidden="true">⚠</span>
   <span class="status-text">Attenzione: Vento Forte (24 km/h)</span>
@@ -103,12 +90,12 @@ Non affidare la comunicazione dello stato critico unicamente alla tonalità crom
 
 ---
 
-## 3. Checklist di Verifica Pre-Rilascio
+## 3. Pre-Release Verification Checklist
 
-| Criterio | Soglia Minima | Verifica |
+| Criterion | Minimum Threshold | Verification |
 | :--- | :---: | :--- |
-| **Touch Target** | >= 48 x 48 px | Ispezione DOM box-model |
-| **Contrasto Luce Solare** | >= 4.5:1 (AA) / >= 7:1 (AAA) | Lighthouse / a11y color contrast |
-| **Overflow Orizzontale** | 0 pixel su 360px viewport | Test headless browser |
-| **Feedback Interazione** | < 100ms (stato `:active`) | Test manuale o reattività CSS |
-| **Icon Clutter** | 0 emoji decorative nei titoli | Scansione codice |
+| **Touch Target** | `>= 48 x 48 px` | DOM box-model probe |
+| **Sunlight Contrast** | `>= 4.5:1` (AA) / `>= 7:1` (AAA) | Contrast check |
+| **Horizontal Overflow** | `0 px` on `360px` viewport | `ui-geometry-probe.js` |
+| **Interaction Feedback** | `< 100ms` (`:active` state) | CSS/UI smoke test |
+| **Icon Clutter** | `0` decorative emojis in headings | Code scan |

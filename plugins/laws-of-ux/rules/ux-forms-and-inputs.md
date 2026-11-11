@@ -1,17 +1,18 @@
 ---
 description: >-
-  Regola per l'ottimizzazione di form, campi di input, validazione dati, wizard e formattazione permissiva (Postel's Law, Parkinson's Law, Proximity, Tesler's Law, Chunking).
+  Rules for optimizing forms, input fields, data validation, wizards, and permissive formatting (Postel's Law, Parkinson's Law, Proximity, Tesler's Law, Chunking).
 trigger: model_decision
 globs: "**/*{form,input,login,signup,checkout,register,stepper,wizard}*.{html,jsx,tsx,vue,svelte,dart,swift,kt}"
 ---
 
 # Form & Input Field UX Rules
 
-Quando crei o modifichi form, input e procedure di checkout/registrazione:
-1. **Tolleranza degli Input (Postel's Law)**: Accetta qualsiasi variante plausibile (es. spazi nei numeri di telefono, prefissi internazionali, carte di credito) e pulisci/normalizza automaticamente i dati prima dell'invio.
-2. **Riduzione Campi & Layout a Colonna Singola (Benchmark Baymard)**: Riduci del 20-60% i campi del form (mantenere <= 6-8 campi per schermata o step di checkout). Usa un layout a colonna singola per guidare lo sguardo ed evitare salti di riga confusi. Elimina campi opzionali non critici (es. seconda riga indirizzo, fax, titolo onorifico).
-3. **Autofill (Parkinson's Law)**: Includi sempre attributi semantici per il completamento (`autocomplete="tel"`, `autocomplete="email"`, `autocomplete="shipping address-line1"`, ecc.).
-4. **Prossimità Visiva (Law of Proximity)**: Mantieni la label e i messaggi di errore/hint a distanza ravvicinata (<= 8 px) dall'input field corrispondente; distanzia i gruppi logici di campi di almeno 16-24 px.
-5. **Assorbimento Complessità (Tesler's Law)**: Rileva automaticamente i dati derivabili (es. banca dal numero carta, città/provincia da CAP).
-6. **Prevenzione Errori (NN/G Euristica #5)**: Usa vincoli restrittivi e smart defaults (disabilita date passate nei selettori, seleziona valuta locale) anziché attendere l'invio per notificare l'errore.
-7. **Suddivisione a Blocchi (Chunking)**: Raggruppa codici lunghi in blocchi leggibili (4 cifre per volta su carte e seriali; formattazione leggibile di IBAN e telefoni).
+When creating or modifying forms, inputs, and checkout/registration flows:
+1. **Input Tolerance (Postel's Law)**: Accept any plausible input variation (spaces in phone numbers, country codes, credit cards) and sanitize/normalize automatically before submission.
+2. **Field Reduction & Single-Column Layout (Baymard Benchmark)**: Keep `<= 6–8` fields per screen or step in a single-column layout to prevent zig-zag eye tracking. Eliminate non-critical optional fields (address line 2, fax, title).
+3. **Autofill (Parkinson's Law)**: ALWAYS include semantic `autocomplete` (`autocomplete="tel"`, `autocomplete="email"`, `autocomplete="shipping address-line1"`) and mobile `inputmode` attributes.
+4. **Visual Proximity (Law of Proximity)**: Keep `<label>` and error/hint text within `<= 8 px` of their input field; separate distinct field groups by `>= 16–24 px`.
+5. **Complexity Absorption (Tesler's Law)**: Automatically derive inferable values (card network from BIN, city/province from postal code).
+6. **Error Prevention (NN/G Heuristic #5)**: Use constraints and smart defaults (disable invalid past dates, preselect local currency) and validate inline on `blur` rather than while typing.
+7. **Chunking**: Format long numeric strings into readable blocks (4-digit groups for cards/serials; spaced IBAN and phone formats).
+8. **Language**: Reply to the user in plain Italian.

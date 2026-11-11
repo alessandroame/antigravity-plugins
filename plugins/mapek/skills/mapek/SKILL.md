@@ -1,50 +1,49 @@
 ---
 name: mapek
 description: >-
-  Supervisore sempre attivo dei processi di interazione Umano-AI che estrae colli di bottiglia,
-  propone Regole, Skill o Agenti e chiede conferma prima di agire. Utilizza questa skill quando
-  l'utente invoca /mapek o chiede un audit di processo.
+  Use this skill when the user invokes /mapek or requests a process audit to inspect
+  Human-AI interaction bottlenecks, operator mastery, and human-gated L2a/L2b/L2c/L3 proposals.
 ---
 
-# Supervisore di Processo a Consenso Umano (`/mapek`)
+# Human-Gated Process Supervisor Runbook (`/mapek`)
 
-Runbook on-demand per ispezionare il supervisore sempre attivo (`mapek`), consultare il profilo di padronanza dell'operatore, esaminare le decisioni in attesa di approvazione e verificare l'efficacia reale delle regole installate. Per l'architettura generale di plugin, hook e subagent in Antigravity fare riferimento alle skill native `agy-customizations` e `plugin`.
+On-demand runbook to inspect the always-on supervisor (`mapek`), review operator mastery, evaluate `PENDING_APPROVAL` decisions, and audit post-adoption ROI. Refer to built-in skills `agy-customizations` and `plugin` for general Antigravity plugin/hook/subagent architecture. Always reply to the user in plain Italian.
 
 ---
 
-## Step 1 — Esecuzione dell'Analisi in Sola Lettura
+## Step 1 — Read-Only Analysis Execution
 
-1. Eseguire la scansione incrementale sulle sessioni umane in `~/.gemini/antigravity/brain/` generando il rapporto già formattato in **Semantic Drill-Down (`L0 -> L1 -> L2`)**:
-   ```powershell
-   node c:/github/antigravity-plugins/plugins/mapek/scripts/mapek.mjs --digest
+1. Run incremental analysis on human sessions in `~/.gemini/antigravity/brain/` to generate the **Semantic Drill-Down (`L0 -> L1 -> L2`)** digest in Italian:
+   ```bash
+   node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --digest
    ```
-2. Se occorre ispezionare i dati strutturati JSON (punteggi EMA, evidenze per workspace e stato del registro post-adozione) o delegare un approfondimento multi-progetto senza appesantire la chat attiva, eseguire `--json` oppure invocare il subagent isolato `mapek-analyst`.
+2. To inspect structured JSON metrics (EMA mastery scores, workspace evidence, post-adoption ledger) or offload deep multi-project mining without polluting the main context, run `--json` or invoke the isolated subagent `mapek-analyst`.
 
 ---
 
-## Step 2 — Presentazione Drill-Down e Gate Obbligatorio di Consenso
+## Step 2 — Drill-Down Presentation & Mandatory Human Consent Gate
 
-1. Esporre all'utente il rapporto partendo dal **Livello 0** (sintesi chiara senza acronimi opachi), lasciando i dettagli su decisioni, alternative scartate, profilo di padronanza e storico nei cassetti `<details>` (**Livello 1** e **Livello 2**).
-2. Se sono presenti una o più decisioni `PENDING_APPROVAL`, **non applicarle mai autonomamente**: invocare sempre `ask_question` per raccogliere la decisione esplicita dell'utente per ciascun `<decisionId>`:
-   - **Approva e applica**:
-     ```powershell
-     node c:/github/antigravity-plugins/plugins/mapek/scripts/mapek.mjs --apply <decisionId> --confirm-user-approval
+1. Present the report in plain Italian starting at **Level 0** (2–3 clear lines without opaque acronyms), placing metrics, discarded alternatives, mastery scores, and ledger history inside `<details>` drawers (**Level 1** and **Level 2**, with a mandatory blank line after `</summary>`).
+2. IF one or more `PENDING_APPROVAL` decisions exist, **NEVER apply them autonomously**: MUST invoke `ask_question` in plain everyday Italian (zero technical IDs or filenames in question/options) for each `<decisionId>`:
+   - `(Recommended) Sì, attiva questo miglioramento automatico`:
+     ```bash
+     node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --apply <decisionId> --confirm-user-approval
      ```
-   - **Ispeziona / modifica bozza completa prima del consenso**:
-     ```powershell
-     node c:/github/antigravity-plugins/plugins/mapek/scripts/mapek.mjs --show <decisionId>
+   - `Fammi vedere prima i dettagli completi per modificarli`:
+     ```bash
+     node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --show <decisionId>
      ```
-   - **Rifiuta con silenziamento di 30 giorni**:
-     ```powershell
-     node c:/github/antigravity-plugins/plugins/mapek/scripts/mapek.mjs --reject <decisionId>
+   - `No, non mi serve (non riproporlo per 30 giorni)`:
+     ```bash
+     node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --reject <decisionId>
      ```
-   - **Rimanda di 24 ore**:
-     ```powershell
-     node c:/github/antigravity-plugins/plugins/mapek/scripts/mapek.mjs --snooze <decisionId>
+   - `Chiedimelo di nuovo domani`:
+     ```bash
+     node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --snooze <decisionId>
      ```
 
 ---
 
-## Step 3 — Verifica Post-Applicazione
+## Step 3 — Post-Approval Verification & Hybrid EN/IT Enforcement
 
-Quando l'utente approva una proposta, `--apply <decisionId> --confirm-user-approval` esegue automaticamente la validazione globale (`scripts/validate.mjs --all`), la suite di test e la sincronizzazione fisica in `~/.gemini/config/plugins/` (con rollback immediato in caso di errore), registrando la baseline in `process-ledger.json` per la verifica di efficacia dopo 10 sessioni.
+When approved by the user, `--apply <decisionId> --confirm-user-approval` enforces the **Hybrid Language Standard (`EN` Logic / `IT` User-Facing)** on any generated `L2a`/`L2b`/`L2c` markdown artifact, runs `scripts/validate.mjs --all`, test suites, and global sync to `~/.gemini/config/plugins/` (with automatic rollback on failure), and records the baseline in `process-ledger.json` for 10-session ROI verification.

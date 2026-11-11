@@ -17,6 +17,7 @@ import {
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, basename } from 'node:path';
+import { discoverUnifiedBrainSessions } from '../../proactive-mentorship/scripts/session-miner.mjs';
 
 export const MAX_IDLE_GAP_MS = 15 * 60 * 1000; // 15 minutes max idle gap between active steps
 export const MIN_ACTIVE_SESSION_MS = 5000; // 5s floor for single-turn sessions
@@ -150,6 +151,20 @@ export function extractWorkspaceCandidateFromPath(rawPath) {
     return { workspace: wsKey, workspaceName: basename(rawWs) };
   }
 
+  // Match Cloud / Linux workspace paths: /home/antigravity/<owner>/<repo>, /home/antigravity/<repo>, /workspaces/<repo>
+  const cloudOwnerRepoMatch = norm.match(/^(\/home\/antigravity\/(?!\.gemini\b|upload\b)[^/]+\/[^/]+)/i);
+  if (cloudOwnerRepoMatch) {
+    const rawWs = cloudOwnerRepoMatch[1];
+    const wsName = basename(rawWs);
+    return { workspace: wsName.toLowerCase(), workspaceName: wsName };
+  }
+
+  const cloudDirectRepoMatch = norm.match(/^(\/(?:home\/antigravity|workspaces)\/(?!\.gemini\b|upload\b)([^/.]+))(?:\/|$)/i);
+  if (cloudDirectRepoMatch && cloudDirectRepoMatch[2]) {
+    const wsName = cloudDirectRepoMatch[2];
+    return { workspace: wsName.toLowerCase(), workspaceName: wsName };
+  }
+
   // Match user special folders like Downloads, Desktop, Documents if directly used
   const userFolderMatch = norm.match(/^([a-zA-Z]:\/Users\/[^/]+\/(?:Downloads|Desktop|Documents))/i);
   if (userFolderMatch) {
@@ -201,11 +216,14 @@ export function toLocalDateKey(tsMs) {
 /**
  * Extracts clean user request text and metadata from a USER_INPUT content block.
  * @param {string} rawContent
- * @returns {{ cleanRequest: string, modelChanges: string[], slashCommands: string[] }}
+ * @returns {{ cleanRequest: string, modelChanges: string[], slashCommands: string[], cwdHint: string | null }}
  */
 export function parseUserStepContent(rawContent) {
   const content = typeof rawContent === 'string' ? rawContent : '';
   const modelChanges = [];
+
+  const cwdMatch = content.match(/Command Working Directory:\s*([^\r\n]+)/i);
+  const cwdHint = cwdMatch && cwdMatch[1] ? cwdMatch[1].trim() : null;
 
   // Extract model selection changes from <USER_SETTINGS_CHANGE>
   const settingsRegex = /<USER_SETTINGS_CHANGE>([\s\S]*?)<\/USER_SETTINGS_CHANGE>/gi;
@@ -245,7 +263,7 @@ export function parseUserStepContent(rawContent) {
     }
   }
 
-  return { cleanRequest, modelChanges, slashCommands };
+  return { cleanRequest, modelChanges, slashCommands, cwdHint };
 }
 
 /**
@@ -368,7 +386,19 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
       step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
 
     if (isExplicitUser) {
-      const { cleanRequest, modelChanges, slashCommands: cmds } = parseUserStepContent(step.content || '');
+      const { cleanRequest, modelChanges, slashCommands: cmds, cwdHint } = parseUserStepContent(step.content || '');
+      if (cwdHint) {
+        const wsFromCwd = extractWorkspaceCandidateFromPath(cwdHint);
+        if (wsFromCwd) {
+          const prev = workspaceVotes.get(wsFromCwd.workspace) || {
+            workspace: wsFromCwd.workspace,
+            workspaceName: wsFromCwd.workspaceName,
+            score: 0
+          };
+          prev.score += 3;
+          workspaceVotes.set(wsFromCwd.workspace, prev);
+        }
+      }
       if (cleanRequest && SUBAGENT_PROMPT_HEAD_RX.test(cleanRequest.slice(0, 600)) && userPromptsCount === 0) {
         isSubagent = true;
       }
@@ -436,9 +466,25 @@ export function parseTranscriptContent(rawJsonl, conversationId, fallbackMtimeMs
     }
 
     if (step.type === 'PLANNER_RESPONSE' || step.source === 'MODEL') {
-      const sIn = typeof step.input_tokens === 'number' ? step.input_tokens : 0;
-      const sOut = typeof step.output_tokens === 'number' ? step.output_tokens : 0;
-      const sCache = typeof step.cache_read_tokens === 'number' ? step.cache_read_tokens : 0;
+      const tu = step.token_usage && typeof step.token_usage === 'object' ? step.token_usage : {};
+      const sIn =
+        typeof step.input_tokens === 'number'
+          ? step.input_tokens
+          : typeof tu.input_tokens === 'number'
+            ? tu.input_tokens
+            : 0;
+      const sOut =
+        typeof step.output_tokens === 'number'
+          ? step.output_tokens
+          : typeof tu.output_tokens === 'number'
+            ? tu.output_tokens
+            : 0;
+      const sCache =
+        typeof step.cache_read_tokens === 'number'
+          ? step.cache_read_tokens
+          : typeof tu.cache_read_tokens === 'number'
+            ? tu.cache_read_tokens
+            : 0;
 
       if (step.type === 'PLANNER_RESPONSE') {
         plannerTurnsCount += 1;
@@ -693,6 +739,46 @@ export function syncBrainSessionsIndex(options = {}) {
       } catch {
         // Ignore locked or unreadable transcript
       }
+    }
+  }
+
+  if (Object.keys(nextSessions).length === 0 && !options.brainDir) {
+    try {
+      const cloudEntries = discoverUnifiedBrainSessions({ analyticsDir });
+      for (const ce of cloudEntries) {
+        const rawJsonl = ce.transcriptPath
+          ? readFileSync(ce.transcriptPath, 'utf-8')
+          : ce.syntheticJsonl || ce.jsonlText || '';
+        if (!rawJsonl) continue;
+        totalFiles += 1;
+        const mtimeMs = Math.round(ce.mtimeMs || Date.now());
+        const size = Buffer.byteLength(rawJsonl, 'utf-8');
+        const prev = existingIndex.sessions[ce.conversationId];
+        if (
+          !options.forceRebuild &&
+          prev &&
+          prev._mtimeMs === mtimeMs &&
+          prev._size === size &&
+          prev.summary
+        ) {
+          nextSessions[ce.conversationId] = prev;
+          cached += 1;
+          continue;
+        }
+        const summary = parseTranscriptContent(rawJsonl, ce.conversationId, mtimeMs);
+        if ((!summary.workspace || summary.workspace === 'unknown') && ce.workspace) {
+          summary.workspace = ce.workspace.toLowerCase();
+          summary.workspaceName = ce.workspace;
+        }
+        nextSessions[ce.conversationId] = {
+          _mtimeMs: mtimeMs,
+          _size: size,
+          summary
+        };
+        scanned += 1;
+      }
+    } catch {
+      // Ignore Cloud backfill fallback errors
     }
   }
 

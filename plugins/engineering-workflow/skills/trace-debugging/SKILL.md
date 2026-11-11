@@ -1,61 +1,62 @@
 ---
 name: trace-debugging
 description: >-
-  Utilizza questa skill quando si verificano bug di interazione UI, discrepanze di stato, fallimenti di test o errori silenti per localizzare il guasto tramite breadcrumb tracing deterministico.
+  Use this skill when UI interaction bugs, state discrepancies, test failures, or silent errors
+  occur to isolate the exact root cause via deterministic numbered breadcrumb tracing.
 ---
 
 # Trace-Based Fault Localization Runbook
 
-## 1. Obiettivo
-Sostituire tentativi casuali o congetture speculative con un metodo deterministico di tracciamento a ritroso che isola la causa radice del difetto in modo scientifico.
+## 1. Objective
+Replace speculative guessing with deterministic breadcrumb tracing that scientifically isolates the root cause between the last good checkpoint and the first corrupted hop. Always reply to the user in plain Italian.
 
 ---
 
-## 2. Flusso a 5 Passaggi
+## 2. 5-Step Pipeline
 
-```
-[Difetto Rilevato]
-       │
-       ▼
-[1. Trace Instrumentation] ──► Iniezione log numerati lungo la catena causale
-       │
-       ▼
-[2. Execution & Capture]   ──► Esecuzione del test/scenario e cattura output
-       │
-       ▼
-[3. Fault Localization]    ──► Identificazione Last Known Good Checkpoint
-       │
-       ▼
-[4. Targeted Resolution]   ──► Fix della sola finestra di codice isolata
-       │
-       ▼
-[5. Cleanup & Verification] ──► Rimozione dei log [DEBUG-TRACE] e test finale
+```text
+[Defect Detected]
+        │
+        ▼
+[1. Trace Instrumentation] ──► Inject numbered logs along the causal chain
+        │
+        ▼
+[2. Execution & Capture]   ──► Run test/scenario and capture console output
+        │
+        ▼
+[3. Fault Localization]    ──► Pinpoint Last Known Good Checkpoint
+        │
+        ▼
+[4. Targeted Resolution]   ──► Fix only the isolated code segment
+        │
+        ▼
+[5. Cleanup & Verification] ──► Strip all [DEBUG-TRACE] logs and run full test suite
 ```
 
 ---
 
-## 3. Guida Operativa
+## 3. Operational Procedure
 
-### Passo 1: Iniezione Checkpoint Numerati
-Inserire log temporanei espliciti nei punti nodali del flusso:
+### Step 1: Inject Numbered Checkpoints
+Insert temporary trace logs at key hops of the causal chain:
 ```javascript
-console.log('[DEBUG-TRACE #1] Evento innescato', { trigger, params });
-console.log('[DEBUG-TRACE #2] Validazione precondizioni superata', { state });
-console.log('[DEBUG-TRACE #3] Risultato computazione pura', { input, output });
-console.log('[DEBUG-TRACE #4] Mutazione stato completata', { before, after });
-console.log('[DEBUG-TRACE #5] Render/Aggiornamento interfaccia', { domResult });
+console.log('[DEBUG-TRACE #1] Event triggered', { trigger, params });
+console.log('[DEBUG-TRACE #2] Precondition guard passed', { state });
+console.log('[DEBUG-TRACE #3] Pure computation output', { input, output });
+console.log('[DEBUG-TRACE #4] State mutation completed', { before, after });
+console.log('[DEBUG-TRACE #5] UI render updated', { domResult });
 ```
 
-### Passo 2: Esecuzione e Cattura
-Eseguire il test unitario o la simulazione per catturare la sequenza temporale di emissione.
+### Step 2: Execute & Capture
+Run the unit test or reproduction script to capture the emitted sequence.
 
-### Passo 3: Localizzazione del Guasto
-1. Individuare il **Last Known Good Checkpoint** (il numero più alto che ha prodotto valori corretti).
-2. La causa radice si trova rigorosamente tra l'ultimo checkpoint corretto e il successivo checkpoint mancante o corrotto.
+### Step 3: Pinpoint the Fault
+1. Identify the **Last Known Good Checkpoint** (highest checkpoint index with valid values).
+2. The root cause lies strictly between the last good checkpoint and the next missing or corrupted checkpoint.
 
-### Passo 4: Risoluzione Mirata
-Intervenire unicamente sul segmento isolato, evitando refactor a largo raggio mentre si risolve il bug specifico.
+### Step 4: Surgical Fix
+Modify only the isolated segment without mixing broad refactors into the bug fix.
 
-### Passo 5: Pulizia Totale e Verifica
-- **Cancellazione log**: Rimuovere ogni occorrenza di `[DEBUG-TRACE]` dai file sorgente.
-- **Verifica**: Eseguire la regressione completa per assicurare assenza di regressioni e console pulita.
+### Step 5: Total Cleanup & Verification
+- **Strip trace logs**: Remove every `[DEBUG-TRACE]` line from source files before delivery.
+- **Verify**: Run the full test suite to confirm zero regressions and a clean console.

@@ -181,7 +181,7 @@ export function synthesizeArtifactDraft(cluster, route, slug) {
 
   if (route.targetLevel === 'L2b') {
     const relativePath = `plugins/mapek/skills/${slug}/SKILL.md`;
-    const desc = `Esegue la procedura preventiva anti-rework sintetizzata da MAPE-K per bloccare perimetro e oracolo di verifica prima delle modifiche. Utilizza questa skill quando inizi modifiche multi-file.`;
+    const desc = `Use this skill when starting multi-file edits to execute the MAPE-K anti-rework runbook, locking file scope and verification oracle before modifying code.`;
     const boundedDesc = desc.length > 245 ? desc.slice(0, 242) + '...' : desc;
     const proposedContent = [
       '---',
@@ -190,22 +190,24 @@ export function synthesizeArtifactDraft(cluster, route, slug) {
       `  ${boundedDesc}`,
       '---',
       '',
-      `# Runbook Anti-Attrito — ${slug}`,
+      `# Anti-Rework Runbook — ${slug}`,
       '',
-      '## Step 1 — Verifica della Precondizione Strutturale',
+      'Always reply to the user in plain Italian.',
       '',
-      `- Condizione intercettata: ${contract.precondition}.`,
-      '- Elenca esplicitamente i file coinvolti e verifica che il perimetro sia chiuso prima di modificare il codice.',
+      '## Step 1 — Structural Precondition Check',
       '',
-      '## Step 2 — Trasformazione Operativa',
+      `- Intercepted condition: ${contract.precondition}.`,
+      '- Explicitly list target files and verify scope is bounded before modifying code.',
       '',
-      `- Azione: ${contract.transformation}.`,
-      '- Definisci il comando esatto di test o validazione che fungerà da criterio di uscita.',
+      '## Step 2 — Operational Transformation',
       '',
-      '## Step 3 — Controllo dell\'Oracolo di Uscita',
+      `- Required action: ${contract.transformation}.`,
+      '- Define the exact deterministic test or validation command serving as the exit oracle.',
       '',
-      `- Oracolo falsificabile: ${contract.falsifiableOracle}.`,
-      '- Esegui il comando di verifica prima di dichiarare concluso il task.',
+      '## Step 3 — Exit Oracle Verification',
+      '',
+      `- Falsifiable oracle: ${contract.falsifiableOracle}.`,
+      '- Run the verification command before declaring the task complete.',
       ''
     ].join('\n');
     return { relativePath, proposedContent };
@@ -251,11 +253,13 @@ export function synthesizeArtifactDraft(cluster, route, slug) {
     `description: Apply when ${contract.precondition.toLowerCase()}`,
     '---',
     '',
-    `# Vincolo di Processo (${slug})`,
+    `# Process Constraint (${slug})`,
     '',
-    `- **Precondizione**: ${contract.precondition}.`,
-    `- **Regola**: ${contract.transformation}.`,
-    `- **Oracolo**: ${contract.falsifiableOracle}.`,
+    'Always reply to the user in plain Italian.',
+    '',
+    `- **Precondition**: ${contract.precondition}.`,
+    `- **Rule**: ${contract.transformation}.`,
+    `- **Oracle**: ${contract.falsifiableOracle}.`,
     ''
   ].join('\n');
   return { relativePath, proposedContent };

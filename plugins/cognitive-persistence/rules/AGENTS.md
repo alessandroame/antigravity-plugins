@@ -1,19 +1,19 @@
-# Disciplina di Continuità Cognitiva, Memoria di Progetto e Auto-Distillazione Skill (`cognitive-persistence`)
+# Cognitive Continuity, Project Memory & Skill Auto-Distillation (`cognitive-persistence`)
 
-Prescrive la persistenza delle osservazioni in-flight, degli ADR, dei vincoli appresi e della distillazione cross-workspace dell'esperienza in skill/regole (`L1..L3`).
+Governs in-flight note capture, ADRs, domain constraints, and cross-workspace experience distillation into `L1..L3` rules/skills. Always reply to the user in plain Italian.
 
-## 1. Architettura Cognitiva (3+1 File Canonici & Tetti in Byte/Righe)
-1. **`NOTES.md` (Buffer In-Flight — Max `120` Righe)**:
-   - Mantiene `> **Ultimo ID Assegnato**: NOTE-XXX`. La sezione `## ✅ Analizzate & Consolidate` conserva al massimo le **ultime 10 note chiuse** come singola riga di tabella (`<= 120` char), ruotando le più vecchie in `.agents/archive/NOTES_archive.md`.
-2. **`MEMORY.md` (Vincoli Stabili per Dominio — Max `200` Righe & `<= 16 KB`)**:
-   - Registra solo invarianti architetturali e insidie non ovvie. **Vietato l'append cronologico numerato**: organizzare in **5–8 sezioni stabili di dominio** aggiornate **in-place** (`- **<Titolo>**:` -> `*Insidia*` + `*Regola*`).
-3. **`WORKLOG.md` (Rolling Window & Pointer Index — Max `300` Righe & `<= 20 KB`)**:
-   - L'ADR esteso risiede solo in `.agents/worklog.d/YYYY-MM-DD_<argomento>.md`. In `WORKLOG.md` inserire solo un **Pointer Record di 4–5 righe** mantenendo gli **ultimi 10–15 interventi** preceduti da `## Indice Sintetico delle Fasi Consolidate`, ruotando l'eccedenza in `.agents/archive/WORKLOG_v<N>_archive.md`.
-4. **`DESIDERATA.md` (Matrice Funzionalità — Max `150` Righe & Celle `<= 160` char)**:
-   - Diviso in `## 1. Backlog Attivo` (`🔴`/`⚪`/`🟡`) e `## 2. Funzionalità Completate` (`🟢`). Oltre 150 righe, archiviare in `.agents/archive/DESIDERATA_v<N>_archive.md`.
+## 1. Cognitive Architecture (3+1 Canonical Files & Line/Byte Ceilings)
+1. **`NOTES.md` (In-Flight Buffer — Max `120` Lines)**:
+   - Maintains `> **Ultimo ID Assegnato**: NOTE-XXX`. Section `## ✅ Analizzate & Consolidate` keeps at most the **last 10 closed notes** as single-line table rows (`<= 120` chars), rotating older ones to `.agents/archive/NOTES_archive.md`.
+2. **`MEMORY.md` (Stable Domain Constraints — Max `200` Lines & `<= 16 KB`)**:
+   - Records only architectural invariants and non-obvious runtime pitfalls. **Numbered chronological appends are FORBIDDEN**: organize into **5–8 stable domain sections** updated **in-place** (`- **<Titolo>**:` -> `*Insidia*` + `*Regola*`).
+3. **`WORKLOG.md` (Rolling Window & Pointer Index — Max `300` Lines & `<= 20 KB`)**:
+   - Full ADRs live in `.agents/worklog.d/YYYY-MM-DD_<topic>.md`. In `WORKLOG.md`, insert only a **4–5 line Pointer Record** keeping the **last 10–15 entries** after `## Indice Sintetico delle Fasi Consolidate`, rotating older entries to `.agents/archive/WORKLOG_v<N>_archive.md`.
+4. **`DESIDERATA.md` (Feature Matrix — Max `150` Lines & Cells `<= 160` chars)**:
+   - Split into `## 1. Backlog Attivo` (`🔴`/`⚪`/`🟡`) and `## 2. Funzionalità Completate` (`🟢`). Above 150 lines, archive to `.agents/archive/DESIDERATA_v<N>_archive.md`.
 
-## 2. Workflow `/take-note`, `/review-notes`, `/memory-sync` e `/next-step`
-1. **Isolamento `/take-note`**: salvare verbatim in `NOTES.md` incrementando `NOTE-XXX`. **Vietato ispezionare codice (`read_file`, `grep`)** durante `/take-note`: confermare in 1 riga e riprendere il task attivo.
-2. **Revisione in Sola Lettura `/review-notes`**: ispezionare le note `📥 Da Analizzare` sul codice reale ed esporre la scheda di review. **Vietato modificare codice, `NOTES.md` o `DESIDERATA.md` prima della conferma esplicita dell'utente (`ask_question`)** su promozione in `DESIDERATA.md`, mantenimento in `NOTES.md`, archiviazione o implementazione.
-3. **Chiusura `/memory-sync` & Auto-Distillazione Cross-Workspace (`L1..L3`)**: creare l'ADR in `.agents/worklog.d/`, aggiungere il Pointer Record in `WORKLOG.md`, aggiornare `MEMORY.md` *in-place* (e `DESIDERATA.md`/`NOTES.md`), e se emerge un pattern trasversale aggiornare il sorgente canonico in `c:/github/antigravity-plugins/plugins/` (`L3` test/sonda, `L2b` `SKILL.md` o `L2a` `AGENTS.md <= 6.000 B`) eseguendo `node c:/github/antigravity-plugins/plugins/proactive-mentorship/scripts/session-miner.mjs --verify-and-sync`.
-4. **Avvio `/next-step`**: scansionare `DESIDERATA.md`, leggere `MEMORY.md` e `WORKLOG.md`, commutare in `🟡 In Lavorazione` e rinominare la chat (`set-chat-title.mjs`).
+## 2. `/take-note`, `/review-notes`, `/memory-sync` & `/next-step` Workflows
+1. **`/take-note` Isolation**: Save verbatim in `NOTES.md` incrementing `NOTE-XXX`. **NEVER inspect source code (`read_file`, `grep`)** during `/take-note`: confirm in 1 Italian line and resume the active task.
+2. **Read-Only `/review-notes`**: Inspect `📥 Da Analizzare` notes against real code and present the review card. During `/review-notes`, **NEVER modify code, `NOTES.md`, or `DESIDERATA.md` before explicit user confirmation (`ask_question`)** on promoting to `DESIDERATA.md`, keeping open in `NOTES.md`, archiving, or implementing.
+3. **`/memory-sync` & Cross-Workspace Auto-Distillation (`L1..L3`)**: Create the ADR in `.agents/worklog.d/`, add the Pointer Record in `WORKLOG.md`, update `MEMORY.md` *in-place* (plus `DESIDERATA.md`/`NOTES.md`), and IF a reusable cross-workspace pattern emerged, update the canonical plugin in `plugins/` in Hybrid EN/IT format (`L3` test/probe, `L2b` `SKILL.md`, or `L2a` `AGENTS.md <= 6,000 B`) and run `node ~/.gemini/config/plugins/proactive-mentorship/scripts/session-miner.mjs --verify-and-sync`.
+4. **`/next-step` Launch**: Scan `DESIDERATA.md`, read `MEMORY.md` and `WORKLOG.md`, switch target task to `🟡 In Lavorazione`, and update chat title (`set-chat-title.mjs`).

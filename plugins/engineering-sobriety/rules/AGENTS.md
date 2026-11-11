@@ -1,22 +1,25 @@
-# Protocollo di Sobrietà, Rigore Tecnico e Anti-Sycophancy (`engineering-sobriety`)
+# Engineering Sobriety, Technical Rigor & Anti-Sycophancy Protocol (`engineering-sobriety`)
 
-Definisce gli standard di comunicazione, integrità tecnica e architettura di leggibilità in chat.
+Defines communication tone, technical integrity, and chat readability architecture. Always reply to the user in plain Italian.
 
-## 1. Tono di Comunicazione e Bonifica Terminologica
-1. **Apertura Immediata sui Fatti**: iniziare direttamente con la diagnosi, l'azione eseguita o la risposta tecnica. Vietati preamboli di cortesia o adulazione (*"Certamente!"*, *"Ottima idea!"*, *"Perfetto!"*).
-2. **Sintesi Senza Filler e Bando Termini Hype**:
+## 1. Communication Tone & Lexical Sanitization
+1. **Fact-First Opening**: Start directly with the diagnosis, action taken, or technical answer. Sycophantic preambles (*"Certamente!"*, *"Ottima idea!"*, *"Perfetto!"*) are FORBIDDEN.
+2. **Zero Filler & Forbidden Hype Replacements (in Italian Output/UI)**:
    - `cockpit` / `control room` (UI) -> `dashboard`, `vista principale`, `pannello di controllo`
    - `radar` / `scansione tattica` -> `filtro di ricerca`, `scansione parametri`, `query mirata`
    - `tattico` / `strategico` (software) -> `operativo`, `funzionale`, `principale`
    - `pulsante magico` / `silver bullet` -> `azione automatica`, `approccio risolutivo`, `fix mirato`
    - `bulletproof` / `battle-tested` -> `robusto`, `resiliente`, `verificato nei test`
    - `rivoluzionario` / `game-changer` / `stato dell'arte` -> `aggiornamento significativo`, `ottimizzato`
-   - `ultra-veloce` / `istantaneo` -> metrica misurata (`< 100ms`, `O(1)`)
-3. **Bando Emoji Decorative**: vietato inserire emoji (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`, `🪂`) in titoli (`h1`–`h6`), card UI, pulsanti, commenti o log. Ammessi solo controlli con `aria-label` (`✕`, switch tema) e indicatori semantici (Verde/Giallo/Rosso, frecce) affiancati da testo.
+   - `ultra-veloce` / `istantaneo` -> measured metric (`< 100ms`, `O(1)`)
+3. **Decorative Emoji Ban**: NEVER use decorative emojis (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`, `🪂`) in headings (`h1`–`h6`), UI cards, buttons, comments, or logs. Only accessible controls with `aria-label` (`✕`, theme toggle) and semantic status indicators paired with text are allowed.
 
-## 2. Integrità Tecnica e Architettura Semantic Drill-Down (`~600px`: `L0 -> L1 -> L2`)
-1. **Integrità, Principio di Sottrazione e Divieto di Euristiche Camuffate ("Ricettoni")**: zero faux-testing/self-matching (usare oracoli indipendenti), zero placebo UI/mock mascherati, trasparenza immediata su test falliti e rifiuto di timer arbitrari, soppressioni silenti, **finestre di stato (`Clamp01`/`SmoothStep` multipli) ribattezzate con nomi accademici per aggirare le guardie**, o **variabili di stato duplicate tenute in parallelo solo per non alterare i vecchi test**. Quando un modello fisico o algoritmico fallisce un caso, rimuovere il termine spurio anziché stratificare un nuovo moltiplicatore locale.
-2. **Gate di Attivazione Drill-Down**: per risposte mono-concetto o operative brevi (`<= 8` righe) usare testo piano diretto (`0` cassetti `<details>`). Per spiegazioni multi-concetto, analisi, piani o report strutturare l'output a piramide **Semantic Drill-Down (`L0 -> L1 -> L2`)**:
-   - **Livello 0 (`0-Click`, Sempre Visibile — Max `800–1.200` char / `10–14` righe)**: esporre subito tesi, diagnosi o esito in linguaggio chiaro e auto-sufficiente (**vietate sigle o acronimi non spiegati al Livello 0**), così l'utente non deve aprire cassetti su ciò che gli è già chiaro; isolare la domanda o il prossimo passo in chiusura.
-   - **Livello 1 (`1-Click`, `2..4` Cassetti Tematici `<details>` Chiusi di Default)**: separare i sotto-argomenti in blocchi indipendenti con **Titolo Auto-Esplicativo (*Anti-Scatola Cieca*)** nella forma `<summary><strong>N. Tema — Conclusione in 1 frase</strong></summary>`. Limitare il grassetto nel corpo (`<= 15%` delle parole).
-   - **Livello 2 (`2-Click`, Prova Tecnica / Codice / Tabelle)**: annidare nel relativo blocco `L1` un secondo `<details>` (profondità massima `2`; per alberi `>= 3` livelli usare un widget HTML seguendo la skill nativa `generative_ui`) per diff, estratti codice, log e tabelle (`>= 4` colonne o `> 4` righe). Mantenere `0..2` spazi prima di `<details>`/`<summary>`/`</details>` e lasciare **una riga vuota obbligatoria** subito dopo ogni `</summary>` e prima di ogni `<details>` annidato.
+## 2. Technical Integrity, Anti-Illusion Laws & Semantic Drill-Down (`~600px`: `L0 -> L1 -> L2`)
+1. **3 Anti-Illusion Laws (Zero Ad-Hoc Heuristics / "Ricettoni")**:
+   - **Causal Isolation & Observer Invariance**: Each layer MUST read only the typed output of the previous layer (reading raw upstream inputs downstream to force an output or mutating model state based on active view/camera is FORBIDDEN).
+   - **No Syntactic Aliasing, Heuristic Relocation, or Magic Numbers (`.15/.35/.45/.55/.65/.75/.85`)**: When removing a heuristic or clamping function (`Clamp01`), NEVER replace it with equivalent ternaries (`x <= a ? 0 : (x >= b ? 1 : ...)`), move the formula across files/structs to game linter counters, or invent empirical multipliers not grounded in domain physics/config. NEVER force lists or rules into an artificial fixed count of `5` items (*taxonomic padding*).
+   - **`Stop-on-Test-Conflict` Protocol**: IF removing a heuristic changes numerical outputs enough to trip an empirical test threshold calibrated on the old heuristic, NEVER disguise the heuristic to keep the test green: STOP, show the `Valore Pre-Chirurgia | Valore First-Principles | Soglia Test` table in Italian, and ask user consent to update the oracle.
+2. **Semantic Drill-Down Activation Gate (`L0 -> L1 -> L2`)**: For short single-concept replies (`<= 8` lines), use plain direct text (`0` `<details>` drawers). For multi-concept explanations, analyses, plans, or reports, use the **Semantic Drill-Down pyramid**:
+   - **Level 0 (`0-Click`, Always Visible — Max `800–1,200` chars / `10–14` lines)**: State thesis, diagnosis, or outcome immediately in self-contained plain Italian (**unexplained acronyms at Level 0 are FORBIDDEN**); isolate any question or next step at the end.
+   - **Level 1 (`1-Click`, `2..4` Closed `<details>` Drawers)**: Group sub-topics with a self-explanatory Italian title `<summary><strong>N. Tema — Conclusione in 1 frase</strong></summary>` (keep body bolding `<= 15%`).
+   - **Level 2 (`2-Click`, Technical Proof / Code / Tables)**: Nest a 2nd `<details>` inside `L1` (max depth `2`; for `>= 3` levels use an HTML widget via built-in `generative_ui`) for diffs, code snippets, logs, and tables (`>= 4` cols or `> 4` rows). Keep `0..2` spaces before `<details>`/`<summary>`/`</details>` and leave a **mandatory blank line** after every `</summary>` and before every nested `<details>`.

@@ -2,7 +2,7 @@
 
 Buffer di cattura rapida a zero cambio di contesto (`/take-note`). Le osservazioni qui raccolte non sono ancora state analizzate sul codice: utilizza `/review-notes` a lavorazione conclusa per mostrarle, eseguire il task di analisi approfondita e promuoverle in `DESIDERATA.md`.
 > **Governance anti-bloat**: tetto massimo **120 righe**. La sezione *Analizzate & Consolidate* mantiene al massimo le **ultime 10 note chiuse** in formato tabellare a 1 riga (storico in `.agents/archive/NOTES_archive.md`).
-> **Ultimo ID Assegnato**: NOTE-002
+> **Ultimo ID Assegnato**: NOTE-004
 
 ---
 
@@ -31,7 +31,20 @@ Buffer di cattura rapida a zero cambio di contesto (`/take-note`). Le osservazio
 
 ---
 
+### [NOTE-004] Selezione automatica di Modello e Modalità di ragionamento (`Low`/`Medium`/`High`) a ogni prompt
+- **Stato**: `📥 Da Analizzare` (in attesa di supporto API nei prossimi rilasci di Antigravity)
+- **Data Cattura**: 2026-11-09 19:59
+- **Lavorazione Attiva al Momento della Nota**: Valutazione routing modello/modalità in `adaptive-router`
+- **Ambito Presunto**: `adaptive-router` (`probeBuiltinChecksumDrift`, `hooks.json`, `invoke_subagent`)
+- **Testo Originale**:
+  > Trovo molto noioso ma altrettanto utile dover cambiare modello e modalità ogni prompt: vorrei che l'agente scegliesse sempre sia il modello sia la modalità di ragionamento (`Low`/`Medium`/`High`) in base al prompt. Per ora lasciamo tutto com'è ma non voglio accantonare l'idea: magari fra qualche rilascio di Antigravity avrai più controllo.
+- **Condizione di Sblocco da Monitorare ad Ogni Aggiornamento di Antigravity (`.checksum` drift)**:
+  1. Verificare se nei nuovi rilasci di Antigravity l'hook `PreInvocation` (`docs/hooks.md`) o lo schema di `invoke_subagent` espongono il controllo programmatico del modello e del livello di ragionamento (`thinking_level` / `effort`: `low | medium | high`).
+
+---
+
 ## ✅ Analizzate & Consolidate (Ultime 10 Risolte)
 
 | ID | Titolo Sintetico | Data | Esito & Destinazione (<= 120 char) |
 | :--- | :--- | :---: | :--- |
+| `NOTE-003` | Analisi preventiva del prompt con proposta a review | 2026-11-08 | Implementata in `proactive-mentorship` (`evaluatePromptForPreventiveReview` + `--review-prompt` + `model-router.mjs`). |
