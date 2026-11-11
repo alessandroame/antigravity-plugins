@@ -120,16 +120,29 @@ async function main() {
     // Non-blocking persistence
   }
 
+  const questionPrompt =
+    candidate.userFacingQuestionIt ||
+    `[Plugin: mapek] Componente interessato: \`${candidate.targetArtifact?.relativePath}\` (${candidate.titleIt}).\nCosa non va bene: ${candidate.plainProblemIt || candidate.observedEvidenceIt}\nCome vuoi procedere?`;
+  const optionsList = Array.isArray(candidate.userFacingOptionsIt) && candidate.userFacingOptionsIt.length === 4
+    ? candidate.userFacingOptionsIt
+    : [
+        '(Recommended) Sì, applica ora questa modifica',
+        'Mostrami prima il contenuto completo del file',
+        'No, non mi serve (non riproporlo per 30 giorni)',
+        'Chiedimelo di nuovo domani'
+      ];
+
   const directive =
-    `[MAPEK DECISION READY — ID: ${candidate.decisionId}] ` +
-    `Proposta supervisore di processo: "${candidate.titleIt}" (${candidate.primitiveLabelIt} -> ${candidate.targetArtifact?.relativePath}). ` +
-    `Evidenza: ${candidate.observedEvidenceIt} | Motivazione: ${candidate.decisionRationaleIt}. ` +
-    `REGOLA OBBLIGATORIA (HUMAN-GATED MAPE-K): Non applicare alcuna modifica ai file dei plugin di nascosto. ` +
-    `Comunica all'utente questa decisione in stile Semantic Drill-Down (Livello 0 sintetico + cassetto <details> con evidenza e alternative scartate) ` +
-    `e usa ask_question per chiedergli se (1) Approvare e applicare ora eseguendo 'node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --apply ${candidate.decisionId} --confirm-user-approval', ` +
-    `(2) Vedere/modificare prima la bozza ('--show ${candidate.decisionId}'), ` +
-    `(3) Rifiutare per 30 giorni ('--reject ${candidate.decisionId}'), oppure ` +
-    `(4) Rimandare di 24 ore ('--snooze ${candidate.decisionId}').`;
+    `[MAPEK DECISION READY — PLUGIN: mapek — ID: ${candidate.decisionId}] ` +
+    `Componente bersaglio ("cosa"): "${candidate.targetArtifact?.relativePath}" | Titolo: "${candidate.titleIt}" (${candidate.primitiveLabelIt}). ` +
+    `Spiegazione chiara del problema ("cosa non va bene"): ${candidate.plainProblemIt || candidate.observedEvidenceIt} | Motivazione: ${candidate.decisionRationaleIt}. ` +
+    `REGOLA OBBLIGATORIA DI IDENTIFICAZIONE E CHIAREZZA (HUMAN-GATED MAPE-K): ` +
+    `1) Non applicare alcuna modifica di nascosto. ` +
+    `2) Poiché ask_question appare all'utente PRIMA della tua risposta testuale, il testo della domanda in ask_question DEVE SEMPRE iniziare con "[Plugin: mapek]", indicare il nome esatto del file/componente ("${candidate.targetArtifact?.relativePath}") e spiegare in italiano semplice e dettagliato cosa non va bene usando questo testo: ${JSON.stringify(questionPrompt)} con le opzioni ${JSON.stringify(optionsList)}. ` +
+    `3) In base alla risposta: (Opzione 1) esegui 'node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --apply ${candidate.decisionId} --confirm-user-approval', ` +
+    `(Opzione 2) esegui '--show ${candidate.decisionId}', ` +
+    `(Opzione 3) esegui '--reject ${candidate.decisionId}', ` +
+    `(Opzione 4) esegui '--snooze ${candidate.decisionId}'.`;
 
   process.stdout.write(
     JSON.stringify({

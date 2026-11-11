@@ -259,9 +259,11 @@ export function evaluatePostAdoptionRoi(ledgerEntries = [], analyzedSessions = [
         isStaleArtifact: true,
         detectorId: entry.detectorId,
         patternKey: `prune:${entry.patternKey}`,
-        titleIt: `Rimuovere artefatto senza beneficio misurato (${entry.targetArtifact?.relativePath || entry.decisionId})`,
+        titleIt: `Rimuovere ${entry.targetArtifact?.relativePath || entry.decisionId} (nessun miglioramento misurato in ${postSessions.length} sessioni)`,
         targetPath: entry.targetArtifact?.relativePath || '',
         observedSessionsAfter: postSessions.length,
+        baselineFrictionRate: baseline,
+        postFrictionRate,
         relativeImprovementPct,
         projectedSavedSeconds15: 160,
         generalizedContract: entry.generalizedContract
@@ -325,21 +327,21 @@ export function formatDrillDownDecisionReport(digest) {
   }
 
   const lines = [];
-  lines.push('## Rapporto Supervisore di Processo (`Livello 0` — Sintesi Operativa)');
+  lines.push('## `[Plugin: mapek]` Rapporto Supervisore di Processo (`Livello 0` — Sintesi Operativa)');
   lines.push('');
 
   if (pending.length === 0) {
     lines.push(
-      `Analizzate **${sessionsCount}** sessioni umane in sola lettura: **nessun intervento richiesto** (` +
+      `**[Plugin: mapek]** Analizzate **${sessionsCount}** sessioni umane in sola lettura: **nessun intervento richiesto** (` +
         `${masteredList.length}/${MASTERY_DIMENSIONS.length} aree già padroneggiate, ` +
         `0 proposte in attesa di consenso).`
     );
   } else {
     const top = pending[0];
     lines.push(
-      `Analizzate **${sessionsCount}** sessioni umane in sola lettura: rilevata **${pending.length} decisione pronta** ` +
-        `(**${top.titleIt}** -> \`${top.targetArtifact?.relativePath}\`). ` +
-        `Nessun file è stato modificato: il sistema attende la tua conferma esplicita prima di agire.`
+      `**[Plugin: mapek]** Analizzate **${sessionsCount}** sessioni umane in sola lettura: rilevata **${pending.length} proposta pronta** ` +
+        `sul file \`${top.targetArtifact?.relativePath}\` (**${top.titleIt}**). ` +
+        `${top.plainProblemIt || top.observedEvidenceIt} Nessun file è stato toccato: attendo la tua scelta.`
     );
   }
   lines.push('');

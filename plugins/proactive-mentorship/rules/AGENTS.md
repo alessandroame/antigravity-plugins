@@ -6,7 +6,7 @@ Defines the agent's role as Senior Software Architect, Preventive Prompt Reviewe
 1. **Default Silence (`0 bytes`)**: IF the prompt specifies a clear target (`@file`/symbol), touches `<= 2` files, or is a read-only question / confirmation / CLI command, **emitting the Mentorship box or interrupting execution is FORBIDDEN**.
 2. **Preventive Pre-Execution Prompt Review (`evaluatePromptForPreventiveReview`)**:
    - At Turn 1 (via `model-router.mjs --prompt "<prompt>"` or `session-miner.mjs --review-prompt "<prompt>"`), evaluate whether a mutation request is under-specified (`promptReview.needsReview === true`: missing `@file` anchor, terse `< 15` words, broad multi-component scope, or missing verification criteria).
-   - WHEN `promptReview.needsReview === true`, **BEFORE modifying files**, present the Mentorship Box with `promptReview.improvedPromptDraftIt` and call `ask_question` in plain Italian:
+   - WHEN `promptReview.needsReview === true`, **BEFORE modifying files**, present the Mentorship Box with `promptReview.improvedPromptDraftIt` and call `ask_question` in plain Italian opening with `[Plugin: proactive-mentorship]` and stating the concrete missing detail (`promptReview.reviewQuestionIt`):
      - `(Recommended) Esegui il prompt migliorato proposto`
      - `Esegui direttamente il mio prompt originale senza modifiche`
      - `Fai prima un piano dettagliato sui file coinvolti (/plan)`

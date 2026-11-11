@@ -310,7 +310,7 @@ async function main() {
     `[HUMAN-GOVERNOR ALERT — STATUS: ${evaluation.status}] ` +
     `Telemetria operatore: ${violationSummary}. ` +
     `REGOLA OBBLIGATORIA: Prima di eseguire il task richiesto dall'utente, invoca il tool ask_question ` +
-    `riportando i numeri esatti appena rilevati (${evaluation.metrics.activeWipCount} WIP attivi, ` +
+    `iniziando il testo della domanda con "[Plugin: human-governor]" e riportando i numeri esatti appena rilevati (${evaluation.metrics.activeWipCount} WIP attivi, ` +
     `${evaluation.metrics.switchesLast10Min} cambi chat/10m, ${evaluation.metrics.promptsLast60Min} prompt/60m, ` +
     `${evaluation.metrics.continuousStreakMinutes} min consecutivi) e chiedigli letteralmente se vuole ` +
     `continuare a fare la scimmia di smistamento per i suoi LLM tenendo ${evaluation.metrics.activeWipCount} WIP aperti ` +

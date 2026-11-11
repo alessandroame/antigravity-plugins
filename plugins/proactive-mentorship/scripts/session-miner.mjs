@@ -937,7 +937,7 @@ export function evaluatePromptForPreventiveReview(rawPrompt, options = {}) {
     recommendedAgyMove,
     improvedPromptDraftIt,
     reviewQuestionIt:
-      'Ho analizzato il tuo prompt e ho preparato una versione più precisa con perimetro e test di verifica: come preferisci procedere?',
+      `[Plugin: proactive-mentorship] Problema rilevato nel prompt: ${frictionReasonsIt.join(' ')} Ho preparato una versione più precisa su \`${wsName}\` con file bersaglio e verifica automatica: come preferisci procedere?`,
     reviewOptionsIt: [
       '(Recommended) Esegui il prompt migliorato proposto',
       'Esegui direttamente il mio prompt originale senza modifiche',
