@@ -99,30 +99,45 @@ const DETECTOR_PROPOSAL_TEMPLATES = Object.freeze({
   PREMATURE_IMPLEMENTATION_LOOP: {
     slug: 'pre-edit-scope-lock',
     titleIt: 'Bloccare il perimetro dei file prima di modifiche multi-file',
+    purposeShortIt: 'concordare elenco dei file e test di verifica prima di toccare 3 o più file',
+    buildPlainProblemIt: (c, wastedMin) =>
+      `Nelle tue ultime sessioni (successo ${c.occurrences} volte in ${c.distinctSessions} chat sui progetti: ${(c.workspaces || []).join(', ') || 'attivi'}) l'assistente è partito subito a modificare 3 o più file al primo messaggio senza prima fissare quali file toccare e come testarli. Questo ha costretto a rifare più volte le stesse modifiche, perdendo circa ${wastedMin} minuti (${c.totalWastedTurns} turni di correzioni sugli stessi file).`,
     operatorLessonIt:
       'Prima di chiedere modifiche che toccano 3 o più file, fissa in 1 riga i file bersaglio (@file) e il test di uscita oppure anteponi /plan: eviti i giri successivi di correzione sugli stessi file.'
   },
   UNANCHORED_CORRECTION_SPIRAL: {
     slug: 'halt-unverified-edit-spiral',
     titleIt: 'Fermare le correzioni a tentativi dopo 2 modifiche senza test',
+    purposeShortIt: 'bloccare le modifiche ripetute "a tentativi" sullo stesso file senza eseguire un test intermedio',
+    buildPlainProblemIt: (c, wastedMin) =>
+      `Nelle tue ultime sessioni (successo ${c.occurrences} volte in ${c.distinctSessions} chat sui progetti: ${(c.workspaces || []).join(', ') || 'attivi'}) l'assistente ha modificato gli stessi file per 3 o più volte di fila andando "a tentativi", senza mai lanciare un test automatico tra un tentativo e l'altro per isolare la vera causa del difetto (circa ${wastedMin} minuti e ${c.totalWastedTurns} turni sprecati).`,
     operatorLessonIt:
       'Quando una correzione non funziona al primo tentativo, non chiedere subito un secondo ritocco "a occhio": chiedi prima un test o una traccia diagnostica che riproduca il difetto.'
   },
   CONTEXT_ENTROPY_DRIFT: {
     slug: 'context-offload-scout',
     titleIt: 'Delegare ricerche e verifiche pesanti a un Agente esploratore isolato',
+    purposeShortIt: 'spostare le letture esplorative pesanti fuori dalla chat principale superati i 150k token',
+    buildPlainProblemIt: (c, wastedMin, wastedTokK) =>
+      `Nelle tue ultime sessioni (successo ${c.occurrences} volte in ${c.distinctSessions} chat sui progetti: ${(c.workspaces || []).join(', ') || 'attivi'}) la conversazione ha superato i 20 messaggi e i 150.000 token accumulando tutte le ricerche di codice nella chat principale: quando la chat diventa così pesante, l'assistente perde precisione e rallenta (circa ${wastedMin} minuti extra e ~${wastedTokK}k token consumati).`,
     operatorLessonIt:
       'Oltre i 20 messaggi o 150k token la precisione cala e ogni turno ricarica tutto lo storico: delega le letture esplorative a un subagent isolato o usa /compact prima di cambiare sotto-task.'
   },
   HUMAN_ROUTER_MICROMANAGEMENT: {
     slug: 'autonomous-verification-runner',
     titleIt: 'Sostituire i micro-comandi passo-passo con un Agente esecutore autonomo',
+    purposeShortIt: 'evitarti di dover inviare 5 o più messaggi brevi consecutivi per guidare a mano modifica, test e correzione',
+    buildPlainProblemIt: (c, wastedMin) =>
+      `Nelle tue ultime sessioni (successo ${c.occurrences} volte in ${c.distinctSessions} chat sui progetti: ${(c.workspaces || []).join(', ') || 'attivi'}) ti sei dovuto mettere a guidare l'assistente passo-passo con 5 o più messaggi brevi consecutivi (es. "vai", "ora testa", "correggi") per fargli completare un ciclo modifica -> test -> correzione, perdendo circa ${wastedMin} minuti (${c.totalWastedTurns} passaggi manuali evitabili).`,
     operatorLessonIt:
       'Quando ti accorgi di inviare 5+ messaggi brevi consecutivi per guidare modifica -> test -> fix, raggruppa obiettivo e comando di verifica in un solo task autonomo (/goal o subagent dedicato).'
   },
   MISSING_VERIFICATION_ORACLE: {
     slug: 'mandatory-exit-oracle-check',
     titleIt: 'Richiedere almeno una verifica automatica prima di chiudere modifiche codice',
+    purposeShortIt: 'garantire che almeno un test automatico venga eseguito prima di chiudere modifiche su 2 o più file di codice',
+    buildPlainProblemIt: (c) =>
+      `Nelle tue ultime sessioni (successo ${c.occurrences} volte in ${c.distinctSessions} chat sui progetti: ${(c.workspaces || []).join(', ') || 'attivi'}) sono stati modificati 2 o più file di codice chiudendo poi la sessione senza aver mai lanciato un test automatico o uno script di verifica, col rischio concreto di lasciare bug o regressioni non viste.`,
     operatorLessonIt:
       'Includi sempre il criterio di verifica finale quando chiedi una modifica su più file sorgente, così la sessione non si chiude con regressioni latenti.'
   }
@@ -281,6 +296,9 @@ export function buildDecisionProposal(cluster, route, nowMs = Date.now()) {
       .replace(/^-|-$/g, '')
       .toLowerCase(),
     titleIt: cluster.titleIt || 'Ottimizzazione strutturale del processo di interazione',
+    purposeShortIt: 'evitare passaggi manuali ripetitivi o modifiche non verificate',
+    buildPlainProblemIt: (c, wastedMin) =>
+      `Nelle tue ultime sessioni (successo ${c.occurrences} volte in ${c.distinctSessions} chat sui progetti: ${(c.workspaces || []).join(', ') || 'attivi'}) si è ripetuto un rallentamento operativo che ha fatto perdere circa ${wastedMin} minuti (${c.totalWastedTurns} turni extra).`,
     operatorLessonIt:
       'Ancora sempre il perimetro dei file e il comando di verifica prima di iterare modifiche multi-turno.'
   };
@@ -292,27 +310,64 @@ export function buildDecisionProposal(cluster, route, nowMs = Date.now()) {
 
   const decisionId = `mapek-${hash}`;
   const draft = synthesizeArtifactDraft(cluster, route, tpl.slug);
+  const fileBasename = String(draft.relativePath || '').split('/').filter(Boolean).pop() || tpl.slug;
   const wastedMin = Math.max(1, Math.round(Number(cluster.totalWastedSeconds || 0) / 60));
   const wastedTokK = Math.round(Number(cluster.totalWastedTokens || 0) / 1000);
 
-  const observedEvidenceIt = cluster.isStaleArtifact
-    ? `L'artefatto '${draft.relativePath}' è stato osservato per ${cluster.observedSessionsAfter} sessioni senza ridurre il tasso di attrito (variazione misurata: ${cluster.relativeImprovementPct}%).`
+  const isPrune = Boolean(cluster.isStaleArtifact || route.targetLevel === 'PRUNE');
+  const effectiveTitleIt = isPrune
+    ? cluster.titleIt || `Rimuovere ${fileBasename} (nessun miglioramento misurato in ${cluster.observedSessionsAfter} sessioni)`
+    : tpl.titleIt;
+
+  const beforeAfterDetail =
+    cluster.baselineFrictionRate !== undefined && cluster.postFrictionRate !== undefined
+      ? ` (accadeva nel ${(Number(cluster.baselineFrictionRate) * 100).toFixed(1)}% delle chat prima e nel ${(Number(cluster.postFrictionRate) * 100).toFixed(1)}% dopo)`
+      : '';
+
+  const plainProblemIt = isPrune
+    ? `Il componente \`${draft.relativePath}\` era stato attivato in passato dal plugin \`mapek\` per ${tpl.purposeShortIt}, ma dopo aver controllato ${cluster.observedSessionsAfter} sessioni il problema iniziale non è diminuito${beforeAfterDetail} (miglioramento misurato: ${cluster.relativeImprovementPct}%). Tenerlo attivo occupa spazio nelle istruzioni senza portarti alcun vantaggio pratico.`
+    : tpl.buildPlainProblemIt(cluster, wastedMin, wastedTokK);
+
+  const observedEvidenceIt = isPrune
+    ? plainProblemIt
     : `Rilevato ${cluster.occurrences} volte in ${cluster.distinctSessions} sessioni distinte (${cluster.distinctWorkspaces} workspace: ${(cluster.workspaces || []).join(', ')}), con un costo misurato di ~${wastedMin} min (${cluster.totalWastedTurns} turni extra, ~${wastedTokK}k token) e un risparmio stimato di ~${cluster.projectedSavedSeconds15}s sulle prossime 15 sessioni.`;
+
+  const userFacingQuestionIt = isPrune
+    ? `[Plugin: mapek] Componente che non sta portando benefici: \`${draft.relativePath}\`.\nCosa non va bene: ${plainProblemIt}\nAzione proposta: eliminare il file \`${draft.relativePath}\`. Come vuoi procedere?`
+    : `[Plugin: mapek] Componente proposto: \`${draft.relativePath}\` (${effectiveTitleIt}).\nCosa non va bene nelle sessioni recenti: ${plainProblemIt}\nAzione proposta: creare \`${draft.relativePath}\` per ${tpl.purposeShortIt}. Come vuoi procedere?`;
+
+  const userFacingOptionsIt = isPrune
+    ? [
+        `(Recommended) Sì, rimuovi ${fileBasename} (non porta benefici)`,
+        `Mostrami prima il contenuto di ${fileBasename}`,
+        'No, tienilo installato (non riproporlo per 30 giorni)',
+        'Chiedimelo di nuovo domani'
+      ]
+    : [
+        `(Recommended) Sì, crea e attiva ${fileBasename}`,
+        `Mostrami prima il contenuto completo di ${fileBasename} per modificarlo`,
+        'No, non mi serve (non riproporlo per 30 giorni)',
+        'Chiedimelo di nuovo domani'
+      ];
 
   return {
     decisionId,
+    pluginName: 'mapek',
     patternKey: cluster.patternKey,
     detectorId: cluster.detectorId,
     status: 'PENDING_APPROVAL',
     requiresExplicitUserApproval: true,
     createdAtMs: nowMs,
-    titleIt: tpl.titleIt,
+    titleIt: effectiveTitleIt,
     targetLevel: route.targetLevel,
     primitiveLabelIt: route.primitiveLabelIt,
+    plainProblemIt,
     observedEvidenceIt,
     decisionRationaleIt: route.rationaleIt,
     rejectedAlternativesIt: route.rejectedAlternativesIt,
     operatorLessonIt: tpl.operatorLessonIt,
+    userFacingQuestionIt,
+    userFacingOptionsIt,
     generalizedContract: cluster.generalizedContract,
     baselineFrictionRate: cluster.baselineFrictionRate || 0,
     projectedSavedSeconds15: cluster.projectedSavedSeconds15 || 0,

@@ -21,19 +21,19 @@ On-demand runbook to inspect the always-on supervisor (`mapek`), review operator
 
 ---
 
-## Step 2 — Drill-Down Presentation & Mandatory Human Consent Gate
+## Step 2 — Drill-Down Presentation, Self-Identification & Mandatory Human Consent Gate
 
-1. Present the report in plain Italian starting at **Level 0** (2–3 clear lines without opaque acronyms), placing metrics, discarded alternatives, mastery scores, and ledger history inside `<details>` drawers (**Level 1** and **Level 2**, with a mandatory blank line after `</summary>`).
-2. IF one or more `PENDING_APPROVAL` decisions exist, **NEVER apply them autonomously**: MUST invoke `ask_question` in plain everyday Italian (zero technical IDs or filenames in question/options) for each `<decisionId>`:
-   - `(Recommended) Sì, attiva questo miglioramento automatico`:
+1. Present the report in plain Italian starting at **Level 0** with `[Plugin: mapek]`, explicitly naming any target file (`targetArtifact.relativePath`) and explaining in everyday Italian what concretely went wrong, placing metrics, discarded alternatives, mastery scores, and ledger history inside `<details>` drawers (**Level 1** and **Level 2**, with a mandatory blank line after `</summary>`).
+2. IF one or more `PENDING_APPROVAL` decisions exist, **NEVER apply them autonomously**: MUST invoke `ask_question` using `userFacingQuestionIt` and `userFacingOptionsIt` so the question itself opens with `[Plugin: mapek]`, names the exact target file (`<file>`), and explains in clear detail what problem was observed and what will change:
+   - `(Recommended) Sì, crea e attiva <file>` *(or `Sì, rimuovi <file> (non porta benefici)` when `PRUNE`)*:
      ```bash
      node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --apply <decisionId> --confirm-user-approval
      ```
-   - `Fammi vedere prima i dettagli completi per modificarli`:
+   - `Mostrami prima il contenuto completo di <file>`:
      ```bash
      node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --show <decisionId>
      ```
-   - `No, non mi serve (non riproporlo per 30 giorni)`:
+   - `No, non mi serve / tienilo installato (non riproporlo per 30 giorni)`:
      ```bash
      node ~/.gemini/config/plugins/mapek/scripts/mapek.mjs --reject <decisionId>
      ```

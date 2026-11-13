@@ -161,6 +161,11 @@ describe('MAPE-K Primitive Router & Human-Gated Consent Ledger', () => {
     assert.equal(proposal.status, 'PENDING_APPROVAL');
     assert.equal(proposal.requiresExplicitUserApproval, true);
     assert.match(proposal.targetArtifact.relativePath, /^plugins\/mapek\/agents\/.+\.md$/);
+    assert.match(proposal.userFacingQuestionIt, /^\[Plugin: mapek\]/);
+    assert.ok(proposal.userFacingQuestionIt.includes(proposal.targetArtifact.relativePath));
+    assert.ok(proposal.userFacingQuestionIt.includes('Cosa non va bene'));
+    assert.equal(proposal.userFacingOptionsIt.length, 4);
+    assert.ok(proposal.userFacingOptionsIt[0].includes('context-offload-scout.md'));
 
     // Ensure generated Drill-Down report passes CommonMark L3 hygiene check
     const reportMd = formatDrillDownDecisionReport({
@@ -280,6 +285,15 @@ describe('MAPE-K Primitive Router & Human-Gated Consent Ledger', () => {
     assert.equal(roi.updatedLedger[0].efficacyStatus, 'STALE_CANDIDATE');
     assert.equal(roi.pruningClusters.length, 1);
     assert.equal(roi.pruningClusters[0].isStaleArtifact, true);
+
+    const pruneRoute = routeBottleneckToPrimitive(roi.pruningClusters[0]);
+    const pruneProposal = buildDecisionProposal(roi.pruningClusters[0], pruneRoute, 1700000200000);
+    assert.match(pruneProposal.titleIt, /^Rimuovere plugins\/mapek\/scripts\/guards\/test-guard\.mjs/);
+    assert.match(pruneProposal.userFacingQuestionIt, /^\[Plugin: mapek\]/);
+    assert.ok(pruneProposal.userFacingQuestionIt.includes('plugins/mapek/scripts/guards/test-guard.mjs'));
+    assert.ok(pruneProposal.userFacingQuestionIt.includes('30.0%'));
+    assert.ok(pruneProposal.userFacingQuestionIt.includes('40.0%'));
+    assert.ok(pruneProposal.userFacingOptionsIt[0].includes('Sì, rimuovi test-guard.mjs'));
 
     // Pre-hook notification cooldown & snooze behavior
     const ready = selectReadyDecisionForNotification(
