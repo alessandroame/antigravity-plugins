@@ -13,6 +13,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-13 — Rilascio `adaptive-router` v1.2.0: Tabella LUT a 6 Archetipi, Banner Switch `0`-Token, Conferma 1-Click e Calibrazione Roster `Una Tantum` (`NOTE-004`)
+- **Tipo**: Evoluzione Plugin Routing Dinamico, Hook `PreInvocation`/`Stop` & Calibrazione Ufficiale (`plugins/adaptive-router/` v1.2.0, `DESIDERATA.md`, `NOTES.md`, `MEMORY.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-13_adaptive-router-v120-lut-switch-banner.md`](./.agents/worklog.d/2026-11-13_adaptive-router-v120-lut-switch-banner.md)
+- **Sintesi**:
+  - Introdotta la LUT a 6 archetipi (`R1..R6`) calibrata sulla documentazione ufficiale per le 6 famiglie Gemini/Orchestrator (`15` varianti da `swarm{action:"models"}`, filtro `gemini-ui`), il banner immediato in chat a `0` token (`metadata.user_markdown`) sui cambi modello/modalità e la conferma a 1 click (`invoke_subagent` `self`/`research` + opzione `--snooze-session`) in [`router-pre-hook.mjs`](./plugins/adaptive-router/scripts/router-pre-hook.mjs).
+  - Attivato il blocco dei modi espliciti `(Low)`/`(Medium)`/`(High)`/`(XHigh)`, l'hash SHA-256 del contratto `PreInvocation` (`hooks.md`) e il trigger `CALIBRATE_MODEL_ROSTER_ONCE` su aggiornamenti `.checksum` o nuove famiglie Gemini (`13/13` test in [`router-engine.test.mjs`](./plugins/adaptive-router/tests/router-engine.test.mjs), `107/107` suite globale).
+
+---
+
 ## 2026-11-09 — Estensione Footer Token di Fine Risposta a 4 Valori con Dimensione Contesto (`Contesto: <ctx>`)
 - **Tipo**: Evoluzione Regola Telemetria & Bootstrap Cloud (`plugins/telemetry-analytics/rules/AGENTS.md`, `scripts/sync-to-global.mjs`, `MEMORY.md`, `DESIDERATA.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-09_context-window-footer-telemetry-analytics.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-11-09_context-window-footer-telemetry-analytics.md)

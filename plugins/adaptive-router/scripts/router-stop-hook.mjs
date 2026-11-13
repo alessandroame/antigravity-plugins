@@ -13,7 +13,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { discoverCapabilitiesFromTranscript } from '../core/router-engine.mjs';
+import {
+  discoverCapabilitiesFromTranscript,
+  extractModelBaseFamily
+} from '../core/router-engine.mjs';
 import {
   getAnalyticsDir,
   getBrainDir,
@@ -57,13 +60,38 @@ async function main() {
       (convId ? join(brainDir, convId, '.system_generated', 'logs', 'transcript.jsonl') : '');
 
     let registry = loadCapabilityRegistry(analyticsDir);
+    const hadPrevChecksum = Boolean(registry.builtinChecksum);
     const drift = probeBuiltinChecksumDrift(registry);
     let updated = drift.drifted;
+
+    if (drift.drifted && hadPrevChecksum) {
+      registry.pendingRosterRefresh = {
+        required: true,
+        detectedAtMs: Date.now(),
+        notifiedAtMs: null
+      };
+    }
 
     if (transcriptPath && existsSync(transcriptPath)) {
       const rawJsonl = readFileSync(transcriptPath, 'utf-8');
       const res = discoverCapabilitiesFromTranscript(rawJsonl, registry);
       registry = res.registry;
+
+      if (res.newlyDiscoveredModels.length > 0 && registry.lutCalibration?.calibratedAtMs) {
+        const calibratedMap = registry.lutCalibration.calibratedFamilies || {};
+        const newGeminiFamilies = res.newlyDiscoveredModels
+          .map((m) => extractModelBaseFamily(m))
+          .filter((fam) => fam && /^(?:gemini\b|orchestrator\b)/i.test(fam) && !calibratedMap[fam]);
+        if (newGeminiFamilies.length > 0) {
+          const prevUncal = registry.pendingDocCalibration?.uncalibratedFamilies || [];
+          registry.pendingDocCalibration = {
+            required: true,
+            uncalibratedFamilies: [...new Set([...prevUncal, ...newGeminiFamilies])],
+            detectedAtMs: Date.now(),
+            notifiedAtMs: null
+          };
+        }
+      }
       updated = true;
     }
 

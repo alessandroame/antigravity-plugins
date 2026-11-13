@@ -1,11 +1,11 @@
 {
   "name": "adaptive-router",
   "displayName": "Adaptive Model & Effort Router",
-  "description": "Seleziona in base al prompt il miglior modello AI (flash_lite, flash, pro o modelli futuri scoperti automaticamente) e il livello di impegno operativo (Low, Medium, High), adattandosi in automatico a nuovi modelli e modalità.",
-  "version": "1.0.0",
+  "description": "Mappa dinamicamente ogni prompt su una tabella LUT a 6 archetipi (modello Gemini/Orchestrator + modalità Low/Medium/High/XHigh), notifica istantaneamente i cambi modello in chat, offre conferma 1-click e calibra una tantum i nuovi modelli sulla documentazione ufficiale.",
+  "version": "1.2.0",
   "suggestedPrompts": [
+    "Mostra la tabella LUT dinamica e i ruoli calibrati dei modelli Gemini (/model-router --lut)",
     "Mostra lo stato del registro modelli e le capacità scoperte (/model-router --status)",
-    "Valuta quale modello e livello High/Medium/Low useresti per questo prompt",
-    "Scansiona le sessioni recenti per scoprire nuovi modelli o modalità e calibrare le soglie"
+    "Sincronizza l'elenco modelli disponibili e verifica la calibrazione LUT"
   ]
 }

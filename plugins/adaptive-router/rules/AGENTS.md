@@ -1,16 +1,33 @@
-# Adaptive Model & Effort Routing Protocol (`adaptive-router`)
+# Adaptive Model, Mode & LUT Routing Protocol (`adaptive-router`)
 
-Governs dynamic cognitive profile assignment (`LOW`, `MEDIUM`, `HIGH`), operational effort budget on every turn, and future-proof model auto-discovery. Always communicate with the user in plain Italian.
+Governs dynamic Prompt-to-Model+Mode LUT routing (`R1..R6` across `LOW`, `MEDIUM`, `HIGH`), immediate inline switch notifications, 1-click model confirmation, and one-time official-docs roster calibration. Always communicate with the user in plain Italian.
 
-## 1. Native Subagent Model Inheritance (`Model: 'inherit'`)
-To guarantee full consistency between the UI settings chosen by the user and background tasks, subagent model routing follows the native Antigravity baseline:
-1. **Always Default to `Model: 'inherit'`**: Subagents MUST inherit the exact model and reasoning mode selected in the UI (`Model: 'inherit'`). Never downscale subagents automatically to `flash` or `flash_lite` based on prompt heuristics, preserving the user's active reasoning depth (`Low`, `Medium`, `High`).
-2. **Explicit Override Only**: Select an alternative model (`flash_lite`, `flash`, `pro`) ONLY when the user explicitly requests it in the prompt (e.g. *"con subagent veloci"*, *"usa flash per i subagent"*).
+## 1. Subagent Inheritance Baseline & 1-Click LUT Override
+1. **Default to `Model: 'inherit'`**: Normal background subagents MUST inherit the active UI model and reasoning mode (`Model: 'inherit'`). Never silently downscale subagents without user consent.
+2. **Permitted Non-Inherited Subagent Dispatch**: Pass `Model: 'pro' | 'flash' | 'flash_lite'` ONLY when (a) explicitly requested by the user in the prompt, OR (b) confirmed in **1-click** via the LUT `ask_question` card (`TypeName: 'self' | 'research'`). Whenever delegating on a non-inherited `Model` or switching a `swarm` worker's model, emit a 1-line Italian notice at the top of the reply:
+   `> **[adaptive-router]** Cambio modello esecuzione: **<origine>** -> **subagent <tipo> (<Model>)**`
 3. **Turn-Level Operational Budget**:
-   - `LOW` Tier (`T1_INSTANT`): mechanical operations (`git`, `npm test`, `/memory-sync`, `commit e push`) -> `0` subagents, consolidated single-step execution.
-   - `MEDIUM` Tier (`T2_BALANCED`): single-module edits, structured explanations (`/how-its-made`) -> max `4` tool turns.
-   - `HIGH` Tier (`T3_DEEP`): multi-file refactoring, architectural trade-offs -> deep analysis with `skizzo` / subagents running on inherited UI model.
+   - `LOW` (`R1_MECHANICAL_OPS`, `R2_QUICK_LOOKUP_MICROEDIT`): `0` subagents, single-step execution (`<= 2` tool turns).
+   - `MEDIUM` (`R3_CODE_INSPECTION`, `R4_SINGLE_MODULE_DEV`): max `4` tool turns.
+   - `HIGH` (`R5_MULTI_FILE_REFACTOR`, `R6_DEEP_ARCH_TRADEOFF`): deep verification (`skizzo` / `self` / `research`).
 
-## 2. Future-Proof Auto-Discovery & UI Alignment
-1. **Continuous Passive Discovery (`Stop` Hook)**: `router-stop-hook.mjs` detects newly released models and modes from `<USER_SETTINGS_CHANGE>` and `PLANNER_RESPONSE` records in `transcript.jsonl`, classifying them at Day 0 via lexical family inference (`lite/mini/haiku` -> `LOW`, `flash/sonnet` -> `MEDIUM`, `pro/ultra/opus/thinking` -> `HIGH`) and empirically self-calibrating after `>= 5` real turns.
-2. **Discreet Mismatch Advisory**: when the user invokes `/model-router` or requests an efficiency audit, report any mismatch between the active UI model and task complexity (`OVERPROVISIONED_UI_MODEL` or `UNDERPROVISIONED_UI_MODEL`).
+## 2. Immediate Switch Banner, 6-Archetype 1-Click LUT & Anti-Noise (`PreInvocation`)
+1. **Immediate Inline Switch Banner (`metadata.user_markdown`, `0` LLM Tokens)**:
+   - Whenever the active model or reasoning mode (`Low`/`Medium`/`High`/`XHigh`) changes across turns or mid-turn, `router-pre-hook.mjs` immediately renders in chat:
+     `> **[adaptive-router]** Cambio modalità/modello attivo: **<precedente>** -> **<attuale>** ...`
+2. **1-Click LUT Upgrade Confirmation (`[ADAPTIVE-ROUTER MISMATCH: UNDERPROVISIONED_UI_MODEL]`)**:
+   - WHEN `router-pre-hook.mjs` injects `UNDERPROVISIONED_UI_MODEL` (`switchAction === 'ASK_1CLICK_UPGRADE'`), BEFORE deep analysis or editing files, call `ask_question` in plain Italian opening with `[Plugin: adaptive-router]` (if `proactive-mentorship` also requires confirmation on Turn 1, merge both questions into a SINGLE `ask_question` call):
+     - `(Recommended) Esegui subito in 1-click sul profilo LUT (<Modello UI> tramite subagent <self|research> Model: <pro|flash>)` -> immediately delegate via `invoke_subagent` with that `TypeName` and `Model`.
+     - `Ho passato il selettore modello su <Modello UI>: procedi nel thread principale`
+     - `Procedi comunque con <Modello Attivo> per questo turno`
+     - `Silenzia i suggerimenti LUT per questa sessione` -> run `node ~/.gemini/config/plugins/adaptive-router/scripts/model-router.mjs --snooze-session <conversationId>`.
+   - Stay `0-byte` silent on aligned turns, on `Orchestrator (Carbon)` / `Orchestrator (Argon)` dynamic models, and on `R1_MECHANICAL_OPS` (`git`, `npm test`, `"sì"`, `"procedi"`). On `>= 2` consecutive overprovisioned lightweight turns (`R2`/`R3` on `High`), `router-pre-hook.mjs` emits a non-blocking `0-click` `user_markdown` hint.
+
+## 3. Roster Watchdog, One-Time Official-Docs Calibration & Harness Watchdog (`NOTE-004`)
+1. **Automatic Model Roster Sync & One-Time Docs Calibration (`[ADAPTIVE-ROUTER: CALIBRATE_MODEL_ROSTER_ONCE]`)**:
+   - `router-stop-hook.mjs` monitors `builtin/.checksum` drift and transcript model discoveries (`providerFilter: 'gemini-ui'`). WHEN `[ADAPTIVE-ROUTER: CALIBRATE_MODEL_ROSTER_ONCE]` is injected:
+     1. Run `swarm{action:"models"}` and sync via `model-router.mjs --sync-swarm-models <json>`;
+     2. Consult official Google/Antigravity documentation (`gemini_search_docs` MCP and/or `search_web` on `antigravity.google` / `blog.google`) **once** (`una tantum`) for any uncalibrated Gemini/Orchestrator family;
+     3. Persist calibrated family roles and `R1..R6` targets via `model-router.mjs --apply-calibration <json>` so subsequent turns run in `< 3ms` at `0` LLM tokens.
+2. **Harness `PreInvocation` Contract Watchdog (`[ADAPTIVE-ROUTER: HARNESS_CONTRACT_UPDATED]`)**:
+   - WHEN injected after a `docs/hooks.md` contract change, notify the user in 2 plain Italian lines prefixed with `[Plugin: adaptive-router]` so native pre-turn model override can be enabled.

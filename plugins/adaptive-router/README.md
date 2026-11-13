@@ -1,20 +1,25 @@
-# Adaptive Model & Effort Router (`adaptive-router` v1.0.0)
+# Adaptive Model & Effort Router (`adaptive-router` v1.2.0)
 
-Plugin autonomo per **Google Antigravity** che seleziona in base al prompt il miglior profilo di modello AI (`flash_lite`, `flash`, `pro` o `inherit`) e il livello di impegno operativo (`Low`, `Medium`, `High`), auto-aggiornandosi quando escono nuovi modelli o nuove modalità nell'IDE.
+Plugin autonomo per **Google Antigravity** che mappa ogni prompt su una **tabella LUT dinamica a 6 archetipi (`R1..R6`)** abbinata alle famiglie **Gemini 4 / Orchestrator / Gemini 3.8**, notifica istantaneamente nell'output della chat ogni cambio di modello o modalità, offre il **cambio esecuzione a 1 click** quando il modello attivo è sottodimensionato e aggiorna automaticamente la LUT consultando **una tantum la documentazione ufficiale** quando cambiano i modelli disponibili.
 
 ---
 
 ## 1. Come Funziona
 
-1. **Classificazione Deterministica a 3 Fasce (`< 0.5 ms`)**:
-   - **`LOW` (`T1_INSTANT`, effort `low`, subagent `flash_lite` / `0` subagent)**: comandi operativi (`git`, `npm test`, `/memory-sync`), micro-correzioni puntuali (`<= 14` parole) e lookup informativi rapidi.
-   - **`MEDIUM` (`T2_BALANCED`, effort `medium`, subagent `flash`)**: spiegazioni strutturate del codice (`/how-its-made`), sviluppo feature, bugfix o test unitari su singolo modulo (`score 2..3`).
-   - **`HIGH` (`T3_DEEP`, effort `high`, subagent `pro`)**: progettazione architetturale, refactoring multi-file, race condition o decisioni con trade-off multi-dominio (`score >= 4`).
-2. **Meccanismo Future-Proof (Auto-Discovery & Auto-Calibrazione)**:
-   - **Sonda Transcript (`<USER_SETTINGS_CHANGE>` & `PLANNER_RESPONSE`)**: intercetta automaticamente ogni nuovo modello o modalità selezionata dall'utente senza bisogno di aggiornare il codice del plugin.
-   - **Inferenza Lessicale Giorno 0**: assegna immediatamente il nuovo modello alla fascia corretta (`lite/mini/haiku` -> `LOW`, `flash/sonnet` -> `MEDIUM`, `pro/ultra/opus/thinking` -> `HIGH`, fallback `MEDIUM`).
-   - **Auto-Calibrazione Empirica (`>= 5` campioni)**: promuove o declassa automaticamente il modello in base alla latenza reale (`avgDurationMs`), al volume di output (`avgOutputTokens`) e al tasso di errore (`errorRate`).
-   - **Circuit Breaker (`resolveSafeSubagentModel`)**: ripiega automaticamente su `Model: 'inherit'` se un tier subagent viene deprecato in versioni future del runtime.
+1. **Tabella LUT Dinamica a 6 Archetipi (`< 0.5 ms`, Calibrata su Documentazione Ufficiale Google/Antigravity)**:
+   - **`R1_MECHANICAL_OPS` (`LOW`)**: comandi Git, `npm test`, `/memory-sync`, conferme brevi -> **`Gemini 4 Hydrogen (Low)`** (`0` popup anche se il selettore è su `Carbon High`).
+   - **`R2_QUICK_LOOKUP_MICROEDIT` (`LOW`)**: lookup rapidi, refusi, rinomine singole -> **`Gemini 4 Hydrogen (Low)`** (suggerimento inline `0-click` solo dopo `>= 2` turni leggeri consecutivi su `High`).
+   - **`R3_CODE_INSPECTION` (`MEDIUM`)**: `/how-its-made` e spiegazioni strutturate read-only -> **`Gemini 4 Hydrogen (Medium)`** *(alt. `Gemini 4 Argon (Low)`)*.
+   - **`R4_SINGLE_MODULE_DEV` (`MEDIUM`)**: sviluppo feature, bugfix e test su `1–2` file -> **`Gemini 4 Argon (Medium)`** *(alt. `Gemini 4 Hydrogen (High)`)*.
+   - **`R5_MULTI_FILE_REFACTOR` (`HIGH`)**: refactoring coordinato su `>= 3` file -> **`Orchestrator (Carbon)`** *(swap nativo Carbon + Hydrogen, `-24%` quota e `-19%` latenza; alt. `Gemini 4 Argon (High)`)*.
+   - **`R6_DEEP_ARCH_TRADEOFF` (`HIGH`)**: audit del piano, architettura complessa, trade-off multi-dominio -> **`Gemini 4 Carbon (High)`** *(alt. `Gemini 4 Hydrogen (XHigh)`)*.
+2. **Notifica Immediata in Chat & Conferma 1-Click (`router-pre-hook.mjs`)**:
+   - **Banner istantaneo a `0` token (`metadata.user_markdown`)**: a ogni cambio di modello o modalità (`Low`, `Medium`, `High`, `XHigh`) tra turni o a metà esecuzione, stampa subito la transizione nell'output della chat.
+   - **Conferma a 1 Click (`ASK_1CLICK_UPGRADE`)**: se il modello UI attivo è sottodimensionato rispetto all'archetipo LUT, propone in 1 click di delegare subito l'esecuzione a `invoke_subagent` (`TypeName: 'self' | 'research'`, `Model: 'pro' | 'flash'`) oppure indica la voce esatta da selezionare nel menu UI, con opzione di silenziamento per l'intera sessione (`--snooze-session`).
+   - **Riconoscimento nativo degli `Orchestrator`**: `Orchestrator (Carbon)` e `Orchestrator (Argon)` sono riconosciuti come orchestratori dinamici già allineati su `R1..R5` senza falsi avvisi.
+3. **Hook di Aggiornamento Roster + Calibrazione Documentazione Ufficiale `Una Tantum`**:
+   - `router-stop-hook.mjs` sorveglia le variazioni di `builtin/.checksum` e la comparsa di nuove famiglie Gemini nei transcript (`providerFilter: 'gemini-ui'`).
+   - Quando rileva modelli nuovi non ancora calibrati, inietta una sola volta `[ADAPTIVE-ROUTER: CALIBRATE_MODEL_ROSTER_ONCE]`: l'agente interroga `swarm{action:"models"}`, consulta la documentazione ufficiale Google/Antigravity (`gemini_search_docs` + `antigravity.google`) **una tantum** e salva ruoli e target in `~/.gemini/antigravity/analytics/model-capabilities.json` (`0` token sui turni successivi).
 
 ---
 
@@ -22,22 +27,22 @@ Plugin autonomo per **Google Antigravity** che seleziona in base al prompt il mi
 
 ```text
 plugins/adaptive-router/
-├── plugin.json                        # Manifest SemVer 1.0.0
+├── plugin.json                        # Manifest SemVer 1.2.0
 ├── hooks.json                         # Hook PreInvocation e Stop (< 5ms)
-├── README.md                          # Documentazione architetturale
+├── README.md                          # Documentazione architetturale e LUT
 ├── core/
-│   └── router-engine.mjs              # Classificatore 3-tier + motore auto-discovery e calibrazione
+│   └── router-engine.mjs              # LUT 6 archetipi, filtro roster Gemini UI e calibrazione docs
 ├── scripts/
-│   ├── model-router.mjs               # CLI per status, scansione transcript e test prompt
-│   ├── router-pre-hook.mjs            # Hook PreInvocation silenzioso
-│   └── router-stop-hook.mjs           # Hook Stop per scoperta passiva nuovi modelli
+│   ├── model-router.mjs               # CLI (--lut, --status, --scan, --sync-swarm-models, --apply-calibration)
+│   ├── router-pre-hook.mjs            # Banner 0-token, guardia 1-click LUT e avviso calibrazione una tantum
+│   └── router-stop-hook.mjs           # Scoperta passiva modelli e watchdog .checksum / roster
 ├── rules/
-│   └── AGENTS.md                      # Regola di routing dinamico subagent ed effort
+│   └── AGENTS.md                      # Protocollo LUT, ereditarietà subagent e calibrazione ufficiale
 ├── skills/
 │   └── model-router/
-│       └── SKILL.md                   # Skill /model-router
+│       └── SKILL.md                   # Runbook /model-router
 └── tests/
-    └── router-engine.test.mjs         # Suite di test automatici (classificazione + modelli futuri)
+    └── router-engine.test.mjs         # 13 test end-to-end (classificazione, LUT, hook, snooze e modelli futuri)
 ```
 
 ---
@@ -45,12 +50,15 @@ plugins/adaptive-router/
 ## 3. Comandi CLI
 
 ```bash
-# Mostra il registro dei modelli noti e auto-scoperti
+# Mostra la matrice LUT a 6 archetipi e i ruoli calibrati delle 6 famiglie Gemini/Orchestrator
+node plugins/adaptive-router/scripts/model-router.mjs --lut
+
+# Mostra il registro empirico dei modelli e lo stato del watchdog PreInvocation
 node plugins/adaptive-router/scripts/model-router.mjs --status
 
-# Scansiona i transcript locali per scoprire nuovi modelli e ricalibrare le metriche
-node plugins/adaptive-router/scripts/model-router.mjs --scan
+# Sincronizza il catalogo runtime da swarm{action:"models"} e applica la calibrazione ufficiale
+node plugins/adaptive-router/scripts/model-router.mjs --sync-swarm-models swarm.json --apply-calibration cal.json
 
-# Valuta quale modello ed effort vengono assegnati a un prompt specifico
-node plugins/adaptive-router/scripts/model-router.mjs --prompt "Progetta un nuovo modulo di cache" --ui-model "gemini-2.5-flash-lite"
+# Simula l'archetipo LUT e l'azione 1-click/0-click per un prompt
+node plugins/adaptive-router/scripts/model-router.mjs --prompt "Fai un audit sul piano architetturale" --ui-model "gemini-4-hydrogen-low"
 ```

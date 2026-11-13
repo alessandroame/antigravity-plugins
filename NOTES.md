@@ -31,20 +31,9 @@ Buffer di cattura rapida a zero cambio di contesto (`/take-note`). Le osservazio
 
 ---
 
-### [NOTE-004] Selezione automatica di Modello e Modalità di ragionamento (`Low`/`Medium`/`High`) a ogni prompt
-- **Stato**: `📥 Da Analizzare` (in attesa di supporto API nei prossimi rilasci di Antigravity)
-- **Data Cattura**: 2026-11-09 19:59
-- **Lavorazione Attiva al Momento della Nota**: Valutazione routing modello/modalità in `adaptive-router`
-- **Ambito Presunto**: `adaptive-router` (`probeBuiltinChecksumDrift`, `hooks.json`, `invoke_subagent`)
-- **Testo Originale**:
-  > Trovo molto noioso ma altrettanto utile dover cambiare modello e modalità ogni prompt: vorrei che l'agente scegliesse sempre sia il modello sia la modalità di ragionamento (`Low`/`Medium`/`High`) in base al prompt. Per ora lasciamo tutto com'è ma non voglio accantonare l'idea: magari fra qualche rilascio di Antigravity avrai più controllo.
-- **Condizione di Sblocco da Monitorare ad Ogni Aggiornamento di Antigravity (`.checksum` drift)**:
-  1. Verificare se nei nuovi rilasci di Antigravity l'hook `PreInvocation` (`docs/hooks.md`) o lo schema di `invoke_subagent` espongono il controllo programmatico del modello e del livello di ragionamento (`thinking_level` / `effort`: `low | medium | high`).
-
----
-
 ## ✅ Analizzate & Consolidate (Ultime 10 Risolte)
 
 | ID | Titolo Sintetico | Data | Esito & Destinazione (<= 120 char) |
 | :--- | :--- | :---: | :--- |
+| `NOTE-004` | LUT dinamica modelli, switch 0-token e conferma 1-click | 2026-11-13 | Rilasciato `adaptive-router` v1.2.0 (LUT `R1..R6`, roster Gemini via hook e calibrazione docs una tantum). |
 | `NOTE-003` | Analisi preventiva del prompt con proposta a review | 2026-11-08 | Implementata in `proactive-mentorship` (`evaluatePromptForPreventiveReview` + `--review-prompt` + `model-router.mjs`). |

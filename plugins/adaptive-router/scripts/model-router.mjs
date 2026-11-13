@@ -6,14 +6,22 @@
  * built-in checksum drift detection, session transcript scanning, and prompt routing inspection.
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
+  PROMPT_ARCHETYPES,
+  applyOfficialDocsCalibration,
   classifyPromptRoute,
+  cleanPollutedModelRegistry,
   createDefaultCapabilityRegistry,
   discoverCapabilitiesFromTranscript,
-  inferModelCapability
+  extractModelBaseFamily,
+  inferModelCapability,
+  importSwarmModelsCatalog,
+  resolveLutRoute,
+  sanitizeModelSelectionName
 } from '../core/router-engine.mjs';
 import {
   classifySelfLearningCandidate,
@@ -53,13 +61,39 @@ export function loadCapabilityRegistry(analyticsDir) {
   if (!existsSync(regPath)) return fallback;
   try {
     const parsed = JSON.parse(readFileSync(regPath, 'utf-8'));
-    return {
+    return cleanPollutedModelRegistry({
       ...fallback,
       ...parsed,
+      lutConfig: { ...fallback.lutConfig, ...(parsed.lutConfig || {}) },
+      availableRoster: Array.isArray(parsed.availableRoster)
+        ? parsed.availableRoster
+        : fallback.availableRoster,
+      swarmDisplayNames: { ...fallback.swarmDisplayNames, ...(parsed.swarmDisplayNames || {}) },
+      liveQuotas: { ...fallback.liveQuotas, ...(parsed.liveQuotas || {}) },
+      pendingRosterRefresh: {
+        ...fallback.pendingRosterRefresh,
+        ...(parsed.pendingRosterRefresh || {})
+      },
+      pendingDocCalibration: {
+        ...fallback.pendingDocCalibration,
+        ...(parsed.pendingDocCalibration || {})
+      },
+      lutCalibration: {
+        ...fallback.lutCalibration,
+        ...(parsed.lutCalibration || {}),
+        calibratedFamilies: {
+          ...(fallback.lutCalibration?.calibratedFamilies || {}),
+          ...(parsed.lutCalibration?.calibratedFamilies || {})
+        },
+        archetypeTargets: {
+          ...(fallback.lutCalibration?.archetypeTargets || {}),
+          ...(parsed.lutCalibration?.archetypeTargets || {})
+        }
+      },
       subagentTiers: { ...fallback.subagentTiers, ...(parsed.subagentTiers || {}) },
       effortModes: { ...fallback.effortModes, ...(parsed.effortModes || {}) },
       models: { ...fallback.models, ...(parsed.models || {}) }
-    };
+    });
   } catch {
     return fallback;
   }
@@ -73,27 +107,93 @@ export function saveCapabilityRegistry(registry, analyticsDir) {
   return regPath;
 }
 
+export function inspectPreInvocationContract(builtinDir) {
+  const hooksDocPath = join(builtinDir, 'skills', 'agy-customizations', 'docs', 'hooks.md');
+  if (!existsSync(hooksDocPath)) {
+    return { contractHash: null, preInvocationModelOverrideSupported: false };
+  }
+
+  try {
+    const rawDoc = readFileSync(hooksDocPath, 'utf-8').replace(/\r\n/g, '\n');
+    const secMatch = rawDoc.match(/###\s+4\.\s+`?PreInvocation`?\s+Contract([\s\S]*?)(?=\n###\s+5\.|\n##\s+|$)/i);
+    const sectionText = (secMatch ? secMatch[0] : rawDoc).trim();
+    const contractHash = createHash('sha256').update(sectionText).digest('hex').slice(0, 16);
+    const preInvocationModelOverrideSupported =
+      /\b(?:modelOverride|thinkingLevel|reasoningEffort|effortLevel|setModel|modelSelection)\b/i.test(
+        sectionText
+      );
+    return { contractHash, preInvocationModelOverrideSupported };
+  } catch {
+    return { contractHash: null, preInvocationModelOverrideSupported: false };
+  }
+}
+
 /**
- * Checks `~/.gemini/antigravity/builtin/.checksum` for IDE updates and probes built-in definitions
- * for newly added subagent model tiers.
+ * Checks `~/.gemini/antigravity/builtin/.checksum` for IDE updates and hashes the `PreInvocation`
+ * contract in `docs/hooks.md` to detect when programmatic model/effort override becomes available (`NOTE-004`).
  */
 export function probeBuiltinChecksumDrift(registry, customBuiltinDir) {
   const builtinDir = customBuiltinDir || join(homedir(), '.gemini', 'antigravity', 'builtin');
   const checksumPath = join(builtinDir, '.checksum');
   if (!existsSync(checksumPath)) {
-    return { drifted: false, checksum: registry.builtinChecksum || null };
+    return {
+      drifted: false,
+      contractChanged: false,
+      preInvocationModelOverrideSupported: Boolean(registry.preInvocationModelOverrideSupported),
+      checksum: registry.builtinChecksum || null
+    };
   }
 
   try {
     const currentChecksum = readFileSync(checksumPath, 'utf-8').trim();
-    const drifted = Boolean(currentChecksum && currentChecksum !== registry.builtinChecksum);
-    if (drifted) {
+    const prevChecksum = registry.builtinChecksum || null;
+    const drifted = Boolean(currentChecksum && currentChecksum !== prevChecksum);
+    const contractInfo = inspectPreInvocationContract(builtinDir);
+
+    const hadBaselineHash = Boolean(registry.preInvocationContractHash);
+    const contractChanged = Boolean(
+      hadBaselineHash &&
+        contractInfo.contractHash &&
+        contractInfo.contractHash !== registry.preInvocationContractHash
+    );
+    const newlyUnlockedOverride = Boolean(
+      contractInfo.preInvocationModelOverrideSupported && !registry.preInvocationModelOverrideSupported
+    );
+
+    if (drifted || (!hadBaselineHash && contractInfo.contractHash)) {
+      if (drifted && (contractChanged || newlyUnlockedOverride)) {
+        registry.pendingHarnessUpgradeNotice = {
+          detectedAtMs: Date.now(),
+          previousChecksum: prevChecksum,
+          currentChecksum,
+          contractChanged,
+          preInvocationModelOverrideSupported: contractInfo.preInvocationModelOverrideSupported,
+          notifiedAtMs: null
+        };
+      }
       registry.builtinChecksum = currentChecksum;
+      if (contractInfo.contractHash) {
+        registry.preInvocationContractHash = contractInfo.contractHash;
+      }
+      registry.preInvocationModelOverrideSupported = Boolean(
+        contractInfo.preInvocationModelOverrideSupported
+      );
       registry.updatedAtMs = Date.now();
     }
-    return { drifted, checksum: currentChecksum };
+
+    return {
+      drifted,
+      contractChanged,
+      preInvocationModelOverrideSupported: Boolean(registry.preInvocationModelOverrideSupported),
+      checksum: currentChecksum
+    };
   } catch {
-    return { drifted: false, checksum: registry.builtinChecksum || null };
+    return {
+      drifted: false,
+      contractChanged: false,
+      preInvocationModelOverrideSupported: Boolean(registry.preInvocationModelOverrideSupported),
+      checksum: registry.builtinChecksum || null
+    };
   }
 }
 
@@ -164,6 +264,7 @@ function formatStatusMarkdown(registry) {
     '# Stato Registro Capacità & Modelli (`adaptive-router`)',
     '',
     `- **Modelli censiti**: \`${models.length}\` · **Modalità Effort**: \`${modes.length}\` · **Tier Subagent**: \`${tiers.map(([k]) => k).join(', ')}\``,
+    `- **Watchdog Harness (\`NOTE-004\`)**: checksum \`${registry.builtinChecksum ? registry.builtinChecksum.slice(0, 20) + '...' : 'n/d'}\` · hash \`PreInvocation\`: \`${registry.preInvocationContractHash || 'n/d'}\` · override modello pre-turno: \`${registry.preInvocationModelOverrideSupported ? 'DISPONIBILE' : 'IN ATTESA'}\``,
     '',
     '| Modello | Fascia (`Tier`) | Effort | Origine | Campioni | Durata Media |',
     '| :--- | :---: | :---: | :---: | :---: | :---: |'
@@ -179,6 +280,74 @@ function formatStatusMarkdown(registry) {
   return lines.join('\n');
 }
 
+function parseJsonArgOrFile(rawArg) {
+  if (!rawArg || typeof rawArg !== 'string') return {};
+  const candidatePath = resolve(rawArg);
+  if (existsSync(candidatePath)) {
+    return JSON.parse(readFileSync(candidatePath, 'utf-8'));
+  }
+  return JSON.parse(rawArg);
+}
+
+export function formatLutMarkdown(registry, activeUiModel = null) {
+  const roster = Array.isArray(registry.availableRoster) ? registry.availableRoster : [];
+  const cal = registry.lutCalibration || {};
+  const calibratedFamilies = cal.calibratedFamilies || {};
+  const calibratedIso = cal.calibratedAtMs ? new Date(cal.calibratedAtMs).toISOString() : 'non calibrata';
+  const docsList = Array.isArray(cal.sourceDocs) && cal.sourceDocs.length > 0
+    ? cal.sourceDocs.join(', ')
+    : 'nessuna fonte registrata';
+
+  const variantsByFamily = new Map();
+  for (const slug of roster) {
+    const label = registry.swarmDisplayNames?.[slug.toLowerCase()] || slug;
+    const fam = extractModelBaseFamily(label);
+    if (!variantsByFamily.has(fam)) variantsByFamily.set(fam, []);
+    variantsByFamily.get(fam).push(label);
+  }
+
+  const lines = [
+    '# Tabella LUT Dinamica Prompt -> Modello + Modalità (`adaptive-router`)',
+    '',
+    `- **Filtro Provider**: \`${registry.lutConfig?.providerFilter || 'gemini-ui'}\` · **Varianti UI attive**: \`${roster.length}\` · **Stato calibrazione**: \`${registry.pendingDocCalibration?.required ? 'DA CALIBRARE' : 'ALLINEATA'}\``,
+    `- **Ultima calibrazione documentazione ufficiale**: \`${calibratedIso}\` · **Fonti**: \`${docsList}\``,
+    '',
+    '## 1. Ruoli delle Famiglie Gemini / Orchestrator (Documentazione Ufficiale)',
+    '',
+    '| Famiglia UI | Classe Ruolo | Varianti Rilevate | Sintesi Ufficiale |',
+    '| :--- | :---: | :---: | :--- |'
+  ];
+
+  const familyEntries = Object.entries(calibratedFamilies);
+  if (familyEntries.length === 0) {
+    lines.push('| *(in attesa di calibrazione)* | `n/d` | `0` | Esegui `--sync-swarm-models` + `--apply-calibration` |');
+  } else {
+    for (const [fam, info] of familyEntries) {
+      const count = variantsByFamily.get(fam)?.length || 0;
+      lines.push(
+        `| **${fam}** | \`${info.roleClass}\` | \`${count}\` | ${info.officialSummaryIt || ''} |`
+      );
+    }
+  }
+
+  lines.push(
+    '',
+    '## 2. Matrice LUT a 6 Archetipi (`R1..R6`)',
+    '',
+    '| Archetipo | Fascia | Modello UI Consigliato | Alternativa UI | Subagent 1-Click |',
+    '| :--- | :---: | :--- | :--- | :---: |'
+  );
+
+  for (const archKey of Object.keys(PROMPT_ARCHETYPES)) {
+    const resolved = resolveLutRoute(archKey, registry, activeUiModel);
+    lines.push(
+      `| **\`${resolved.archetypeId}\`** (${resolved.archetypeLabelIt}) | **\`${resolved.targetTier}\`** | \`${resolved.recommendedUiModel}\` | \`${resolved.alternativeUiModel || '-'}\` | \`${resolved.executionSubagentType}\` (\`${resolved.executionSubagentModel}\`) |`
+    );
+  }
+
+  return lines.join('\n');
+}
+
 const isDirectEntry = isDirectCliEntrypoint(import.meta.url, process.argv[1]);
 
 if (isDirectEntry) {
@@ -186,15 +355,84 @@ if (isDirectEntry) {
   const asJson = args.includes('--json');
   const doScan = args.includes('--scan');
   const doStatus = args.includes('--status');
+  const doLut = args.includes('--lut');
 
   const promptIdx = args.indexOf('--prompt');
   const uiModelIdx = args.indexOf('--ui-model');
   const registerModelIdx = args.indexOf('--register-model');
+  const syncSwarmIdx = args.indexOf('--sync-swarm-models');
+  const applyCalIdx = args.indexOf('--apply-calibration');
+  const snoozeIdx = args.indexOf('--snooze-session');
 
-  const activeUiModel = uiModelIdx !== -1 && args[uiModelIdx + 1] ? args[uiModelIdx + 1] : null;
+  const activeUiModel =
+    uiModelIdx !== -1 && args[uiModelIdx + 1]
+      ? sanitizeModelSelectionName(args[uiModelIdx + 1])
+      : null;
+
+  if (snoozeIdx !== -1 && args[snoozeIdx + 1]) {
+    const convId = args[snoozeIdx + 1].trim();
+    const dir = getAnalyticsDir();
+    mkdirSync(dir, { recursive: true });
+    const routePath = join(dir, `.route_${convId}.json`);
+    let existing = {};
+    if (existsSync(routePath)) {
+      try {
+        existing = JSON.parse(readFileSync(routePath, 'utf-8'));
+      } catch {
+        existing = {};
+      }
+    }
+    existing.conversationId = convId;
+    existing.lutSnoozed = true;
+    existing.updatedAtMs = Date.now();
+    writeFileSync(routePath, JSON.stringify(existing) + '\n', 'utf-8');
+    process.stdout.write(`${JSON.stringify({ snoozed: true, conversationId: convId })}\n`);
+    process.exit(0);
+  }
+
+  if (args.includes('--ack-harness')) {
+    const reg = loadCapabilityRegistry();
+    reg.pendingHarnessUpgradeNotice = null;
+    saveCapabilityRegistry(reg);
+  }
+
+  let didMutateLut = false;
+  let syncSummary = null;
+
+  if (syncSwarmIdx !== -1 && args[syncSwarmIdx + 1]) {
+    const swarmPayload = parseJsonArgOrFile(args[syncSwarmIdx + 1]);
+    const reg = loadCapabilityRegistry();
+    const res = importSwarmModelsCatalog(reg, swarmPayload, { providerFilter: 'gemini-ui' });
+    saveCapabilityRegistry(res.registry);
+    didMutateLut = true;
+    syncSummary = {
+      rosterChanged: res.rosterChanged,
+      uncalibratedFamilies: res.uncalibratedFamilies,
+      rosterCount: res.registry.availableRoster.length
+    };
+  }
+
+  if (applyCalIdx !== -1 && args[applyCalIdx + 1]) {
+    const calPayload = parseJsonArgOrFile(args[applyCalIdx + 1]);
+    const reg = loadCapabilityRegistry();
+    const updatedReg = applyOfficialDocsCalibration(reg, calPayload);
+    saveCapabilityRegistry(updatedReg);
+    didMutateLut = true;
+    syncSummary = {
+      ...(syncSummary || {}),
+      calibrated: true,
+      pendingDocCalibration: updatedReg.pendingDocCalibration,
+      rosterCount: updatedReg.availableRoster.length
+    };
+  }
+
+  if (didMutateLut && !doLut && !doStatus && !doScan && promptIdx === -1) {
+    process.stdout.write(`${JSON.stringify(syncSummary, null, 2)}\n`);
+    process.exit(0);
+  }
 
   if (registerModelIdx !== -1 && args[registerModelIdx + 1]) {
-    const rawM = args[registerModelIdx + 1].trim();
+    const rawM = sanitizeModelSelectionName(args[registerModelIdx + 1]);
     const reg = loadCapabilityRegistry();
     const inferred = inferModelCapability(rawM);
     reg.models[rawM.toLowerCase()] = {
@@ -209,6 +447,27 @@ if (isDirectEntry) {
       errorRate: 0
     };
     saveCapabilityRegistry(reg);
+  }
+
+  if (doLut) {
+    const reg = loadCapabilityRegistry();
+    if (asJson) {
+      process.stdout.write(
+        `${JSON.stringify(
+          {
+            lutConfig: reg.lutConfig,
+            availableRoster: reg.availableRoster,
+            pendingDocCalibration: reg.pendingDocCalibration,
+            lutCalibration: reg.lutCalibration
+          },
+          null,
+          2
+        )}\n`
+      );
+    } else {
+      process.stdout.write(`${formatLutMarkdown(reg, activeUiModel)}\n`);
+    }
+    process.exit(0);
   }
 
   if (doScan) {
