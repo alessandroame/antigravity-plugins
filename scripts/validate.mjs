@@ -55,6 +55,7 @@ const ALLOWED_TOP_LEVEL_FIELDS = new Set([
 const ALLOWED_LOGO_EXTENSIONS = new Set(['.png', '.svg', '.jpg', '.jpeg', '.webp']);
 const KEBAB_CASE_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$/;
+export const MAX_AGGREGATE_INLINE_RULES_BYTES = 48000;
 
 const BUILTIN_BOILERPLATE_SIGNATURES = [
   {
@@ -687,7 +688,14 @@ export function validatePlugin(pluginDir, existingNames = new Set(), seenSkillNa
     }
   }
 
-  return { dirName, errors, warnings, agentsRuleBytes, concepts: [...pluginConcepts].sort() };
+  return {
+    dirName,
+    disabled: Boolean(manifest.disabled),
+    errors,
+    warnings,
+    agentsRuleBytes,
+    concepts: [...pluginConcepts].sort()
+  };
 }
 
 export function buildBuiltinSnapshot(customBuiltinRoot) {
@@ -834,14 +842,18 @@ function main() {
   let totalErrors = 0;
   let totalWarnings = 0;
   let totalRulesBytes = 0;
+  let activeRulesBytes = 0;
 
   for (const dir of pluginDirs) {
     const res = validatePlugin(dir, existingNames, seenSkillNames, seenAgentNames);
     pluginResults.push(res);
     totalErrors += res.errors.length;
     totalWarnings += res.warnings.length;
-    if (res.dirName !== 'plugin-template') {
+    if (res.dirName !== 'plugin-template' && res.dirName !== 'starter-plugin') {
       totalRulesBytes += res.agentsRuleBytes || 0;
+      if (!res.disabled) {
+        activeRulesBytes += res.agentsRuleBytes || 0;
+      }
     }
 
     const status = res.errors.length === 0 ? '✔ OK' : '✖ FALLITO';
@@ -859,10 +871,15 @@ function main() {
   }
 
   if (args.includes('--all') || args.includes('--report-builtin-overlaps')) {
-    if (totalRulesBytes > 60000) {
-      totalWarnings++;
+    const globalGeminiPath = join(homedir(), '.gemini', 'GEMINI.md');
+    const globalGeminiBytes = existsSync(globalGeminiPath)
+      ? Buffer.byteLength(readFileSync(globalGeminiPath, 'utf-8'), 'utf-8')
+      : 0;
+    const effectiveInlineBytes = activeRulesBytes + globalGeminiBytes;
+    if (effectiveInlineBytes > MAX_AGGREGATE_INLINE_RULES_BYTES) {
+      totalErrors++;
       console.log(
-        `\n[AVVISO BUDGET REGOLE] Peso aggregato rules/AGENTS.md (${totalRulesBytes} B) vicino o superiore al defaultRulesBudget nativo (20.000 token / ~60 KB)`
+        `\n[✖ FALLITO] Budget regole inline (${effectiveInlineBytes} B = ${activeRulesBytes} B plugin attivi + ${globalGeminiBytes} B GEMINI.md) supera il tetto di sicurezza (${MAX_AGGREGATE_INLINE_RULES_BYTES} B) per defaultRulesBudget (20.000 token)`
       );
     }
 
@@ -943,7 +960,7 @@ function main() {
 
   console.log('\n' + '='.repeat(50));
   console.log(
-    `Riepilogo: ${pluginDirs.length} plugin verificati | ${totalErrors} errori | ${totalWarnings} avvisi | Regole inline: ${(totalRulesBytes / 1024).toFixed(1)} KB\n`
+    `Riepilogo: ${pluginDirs.length} plugin verificati | ${totalErrors} errori | ${totalWarnings} avvisi | Regole attive inline: ${(activeRulesBytes / 1024).toFixed(1)} KB (totale catalogo: ${(totalRulesBytes / 1024).toFixed(1)} KB)\n`
   );
 
   if (totalErrors > 0) {

@@ -37,7 +37,7 @@ Once both challengers complete, run `bench.mjs --prepare` with `<id-a>` and `<id
 
 ## 4. Step 3: Blind 5-Finger Judge (`invoke_subagent`)
 
-Invoke a third independent subagent (`Role: "Blind 5-Finger Judge"`, `TypeName: "research"`) passing **only** the task requirement and the anonymized `Soluzione X` and `Soluzione Y` texts:
+Invoke a third independent subagent (`Role: "Blind 5-Finger Judge"`, `TypeName: "research"`) passing **only** the task requirement and the anonymized `Soluzione X` and `Soluzione Y` texts (self-grading by the parent agent is FORBIDDEN):
 
 ```markdown
 Agisci come **Giudice Cieco Indipendente**. Valuta `Soluzione X` e `Soluzione Y` sul seguente requisito:
@@ -57,7 +57,7 @@ Restituisci un blocco JSON con `scoresX: [0|1, 0|1, 0|1, 0|1, 0|1]`, `scoresY: [
 
 ## 5. Step 4: Verdict Calculation, History Logging & Output (`~600px`)
 
-Run `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --evaluate` with judge scores and transcript metrics to log the result in `~/.gemini/antigravity/analytics/ab-bench-history.ndjson` and output the Italian progressive disclosure block (`0-Click` <= 12 lines + `<details>` with blank line after `</summary>`):
+Run `node ~/.gemini/config/plugins/ab-bench/scripts/bench.mjs --evaluate` with judge scores and transcript metrics (`Fingers(B) > Fingers(A)` -> `SÌ, VALEVA LA PENA`; `Fingers(B) == Fingers(A)` -> `NO, TEMPO SPRECATO`; `Fingers(B) < Fingers(A)` -> `NO, DANNO DA OVER-ENGINEERING`) to log the result in `~/.gemini/antigravity/analytics/ab-bench-history.ndjson` and output the Italian progressive disclosure block (`0-Click` <= 12 lines + `<details>` with blank line after `</summary>`):
 
 ```markdown
 > [!IMPORTANT]

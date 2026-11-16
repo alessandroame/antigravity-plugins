@@ -52,7 +52,7 @@ Deterministically reconstruct how a software feature works, providing a structur
 
 ### Step 2: Interactive Visual Selector (`<agent-embed>`) & IPO Table
 1. Start the response directly with the technical synthesis in Italian (zero filler).
-2. **Build Dual-Tab HTML Widget (`Albero Testuale` | `Grafico a Blocchi`)**:
+2. **Build Dual-Tab HTML Widget (`role="tablist"`: `Albero Testuale` default | `Grafico a Blocchi`, `0` `flowchart LR`)**:
    - Base on [`references/flow-widget-template.html`](./references/flow-widget-template.html) and write `<artifact_dir>/flow-inspector-<slug>.html` (`UserFacing: true`).
    - Populate **Tab 1 (`Albero Testuale`)** with a vertical monospace spine (max 65 chars/line, branches marked `◇ BIVIO N:` with `├── [NO] ──►` / `└── [SÌ] ──►`).
    - Populate **Tab 2 (`Grafico a Blocchi`)** with vertical cards for Ingresso, 2-column branches (`Ramo [NO]` vs `Ramo [SÌ]`), Process Steps (`[PURE]`, `[STATE]`, `[I/O]`), and Uscita.

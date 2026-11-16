@@ -6,8 +6,11 @@ import { join } from 'node:path';
 import {
   validateContentAndSense,
   extractTechnicalConcepts,
-  inspectBuiltinEvolution
+  inspectBuiltinEvolution,
+  validatePlugin,
+  MAX_AGGREGATE_INLINE_RULES_BYTES
 } from '../scripts/validate.mjs';
+import { buildCloudBootstrapContent } from '../scripts/sync-to-global.mjs';
 
 describe('Content & Sense Overlap Engine (validate.mjs)', () => {
   it('allows explicit delegation to generative_ui when using <agent-embed>', () => {
@@ -85,5 +88,38 @@ describe('Content & Sense Overlap Engine (validate.mjs)', () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
+  });
+
+  it('keeps aggregate active inline rules + Cloud bootstrap safely below MAX_AGGREGATE_INLINE_RULES_BYTES (defaultRulesBudget guard)', async () => {
+    const { readdirSync } = await import('node:fs');
+    const pluginsRoot = join(process.cwd(), 'plugins');
+    const existingNames = new Set();
+    const seenSkills = new Map();
+    const seenAgents = new Map();
+    let activeBytes = 0;
+    const bootstrapItems = [];
+
+    for (const ent of readdirSync(pluginsRoot, { withFileTypes: true })) {
+      if (!ent.isDirectory() || ent.name.startsWith('.')) continue;
+      const res = validatePlugin(join(pluginsRoot, ent.name), existingNames, seenSkills, seenAgents);
+      assert.equal(res.errors.length, 0, `Plugin ${ent.name} failed validation: ${res.errors.join('; ')}`);
+      if (!res.disabled) {
+        activeBytes += res.agentsRuleBytes;
+      }
+      bootstrapItems.push({
+        name: ent.name,
+        version: '1.0.0',
+        hasRules: res.agentsRuleBytes > 0,
+        skills: ['skill-stub'],
+        scripts: []
+      });
+    }
+
+    const bootstrapMd = buildCloudBootstrapContent(bootstrapItems);
+    const bootstrapBytes = Buffer.byteLength(bootstrapMd, 'utf-8');
+    assert.ok(
+      activeBytes + bootstrapBytes <= MAX_AGGREGATE_INLINE_RULES_BYTES,
+      `Expected active rules (${activeBytes} B) + GEMINI.md (${bootstrapBytes} B) <= ${MAX_AGGREGATE_INLINE_RULES_BYTES} B`
+    );
   });
 });

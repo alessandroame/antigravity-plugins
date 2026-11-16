@@ -39,33 +39,58 @@ if (isDirectEntry) {
 
 const DEFAULT_SYNC_TTL_MS = 30 * 60 * 1000;
 
+function isValidCatalogRepoRoot(dir) {
+  if (!dir || typeof dir !== 'string') return false;
+  const resolved = resolve(dir);
+  const norm = resolved.replace(/\\/g, '/').toLowerCase();
+  if (norm.includes('/.gemini/config')) return false;
+  return (
+    existsSync(join(resolved, 'package.json')) &&
+    existsSync(join(resolved, 'scripts', 'sync-to-global.mjs')) &&
+    existsSync(join(resolved, 'plugins'))
+  );
+}
+
 export function resolveCatalogRepoRoot(customRoot) {
-  if (customRoot && existsSync(join(resolve(customRoot), 'scripts', 'sync-to-global.mjs'))) {
+  if (customRoot && isValidCatalogRepoRoot(customRoot)) {
     return resolve(customRoot);
   }
   if (
     process.env.ANTIGRAVITY_PLUGINS_ROOT &&
-    existsSync(join(resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT), 'scripts', 'sync-to-global.mjs'))
+    isValidCatalogRepoRoot(process.env.ANTIGRAVITY_PLUGINS_ROOT)
   ) {
     return resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT);
   }
+  const scriptDir = dirname(fileURLToPath(import.meta.url));
+  const candidateFromScript = resolve(scriptDir, '..', '..', '..');
+  if (isValidCatalogRepoRoot(candidateFromScript)) {
+    return candidateFromScript;
+  }
+  try {
+    const syncStateFile = join(homedir(), '.gemini', 'antigravity', 'analytics', 'plugin-sync-state.json');
+    if (existsSync(syncStateFile)) {
+      const parsed = JSON.parse(readFileSync(syncStateFile, 'utf-8'));
+      if (parsed?.repoRoot && isValidCatalogRepoRoot(parsed.repoRoot)) {
+        return resolve(parsed.repoRoot);
+      }
+    }
+  } catch {
+    // Ignore unreadable sync state
+  }
   const matchedCandidate = [
+    resolve(process.cwd()),
     resolve(process.cwd(), '..', 'antigravity-plugins'),
     join(homedir(), 'alessandroame', 'antigravity-plugins'),
     join(homedir(), '.gemini', 'antigravity-plugins'),
+    'd:/Github/antigravity-plugins',
     'c:/github/antigravity-plugins',
     join(homedir(), 'github', 'antigravity-plugins'),
     join(homedir(), 'antigravity-plugins'),
     '/tmp/antigravity-plugins',
     '/workspaces/antigravity-plugins'
-  ].find((p) => existsSync(join(p, 'scripts', 'sync-to-global.mjs')));
+  ].find((p) => isValidCatalogRepoRoot(p));
   if (matchedCandidate) {
     return resolve(matchedCandidate);
-  }
-  const scriptDir = dirname(fileURLToPath(import.meta.url));
-  const candidateFromScript = resolve(scriptDir, '..', '..', '..');
-  if (existsSync(join(candidateFromScript, 'scripts', 'sync-to-global.mjs'))) {
-    return candidateFromScript;
   }
   return null;
 }

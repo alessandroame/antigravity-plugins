@@ -110,6 +110,18 @@ export function ensureCloudCatalogClone(targetDir) {
   return null;
 }
 
+function isValidCatalogRepoRoot(dir) {
+  if (!dir || typeof dir !== 'string') return false;
+  const resolved = resolve(dir);
+  const norm = resolved.replace(/\\/g, '/').toLowerCase();
+  if (norm.includes('/.gemini/config')) return false;
+  return (
+    existsSync(join(resolved, 'package.json')) &&
+    existsSync(join(resolved, 'scripts', 'validate.mjs')) &&
+    existsSync(join(resolved, 'plugins'))
+  );
+}
+
 /**
  * Resolves the canonical `antigravity-plugins` repository root regardless of current working directory.
  * @param {string} [customRoot]
@@ -117,19 +129,19 @@ export function ensureCloudCatalogClone(targetDir) {
  * @returns {string}
  */
 export function resolveCatalogRepoRoot(customRoot, options = {}) {
-  if (customRoot && existsSync(join(resolve(customRoot), 'scripts', 'validate.mjs'))) {
+  if (customRoot && isValidCatalogRepoRoot(customRoot)) {
     return resolve(customRoot);
   }
   if (
     process.env.ANTIGRAVITY_PLUGINS_ROOT &&
-    existsSync(join(resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT), 'scripts', 'validate.mjs'))
+    isValidCatalogRepoRoot(process.env.ANTIGRAVITY_PLUGINS_ROOT)
   ) {
     return resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT);
   }
 
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const candidateFromScript = resolve(scriptDir, '..', '..', '..');
-  if (existsSync(join(candidateFromScript, 'scripts', 'validate.mjs'))) {
+  if (isValidCatalogRepoRoot(candidateFromScript)) {
     return candidateFromScript;
   }
 
@@ -137,7 +149,7 @@ export function resolveCatalogRepoRoot(customRoot, options = {}) {
     const syncStatePath = join(getAnalyticsDir(), 'plugin-sync-state.json');
     if (existsSync(syncStatePath)) {
       const parsed = JSON.parse(readFileSync(syncStatePath, 'utf-8'));
-      if (parsed?.repoRoot && existsSync(join(resolve(parsed.repoRoot), 'scripts', 'validate.mjs'))) {
+      if (parsed?.repoRoot && isValidCatalogRepoRoot(parsed.repoRoot)) {
         return resolve(parsed.repoRoot);
       }
     }
@@ -146,9 +158,11 @@ export function resolveCatalogRepoRoot(customRoot, options = {}) {
   }
 
   const crossOsCandidates = [
+    resolve(process.cwd()),
     resolve(process.cwd(), '..', 'antigravity-plugins'),
     join(homedir(), 'alessandroame', 'antigravity-plugins'),
     join(homedir(), '.gemini', 'antigravity-plugins'),
+    'd:/Github/antigravity-plugins',
     'c:/github/antigravity-plugins',
     join(homedir(), 'github', 'antigravity-plugins'),
     join(homedir(), 'antigravity-plugins'),
@@ -156,7 +170,7 @@ export function resolveCatalogRepoRoot(customRoot, options = {}) {
     '/workspaces/antigravity-plugins'
   ];
   for (const candidate of crossOsCandidates) {
-    if (existsSync(join(candidate, 'scripts', 'validate.mjs'))) {
+    if (isValidCatalogRepoRoot(candidate)) {
       return resolve(candidate);
     }
   }

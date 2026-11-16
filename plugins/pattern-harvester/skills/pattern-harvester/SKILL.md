@@ -52,8 +52,8 @@ See [`references/pattern-mining-methodology.md`](./references/pattern-mining-met
 
 ## Step 4 — Chat Presentation (in Italian) & Catalog Sync
 
-1. Show at **Level 0-Click** (max `3–5` Italian bullets) only promoted candidates with estimated net saved seconds.
-2. Place the 4-column table (`# Pattern & Frequenza | Sequenza / Scheletro | Destinazione | ROI Netto`) and scaffold draft inside `<details>` (**Level 1-Click**, with a mandatory blank line after `</summary>`).
+1. Open with `[Plugin: pattern-harvester]` (in both prose and any `ask_question`), show analyzed human session count, and list at **Level 0-Click** (max `3` candidates) exact command/workflow name, plain-Italian rationale, classification (`NEW_SKILL`, `SKILL_EXTENSION`, `NEW_PLUGIN`), and net saved seconds.
+2. Place the 4-column table (`# Pattern & Frequenza | Sequenza / Scheletro | Destinazione | ROI Netto`) and `--scaffold <patternId>` draft inside `<details><summary><strong>Analisi Pattern Ricorrenti, Matrice ROI e Bozza Scaffold (Espandi)</strong></summary>` (**Level 1-Click**, with a mandatory blank line after `</summary>`).
 3. After user confirmation and writing files to the canonical `antigravity-plugins` repository, run verification and global sync:
    ```bash
    node ~/.gemini/config/plugins/proactive-mentorship/scripts/session-miner.mjs --verify-and-sync

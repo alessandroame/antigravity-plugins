@@ -18,7 +18,8 @@ import {
   readGitHeadSha,
   computeCatalogFingerprint,
   syncPluginsToGlobal,
-  buildCloudBootstrapContent
+  buildCloudBootstrapContent,
+  isCanonicalCatalogRepoRoot
 } from '../../../scripts/sync-to-global.mjs';
 import {
   evaluateCrossMachineSyncNeed
@@ -305,6 +306,61 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
       const nestedSess = sessions.find((s) => s.conversationId === '9f1c2284-3606-4c8b-aa5a-bd0550bde9ae');
       assert.ok(!nestedSess.syntheticJsonl.includes('task:task-2.log'));
       assert.ok(!nestedSess.syntheticJsonl.includes('18000'));
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks ~/.gemini/config self-mirroring and prunes leaked skills of disabled plugins while preserving standalone skills', () => {
+    const root = resolveCatalogRepoRoot();
+    assert.equal(isCanonicalCatalogRepoRoot(root), true);
+
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-anti-mirror-'));
+    try {
+      const fakeGlobalConfig = path.join(tmpRoot, '.gemini', 'config');
+      fs.mkdirSync(path.join(fakeGlobalConfig, 'plugins'), { recursive: true });
+      fs.mkdirSync(path.join(fakeGlobalConfig, 'scripts'), { recursive: true });
+      fs.writeFileSync(path.join(fakeGlobalConfig, 'scripts', 'validate.mjs'), '// mirror', 'utf-8');
+
+      assert.equal(isCanonicalCatalogRepoRoot(fakeGlobalConfig), false);
+      const blocked = syncPluginsToGlobal({ repoRoot: fakeGlobalConfig, quiet: true });
+      assert.equal(blocked.synced, false);
+      assert.equal(blocked.reason, 'invalid-non-canonical-repo-root');
+
+      const globalPluginsDir = path.join(fakeGlobalConfig, 'plugins');
+      const globalSkillsDir = path.join(tmpRoot, '.gemini', 'skills');
+      const globalConfigFile = path.join(fakeGlobalConfig, 'config.json');
+      const cloudBootstrapFile = path.join(tmpRoot, '.gemini', 'CLOUD_BOOTSTRAP.md');
+      const globalGeminiFile = path.join(tmpRoot, '.gemini', 'GEMINI.md');
+      const stateFile = path.join(tmpRoot, '.gemini', 'analytics', 'plugin-sync-state.json');
+
+      // Seed a disabled third-party plugin ('science') + leaked skill + standalone user skill
+      const scienceSkillDir = path.join(globalPluginsDir, 'science', 'skills', 'pymol');
+      fs.mkdirSync(scienceSkillDir, { recursive: true });
+      fs.writeFileSync(path.join(scienceSkillDir, 'SKILL.md'), '---\nname: pymol\ndescription: test\n---\n', 'utf-8');
+      fs.mkdirSync(path.join(globalSkillsDir, 'pymol'), { recursive: true });
+      fs.mkdirSync(path.join(globalSkillsDir, 'bigquery-sql'), { recursive: true });
+
+      const syncRes = syncPluginsToGlobal({
+        repoRoot: root,
+        globalPluginsDir,
+        globalSkillsDir,
+        globalConfigFile,
+        cloudBootstrapFile,
+        globalGeminiFile,
+        stateFile,
+        quiet: true
+      });
+
+      assert.equal(syncRes.synced, true);
+      assert.ok(syncRes.prunedDisabledSkillsCount >= 1);
+      assert.equal(fs.existsSync(path.join(globalSkillsDir, 'pymol')), false);
+      assert.equal(fs.existsSync(path.join(globalSkillsDir, 'bigquery-sql')), true);
+      assert.equal(fs.existsSync(path.join(globalSkillsDir, 'focus-audit')), false);
+
+      const geminiContent = fs.readFileSync(globalGeminiFile, 'utf-8');
+      assert.doesNotMatch(geminiContent, /\bscience\b/);
+      assert.doesNotMatch(geminiContent, /\bdata-agent-kit-plugin\b/);
     } finally {
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     }
