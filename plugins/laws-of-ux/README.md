@@ -20,7 +20,7 @@ Garantire che ogni vista, componente o flusso generato da Antigravity rispetti s
 
 ## Attivazione Modulare in Base al Problema
 
-Il plugin espone **7 Skill tematiche** e **5 Regole contestuali**:
+Il plugin espone **8 Skill tematiche** e **6 Regole contestuali**:
 
 | Problema da Risolvere | Skill Attivata | Regola Automatica | Leggi & Standard di Riferimento |
 | :--- | :--- | :--- | :--- |
@@ -31,6 +31,7 @@ Il plugin espone **7 Skill tematiche** e **5 Regole contestuali**:
 | **Scelte complesse, menu, search e cataloghi** | `ux-choice-and-navigation-design` | `ux-navigation-and-choice.md` | *Hick's Law, Choice Overload, Recognition over Recall (NN/G #6), 5 Filtri Baymard, Serial Position* |
 | **Abbandono dell'onboarding e setup profili** | `ux-onboarding-and-retention` | `AGENTS.md` | *Jakob's Law, Active User Paradox, Goal-Gradient, Zeigarnik, Flow* |
 | **Uso all'aperto, luce solare diretta e guanti** | `ux-outdoor-and-field-ergonomics` | `AGENTS.md` | *Fitts Target >= 48px, Pan-X Carousels, 100dvh, Dual High-Contrast, Feedback Tri-Modale* |
+| **Grafici temporali, meteogrammi, telemetria e supporto decisionale** | `ux-telemetry-and-decision-charts` | `ux-telemetry-and-decision-charts.md` | *Endsley Situation Awareness (3 livelli), Data-Ink Ratio & Small Multiples (Tufte), Color-by-Exception (Few, EFB FAA/EASA)* |
 | **Audit euristico completo e interfaccia AI** | `laws-of-ux-audit` | Tutte le regole | *30 Laws of UX + 10 Euristiche NN/G + Benchmark Baymard + Explainability & Cheap Takeover (Windmill 2026)* |
 
 
@@ -48,7 +49,8 @@ laws-of-ux/
 │   ├── ux-layout-and-gestalt.md               # Trigger su card, griglie, dashboard
 │   ├── ux-buttons-and-touch-targets.md        # Trigger su button, cta, action-bar
 │   ├── ux-performance-and-feedback.md         # Trigger su loader, skeleton, toast
-│   └── ux-navigation-and-choice.md            # Trigger su nav, menu, sidebar, pricing
+│   ├── ux-navigation-and-choice.md            # Trigger su nav, menu, sidebar, pricing
+│   └── ux-telemetry-and-decision-charts.md    # Trigger su chart, forecast, telemetry, meteogram
 ├── skills/                                    # Skill on-demand attivate in base al problema
 │   ├── ux-form-optimization/SKILL.md
 │   ├── ux-layout-and-visual-hierarchy/SKILL.md
@@ -57,6 +59,9 @@ laws-of-ux/
 │   ├── ux-choice-and-navigation-design/SKILL.md
 │   ├── ux-onboarding-and-retention/SKILL.md
 │   ├── ux-outdoor-and-field-ergonomics/SKILL.md
+│   ├── ux-telemetry-and-decision-charts/
+│   │   ├── SKILL.md
+│   │   └── references/decision-support-foundations.md
 │   └── laws-of-ux-audit/SKILL.md
 ├── references/                                # Catalogo e teoria approfondita
 │   ├── 01-gestalt-principles.md

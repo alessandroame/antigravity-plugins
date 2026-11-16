@@ -26,6 +26,7 @@ Executes a 360-degree heuristic audit on a screen, component, or user flow again
 - **Visual Grouping**: Are related items bounded in clear cards/regions (max 1 outer containment level, max 4 cards above-the-fold on `360x800`)?
 - **Proximity Spacing**: Are labels/hints `<= 8 px` from their input and distinct groups `>= 16–24 px` apart?
 - **Signal-to-Noise Ratio**: Are decorative dividers and clutter stripped (Prägnanz, Occam's Razor, NN/G #8)?
+- **Time-Series & Decision Density (Endsley SA, Tufte, Few)**: On chart/telemetry views, do tracks share a single axis without nested boxes, keep `<= 2` header toggles (no `2x2` mode matrices), and reserve saturated amber/red strictly for threshold breaches (*Color-by-Exception*)?
 
 ### Phase 3: Cognitive Load & Memory (Miller, Chunking, Recognition over Recall, Serial Position, Von Restorff)
 - **Recognition over Recall (NN/G #6)**: Are recent searches and visual autocomplete visible without memory recall?
