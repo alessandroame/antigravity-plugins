@@ -17,6 +17,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note di Rilascio (<= 160 char) |
 | :--- | :---: | :---: | :--- |
+| Snellimento Budget Inline (`48 KB`) & Anti-Mirroring | Catalogo | `🟢 Completato` | Ridotto peso inline del 32,7% (61,8->41,6 KB), tetto L3 48 KB, skill pure ab-bench/code-inspector e blocco self-mirroring ([ADR](./WORKLOG.md)). |
 | Standard Ibrido `EN/IT` & Benchmark `/ab-bench` | Catalogo | `🟢 Completato` | Verdetto `GO` (`-21,6%` B, `+1` dito `S2`), 56 file migrati in `EN` logico + `IT` utente ([piano](./.agents/plans/hybrid-en-it-migration.md)). |
 | `engineering-sobriety` | Plugin | `🟢 Completato` | Regole anti-hype, bonifica lessicale, zero emoji decorative e skill `tone-audit` ([README](./plugins/engineering-sobriety/README.md)). |
 | `laws-of-ux` (v1.1.0) | Plugin | `🟢 Completato` | 30 leggi UX, Budget 60/40, Gerarchia 3s, Ricevuta Visiva a 4 Misure e `ux-outdoor-and-field-ergonomics` ([README](./plugins/laws-of-ux/README.md)). |
