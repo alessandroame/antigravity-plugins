@@ -125,7 +125,7 @@ function isValidCatalogRepoRoot(dir) {
 /**
  * Resolves the canonical `antigravity-plugins` repository root regardless of current working directory.
  * @param {string} [customRoot]
- * @param {{ autoCloneInCloud?: boolean }} [options]
+ * @param {{ autoCloneInCloud?: boolean, scriptUrl?: string, analyticsDir?: string }} [options]
  * @returns {string}
  */
 export function resolveCatalogRepoRoot(customRoot, options = {}) {
@@ -139,14 +139,14 @@ export function resolveCatalogRepoRoot(customRoot, options = {}) {
     return resolve(process.env.ANTIGRAVITY_PLUGINS_ROOT);
   }
 
-  const scriptDir = dirname(fileURLToPath(import.meta.url));
+  const scriptDir = dirname(fileURLToPath(options.scriptUrl || import.meta.url));
   const candidateFromScript = resolve(scriptDir, '..', '..', '..');
   if (isValidCatalogRepoRoot(candidateFromScript)) {
     return candidateFromScript;
   }
 
   try {
-    const syncStatePath = join(getAnalyticsDir(), 'plugin-sync-state.json');
+    const syncStatePath = join(getAnalyticsDir(options.analyticsDir), 'plugin-sync-state.json');
     if (existsSync(syncStatePath)) {
       const parsed = JSON.parse(readFileSync(syncStatePath, 'utf-8'));
       if (parsed?.repoRoot && isValidCatalogRepoRoot(parsed.repoRoot)) {

@@ -365,4 +365,45 @@ describe('Session Pattern & Cross-Workspace Self-Learning Engine (Alpha Technica
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     }
   });
+
+  it('skips ~/.gemini/config runtime mirror in resolveCatalogRepoRoot via scriptUrl and analyticsDir overrides', async () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-repo-resolve-'));
+    try {
+      const fakeGlobalConfig = path.join(tmpRoot, '.gemini', 'config');
+      const fakeGlobalScript = path.join(
+        fakeGlobalConfig,
+        'plugins',
+        'proactive-mentorship',
+        'scripts',
+        'session-miner.mjs'
+      );
+      fs.mkdirSync(path.join(fakeGlobalConfig, 'scripts'), { recursive: true });
+      fs.mkdirSync(path.dirname(fakeGlobalScript), { recursive: true });
+      fs.writeFileSync(path.join(fakeGlobalConfig, 'scripts', 'validate.mjs'), '// mirror\n', 'utf-8');
+      fs.writeFileSync(fakeGlobalScript, '// global copy\n', 'utf-8');
+
+      const realRepo = path.join(tmpRoot, 'canonical-repo');
+      fs.mkdirSync(path.join(realRepo, 'scripts'), { recursive: true });
+      fs.mkdirSync(path.join(realRepo, 'plugins'), { recursive: true });
+      fs.writeFileSync(path.join(realRepo, 'package.json'), '{"name":"antigravity-plugins"}\n', 'utf-8');
+      fs.writeFileSync(path.join(realRepo, 'scripts', 'validate.mjs'), '// canonical\n', 'utf-8');
+
+      const analyticsDir = path.join(tmpRoot, 'analytics');
+      fs.mkdirSync(analyticsDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(analyticsDir, 'plugin-sync-state.json'),
+        JSON.stringify({ repoRoot: realRepo }),
+        'utf-8'
+      );
+
+      const { pathToFileURL } = await import('node:url');
+      const resolved = resolveCatalogRepoRoot(undefined, {
+        scriptUrl: pathToFileURL(fakeGlobalScript).href,
+        analyticsDir
+      });
+      assert.equal(resolved, path.resolve(realRepo));
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
 });
