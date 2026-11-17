@@ -9,7 +9,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note / Specifica di Riferimento (<= 160 char) |
 | :--- | :---: | :---: | :--- |
-| *(Nessun elemento in backlog attivo)* | — | `🟢 Allineato` | Tutte le funzionalità pianificate risultano completate e validate (`validate.mjs --all`). |
+| Laboratorio Metodologico Notturno (`interaction-lab`) | Plugin (`mapek`) | `🔴 Prioritario` | `mapek` v1.2.0: slot `02:30`/`08:30`, replay `<= 6 KB`, SSOT padronanza e `0 B` inline ([piano](./.agents/plans/nightly-interaction-lab.md)). |
 
 ---
 
