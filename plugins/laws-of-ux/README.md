@@ -20,7 +20,7 @@ Garantire che ogni vista, componente o flusso generato da Antigravity rispetti s
 
 ## Attivazione Modulare in Base al Problema
 
-Il plugin espone **8 Skill tematiche** e **6 Regole contestuali**:
+Il plugin espone **9 Skill tematiche**, **1 Subagente critico read-only** (`telemetry-chart-critic`) e **6 Regole contestuali**:
 
 | Problema da Risolvere | Skill Attivata | Regola Automatica | Leggi & Standard di Riferimento |
 | :--- | :--- | :--- | :--- |
@@ -31,7 +31,7 @@ Il plugin espone **8 Skill tematiche** e **6 Regole contestuali**:
 | **Scelte complesse, menu, search e cataloghi** | `ux-choice-and-navigation-design` | `ux-navigation-and-choice.md` | *Hick's Law, Choice Overload, Recognition over Recall (NN/G #6), 5 Filtri Baymard, Serial Position* |
 | **Abbandono dell'onboarding e setup profili** | `ux-onboarding-and-retention` | `AGENTS.md` | *Jakob's Law, Active User Paradox, Goal-Gradient, Zeigarnik, Flow* |
 | **Uso all'aperto, luce solare diretta e guanti** | `ux-outdoor-and-field-ergonomics` | `AGENTS.md` | *Fitts Target >= 48px, Pan-X Carousels, 100dvh, Dual High-Contrast, Feedback Tri-Modale* |
-| **Grafici temporali, meteogrammi, telemetria e supporto decisionale** | `ux-telemetry-and-decision-charts` | `ux-telemetry-and-decision-charts.md` | *Endsley Situation Awareness (3 livelli), Data-Ink Ratio & Small Multiples (Tufte), Color-by-Exception (Few, EFB FAA/EASA)* |
+| **Grafici temporali espressivi, meteogrammi, telemetria e supporto decisionale** | `ux-telemetry-and-decision-charts` + subagente `telemetry-chart-critic` | `ux-telemetry-and-decision-charts.md` | *Canali Visivi Ortogonali (Bertin/Flowx), Poligoni Bivariati Playfair, Color-by-Exception (Few/EFB), Spline Monotona Fritsch-Carlson, Endsley SA* |
 | **Audit euristico completo e interfaccia AI** | `laws-of-ux-audit` | Tutte le regole | *30 Laws of UX + 10 Euristiche NN/G + Benchmark Baymard + Explainability & Cheap Takeover (Windmill 2026)* |
 
 
@@ -43,6 +43,8 @@ Il plugin espone **8 Skill tematiche** e **6 Regole contestuali**:
 laws-of-ux/
 ├── plugin.json                                # Manifest ufficiale del plugin Antigravity
 ├── README.md                                  # Questa documentazione
+├── agents/                                    # Subagenti dichiarativi read-only (L2c)
+│   └── telemetry-chart-critic.md              # Revisore percettivo e matematico imparziale per grafici
 ├── rules/                                     # Regole automatiche per il codice
 │   ├── AGENTS.md                              # Regola unificata di riferimento
 │   ├── ux-forms-and-inputs.md                 # Trigger su form, checkout, wizard

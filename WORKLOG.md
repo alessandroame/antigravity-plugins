@@ -14,6 +14,15 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-17 — Rilascio `laws-of-ux` v1.3.0: Architettura a 3 Livelli per Grafici Temporali Espressivi (`L2b` Skill + `L2c` Subagente + `L3` Sonda SVG)
+- **Tipo**: Evoluzione Skill Multivariata, Subagente Critico `L2c` & Sonda Gate 4 `L3` (`plugins/laws-of-ux/` v1.3.0, `ui-geometry-probe.js`, `scripts/sync-to-global.mjs`, `MEMORY.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-17_expressive-charts-3-tier-laws-of-ux-v130.md`](./.agents/worklog.d/2026-11-17_expressive-charts-3-tier-laws-of-ux-v130.md)
+- **Sintesi**:
+  - Estesa `ux-telemetry-and-decision-charts` (`L2b`) e la sua reference con i 5 pilastri della codifica espressiva (canali ortogonali Bertin/Flowx, poligoni differenziali Playfair, bande d'incertezza e *floating range bars* su scala condivisa, interpolazione cubica monotona `Fritsch-Carlson`) e introdotto il subagente read-only `telemetry-chart-critic` (`L2c`) con sync automatico in `~/.gemini/agents/`.
+  - Estesa `ui-geometry-probe.js` (`L3`) per intercettare `SVG_TEXT_OVERLAP`, `SVG_CURSOR_COLLISION` (`< 18px`) e `CHART_OVER_BOXING` (`> 1` bordo concentrico), con `111/111` test verdi e riallineamento completo di `~/.gemini` (`33` skill).
+
+---
+
 ## 2026-11-16 — Snellimento Budget Regole Inline (`-32,7%`), Guardia `48 KB` (`defaultRulesBudget`) e Blocco Self-Mirroring `~/.gemini/config`
 - **Tipo**: Ottimizzazione Token `Always-On`, Bugfix Sync Multi-Disco & Guardia Statica `L3` (`scripts/sync-to-global.mjs`, `scripts/validate.mjs`, `plugins/*`, `README.md`, `MEMORY.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-16_inline-rules-budget-and-anti-self-mirroring.md`](./.agents/worklog.d/2026-11-16_inline-rules-budget-and-anti-self-mirroring.md)

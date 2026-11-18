@@ -1,11 +1,11 @@
 {
   "name": "laws-of-ux",
   "displayName": "Laws of UX (Design & Usability Engineering)",
-  "version": "1.2.0",
-  "description": "Suite di intelligenza di design e valutazione euristica che unifica le 30 Laws of UX, le 10 Euristiche di Usabilità NN/G, i benchmark empirici Baymard, gli standard di densità dati e supporto decisionale (Endsley SA, Tufte, Few) e le linee guida 2026 per interfacce autonome/AI.",
+  "version": "1.3.0",
+  "description": "Suite di intelligenza di design e valutazione euristica che unifica le 30 Laws of UX, le 10 Euristiche di Usabilità NN/G, i benchmark empirici Baymard, i 5 pilastri dei grafici temporali espressivi (canali ortogonali, poligoni Playfair, Color-by-Exception, spline Fritsch-Carlson) e le linee guida 2026 per interfacce autonome/AI.",
   "suggestedPrompts": [
     "Esegui un UX Heuristic Audit completo (30 Laws of UX + NN/G + Baymard)",
-    "Ottimizza questi grafici temporali e cruscotti decisionali con Color-by-Exception e rapporto dati-inchiostro di Tufte",
-    "Verifica ergonomia touch target (Fitts >= 48px), form snelli (<= 6-8 campi) e feedback di latenza (< 400ms)"
+    "Progetta o ottimizza questi grafici temporali con canali ortogonali, poligoni Playfair e Color-by-Exception",
+    "Verifica ergonomia touch target (Fitts >= 48px), form snelli (<= 6-8 campi) e collisioni SVG in Gate 4"
   ]
 }

@@ -558,6 +558,21 @@ export function syncPluginsToGlobal(options = {}) {
       }
     }
 
+    // Sync enabled plugin L2c subagents to ~/.gemini/agents/<agent>.md for Cloud/Local discovery
+    const pluginAgentsDir = path.join(src, 'agents');
+    if (!disabledPluginNames.has(pluginName) && fs.existsSync(pluginAgentsDir)) {
+      const globalAgentsDir = options.globalAgentsDir || path.join(os.homedir(), '.gemini', 'agents');
+      try {
+        fs.mkdirSync(globalAgentsDir, { recursive: true });
+        for (const agEntry of fs.readdirSync(pluginAgentsDir, { withFileTypes: true })) {
+          if (!agEntry.isFile() || !agEntry.name.endsWith('.md')) continue;
+          syncDirectoryContents(path.join(pluginAgentsDir, agEntry.name), path.join(globalAgentsDir, agEntry.name));
+        }
+      } catch {
+        // Ignore read-only agent target errors
+      }
+    }
+
     bootstrapCatalogItems.push({
       name: pluginName,
       version,

@@ -136,4 +136,76 @@ describe('Gate 4 Live Browser UI Geometry Probe', () => {
     assert.equal(report.pass, true);
     assert.equal(report.violationCount, 0);
   });
+
+  it('detects SVG_TEXT_OVERLAP, SVG_CURSOR_COLLISION (< 18px), and CHART_OVER_BOXING on dense charts', () => {
+    const outerBox = {
+      tagName: 'DIV',
+      parentElement: null,
+      _style: { display: 'block', visibility: 'visible', opacity: '1', borderTopWidth: '1px', borderTopStyle: 'solid' }
+    };
+    const innerBox = {
+      tagName: 'DIV',
+      parentElement: outerBox,
+      _style: { display: 'block', visibility: 'visible', opacity: '1', borderTopWidth: '1px', borderTopStyle: 'solid' }
+    };
+
+    const txtA = {
+      tagName: 'TEXT',
+      textContent: '24 km/h',
+      getAttribute: (k) => (k === 'font-size' ? '12' : null),
+      hasAttribute: () => false,
+      _style: { display: 'block', visibility: 'visible', opacity: '1', fontSize: '12px' },
+      getBoundingClientRect: () => ({ left: 80, top: 220, width: 42, height: 14, right: 122, bottom: 234 })
+    };
+    const txtB = {
+      tagName: 'TEXT',
+      textContent: '26 km/h',
+      getAttribute: (k) => (k === 'font-size' ? '12' : null),
+      hasAttribute: () => false,
+      _style: { display: 'block', visibility: 'visible', opacity: '1', fontSize: '12px' },
+      getBoundingClientRect: () => ({ left: 100, top: 222, width: 42, height: 14, right: 142, bottom: 236 })
+    };
+    const cursorPill = {
+      tagName: 'G',
+      id: 'active-cursor-pill',
+      hasAttribute: (k) => k === 'data-chart-cursor',
+      _style: { display: 'block', visibility: 'visible', opacity: '1' },
+      getBoundingClientRect: () => ({ left: 78, top: 238, width: 48, height: 16, right: 126, bottom: 254 })
+    };
+
+    const chartSvg = {
+      tagName: 'SVG',
+      id: 'forecast-meteogram',
+      parentElement: innerBox,
+      viewBox: { baseVal: { width: 320, height: 120 } },
+      _style: { display: 'block', visibility: 'visible', opacity: '1', borderTopWidth: '0px', borderTopStyle: 'none' },
+      getBoundingClientRect: () => ({ left: 16, top: 200, width: 320, height: 120, right: 336, bottom: 320 }),
+      querySelectorAll: (sel) => {
+        if (sel === 'text') return [txtA, txtB];
+        if (sel.includes('data-chart-cursor')) return [cursorPill];
+        return [];
+      }
+    };
+
+    const mockWin = {
+      innerWidth: 360,
+      innerHeight: 800,
+      getComputedStyle: (el) => el._style
+    };
+    const mockDoc = {
+      body: {},
+      documentElement: { scrollWidth: 360 },
+      querySelectorAll: (sel) => {
+        if (sel === 'svg') return [chartSvg];
+        return [];
+      }
+    };
+
+    const report = runUiGeometryProbe(mockWin, mockDoc);
+    assert.equal(report.pass, false);
+    const types = report.violations.map((v) => v.type);
+    assert.ok(types.includes('SVG_TEXT_OVERLAP'), `Expected SVG_TEXT_OVERLAP in ${types.join(',')}`);
+    assert.ok(types.includes('SVG_CURSOR_COLLISION'), `Expected SVG_CURSOR_COLLISION in ${types.join(',')}`);
+    assert.ok(types.includes('CHART_OVER_BOXING'), `Expected CHART_OVER_BOXING in ${types.join(',')}`);
+  });
 });

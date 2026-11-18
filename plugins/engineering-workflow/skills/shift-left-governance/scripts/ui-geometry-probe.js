@@ -135,27 +135,104 @@ export function runUiGeometryProbe(win = globalThis.window, doc = globalThis.doc
     }
   }
 
-  // 4. SVG Chart & Diagram Physical Text Legibility Floor (>= 9.5px rendered CSS pixels)
+  // 4. SVG Chart & Diagram Legibility, Text/Cursor Anti-Collision & Over-Boxing
   const svgNodes = [...doc.querySelectorAll('svg')].filter(isVisible);
+  const rectsIntersect = (a, b, pad = 0) => {
+    const ar = typeof a.right === 'number' ? a.right : a.left + a.width;
+    const ab = typeof a.bottom === 'number' ? a.bottom : a.top + a.height;
+    const br = typeof b.right === 'number' ? b.right : b.left + b.width;
+    const bb = typeof b.bottom === 'number' ? b.bottom : b.top + b.height;
+    return a.left < br + pad && ar + pad > b.left && a.top < bb + pad && ab + pad > b.top;
+  };
+
   for (const svg of svgNodes) {
     const vb = svg.viewBox && svg.viewBox.baseVal;
     if (!vb || vb.width < 120 || vb.height < 60) continue;
+    const svgLabel = describeElement(svg);
     const sr = svg.getBoundingClientRect();
     const scale = Math.min(sr.width / vb.width, sr.height / vb.height);
+
+    // 4a. Concentric bordered ancestor check (max 1 outer box around data charts)
+    let borderedAncestors = 0;
+    let anc = svg.parentElement;
+    while (anc && anc !== doc.body && anc !== doc.documentElement) {
+      const as = win.getComputedStyle(anc);
+      const bw = parseFloat(as.borderTopWidth || as.borderWidth || '0');
+      const bs = as.borderTopStyle || as.borderStyle || 'none';
+      if (bw > 0 && bs !== 'none' && bs !== 'hidden') {
+        borderedAncestors += 1;
+      }
+      anc = anc.parentElement;
+    }
+    if (borderedAncestors > 1) {
+      violations.push({
+        type: 'CHART_OVER_BOXING',
+        element: svgLabel,
+        borderedAncestors,
+        maxAllowed: 1
+      });
+    }
+
+    const visibleTexts = [];
+    let reportedSmallText = false;
     for (const txt of svg.querySelectorAll('text')) {
       const content = (txt.textContent || '').trim();
-      if (!content) continue;
+      if (!content || !isVisible(txt)) continue;
       const rawFs = parseFloat(txt.getAttribute('font-size') || win.getComputedStyle(txt).fontSize || '12');
       const effectivePx = Number((rawFs * scale).toFixed(2));
-      if (effectivePx > 0 && effectivePx < 9.5) {
+      if (!reportedSmallText && effectivePx > 0 && effectivePx < 9.5) {
         violations.push({
           type: 'SVG_TEXT_TOO_SMALL',
-          element: describeElement(svg),
+          element: svgLabel,
           text: content.slice(0, 24),
           effectiveFontPx: effectivePx,
           minRequiredPx: 9.5
         });
-        break;
+        reportedSmallText = true;
+      }
+      if (!txt.hasAttribute || !txt.hasAttribute('data-chart-cursor')) {
+        visibleTexts.push({ el: txt, text: content.slice(0, 24), rect: txt.getBoundingClientRect() });
+      }
+    }
+
+    // 4b. Pairwise SVG text bounding-box overlap check
+    let reportedOverlap = false;
+    for (let i = 0; i < visibleTexts.length && !reportedOverlap; i++) {
+      for (let j = i + 1; j < visibleTexts.length; j++) {
+        if (rectsIntersect(visibleTexts[i].rect, visibleTexts[j].rect, -1)) {
+          violations.push({
+            type: 'SVG_TEXT_OVERLAP',
+            element: svgLabel,
+            textA: visibleTexts[i].text,
+            textB: visibleTexts[j].text
+          });
+          reportedOverlap = true;
+          break;
+        }
+      }
+    }
+
+    // 4c. Active cursor / pill clearance (< 18px vertical/horizontal collision guard)
+    const cursors = [...svg.querySelectorAll('[data-chart-cursor], .gm-cursor-pill, .chart-cursor-pill')].filter(isVisible);
+    let reportedCursorCollision = false;
+    for (const cur of cursors) {
+      if (reportedCursorCollision) break;
+      const cr = cur.getBoundingClientRect();
+      for (const item of visibleTexts) {
+        if (cur.contains && cur.contains(item.el)) continue;
+        if (rectsIntersect(item.rect, cr, 0) || (
+          item.rect.left < (typeof cr.right === 'number' ? cr.right : cr.left + cr.width) &&
+          (typeof item.rect.right === 'number' ? item.rect.right : item.rect.left + item.rect.width) > cr.left &&
+          Math.abs((item.rect.top + item.rect.height / 2) - (cr.top + cr.height / 2)) < 18
+        )) {
+          violations.push({
+            type: 'SVG_CURSOR_COLLISION',
+            element: svgLabel,
+            text: item.text
+          });
+          reportedCursorCollision = true;
+          break;
+        }
       }
     }
   }
