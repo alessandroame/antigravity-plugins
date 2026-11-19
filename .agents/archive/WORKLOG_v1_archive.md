@@ -420,3 +420,12 @@ A seguito dell'audit delle direttive e dei comportamenti richiesti agli agenti n
 - **Sintesi**:
   - Archiviate `29` skill GCP/BigQuery inutilizzate in `~/.gemini/config/skills-disabled-gcp/`, compresse `10` description di plugin terzi (`<= 200` char), convertite a regole condizionali (`trigger: model_decision`) le `6` specifiche verticali di GlideMind (`-32,3 KB` Always-On) e compattati del `32,5%` i 12 file `plugins/*/rules/AGENTS.md` (tetto `<= 6.000 B`).
   - Esclusi i subagent dal conteggio WIP in `governor-hook.mjs` (`isHumanConversationTranscript`) e ruotati/compattati `WORKLOG.md` (`43,5 -> 14,8 KB`) e `MEMORY.md` (`26,3 -> 10,9 KB`) in GlideMind con guardie statiche `<= 16 KB` / `<= 20 KB`.
+
+---
+
+## 2026-10-22 — Evoluzione `skizzo` v1.7.0 (Orchestrazione Multi-Dominio Dinamica `2..4` Agenti Ordinati per Importanza dall'LLM, Audit `TRI-TRACK` e Regola `Anti-Example Hardcoding`)
+- **Tipo**: Evoluzione Protocollo Multi-Agente, Ranking Dominio-Agnostico & Governance Skill (`plugins/skizzo/` v1.7.0, `plugins/skill-governance/`, `plugins/ab-bench/`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md`](./.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md)
+- **Sintesi**:
+  - Sostituito il vincolo fisso a 2 ruoli con la scoperta semantica e l'ordinamento per importanza dei domini via LLM (`2..4` subagent: `DUAL-TRACK`, `TRI-TRACK`, `QUAD-TRACK` con regola di arresto del Rasoio di Occam e matrice in `<details>` trasposta a 4 colonne fisse per riga su `~600px`).
+  - Introdotta [`rankAndCapDomains`](./plugins/skizzo/scripts/triage.mjs#L139-L194) in `triage.mjs` (`12/12` test verdi in [`triage.test.mjs`](./plugins/skizzo/tests/triage.test.mjs)), esteso `sanitizeForBlindJudge` in [`bench.mjs`](./plugins/ab-bench/scripts/bench.mjs#L241-L253) agli slot `Delta`/`Epsilon` e codificato il divieto di overfitting sugli esempi (`Anti-Example Hardcoding`) in [`skill-governance/rules/AGENTS.md`](./plugins/skill-governance/rules/AGENTS.md#L14).

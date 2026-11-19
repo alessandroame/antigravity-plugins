@@ -14,6 +14,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-19 — Valutazione AI-Native SDLC Playbook e Piano dei 3 Innesti Chirurgici (`sdlc-three-grafts`)
+- **Tipo**: Analisi Architetturale & Pianificazione Esecutiva (`.agents/plans/sdlc-three-grafts.md`, `DESIDERATA.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-19_ai-native-sdlc-three-grafts-plan.md`](./.agents/worklog.d/2026-11-19_ai-native-sdlc-three-grafts-plan.md)
+- **Sintesi**:
+  - Scartata la trafila multi-comitato (`intent.md -> spec.md -> REVIEW.md`, già coperta per ~`80%` dal catalogo) e progettati 3 innesti a `0 B` inline: deriva `Piano <-> Diff` (`engineering-workflow`), regressione trigger `SKILL.md` (`skill-governance`) e bande `1σ/2σ/3σ` (`execution-guard` + `gh-board-sync.mjs`).
+
+---
+
 ## 2026-11-17 — Rilascio `laws-of-ux` v1.3.0: Architettura a 3 Livelli per Grafici Temporali Espressivi (`L2b` Skill + `L2c` Subagente + `L3` Sonda SVG)
 - **Tipo**: Evoluzione Skill Multivariata, Subagente Critico `L2c` & Sonda Gate 4 `L3` (`plugins/laws-of-ux/` v1.3.0, `ui-geometry-probe.js`, `scripts/sync-to-global.mjs`, `MEMORY.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-17_expressive-charts-3-tier-laws-of-ux-v130.md`](./.agents/worklog.d/2026-11-17_expressive-charts-3-tier-laws-of-ux-v130.md)
@@ -110,11 +118,3 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
   - Creato [`session-backfill.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/core/session-backfill.mjs) (`5/5` test in [`session-backfill.test.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/tests/session-backfill.test.mjs)) per indicizzare incrementalmente `~/.gemini/antigravity/brain/` (`sessions-index.json` schema `v3`, tempi attivi netti, abitudini orarie, modelli, slash command e `promptsBreakdown[]` per singolo prompt) e corretto il supporto `read_file`/`totalSessions` in [`collector.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/scripts/collector.mjs).
   - Introdotta la Dashboard HTML a 5 tab ([`usage-dashboard-template.html`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/references/usage-dashboard-template.html)), il flag `--session <id>` in [`report.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/scripts/report.mjs) e la regola del footer minimale a 3 valori in [`rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/rules/AGENTS.md) (`> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`).
 
----
-
-## 2026-10-22 — Evoluzione `skizzo` v1.7.0 (Orchestrazione Multi-Dominio Dinamica `2..4` Agenti Ordinati per Importanza dall'LLM, Audit `TRI-TRACK` e Regola `Anti-Example Hardcoding`)
-- **Tipo**: Evoluzione Protocollo Multi-Agente, Ranking Dominio-Agnostico & Governance Skill (`plugins/skizzo/` v1.7.0, `plugins/skill-governance/`, `plugins/ab-bench/`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-22_skizzo-dynamic-multi-domain-ranking.md)
-- **Sintesi**:
-  - Sostituito il vincolo fisso a 2 ruoli con la scoperta semantica e l'ordinamento per importanza dei domini via LLM (`2..4` subagent: `DUAL-TRACK`, `TRI-TRACK`, `QUAD-TRACK` con regola di arresto del Rasoio di Occam e matrice in `<details>` trasposta a 4 colonne fisse per riga su `~600px`).
-  - Introdotta [`rankAndCapDomains`](file:///c:/github/antigravity-plugins/plugins/skizzo/scripts/triage.mjs#L139-L194) in `triage.mjs` (`12/12` test verdi in [`triage.test.mjs`](file:///c:/github/antigravity-plugins/plugins/skizzo/tests/triage.test.mjs)), esteso `sanitizeForBlindJudge` in [`bench.mjs`](file:///c:/github/antigravity-plugins/plugins/ab-bench/scripts/bench.mjs#L241-L253) agli slot `Delta`/`Epsilon` e codificato il divieto di overfitting sugli esempi (`Anti-Example Hardcoding`) in [`skill-governance/rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/skill-governance/rules/AGENTS.md#L14).

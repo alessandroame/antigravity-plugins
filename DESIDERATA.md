@@ -10,6 +10,9 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | Modulo / Funzionalità | Ambito | Stato | Note / Specifica di Riferimento (<= 160 char) |
 | :--- | :---: | :---: | :--- |
 | Laboratorio Metodologico Notturno (`interaction-lab`) | Plugin (`mapek`) | `🔴 Prioritario` | `mapek` v1.2.0: slot `02:30`/`08:30`, replay `<= 6 KB`, SSOT padronanza e `0 B` inline ([piano](./.agents/plans/nightly-interaction-lab.md)). |
+| Verifica Deriva `Piano <-> Diff` (`diff-triage --plan`) | Plugin (`engineering-workflow`) | `⚪ Pianificato` | Fase 1: confronto `0`-token tra percorsi in `.agents/plans/*.md` e `git diff` ([piano](./.agents/plans/sdlc-three-grafts.md)). |
+| Regressione Automatica Trigger Skill (`skill-trigger-eval`) | Plugin (`skill-governance`) | `⚪ Pianificato` | Fase 2: ranking deterministico `BM25` su `SKILL.md` per bloccare skill mute post-refactor ([piano](./.agents/plans/sdlc-three-grafts.md)). |
+| Bande di Controllo `1σ/2σ/3σ` (`metric-band-guard`) | Plugin (`execution-guard`) | `⚪ Pianificato` | Fase 3: guardia `0`-token a riposo, diagnosi `2σ` read-only e alert `3σ` su `gh-board-sync` ([piano](./.agents/plans/sdlc-three-grafts.md)). |
 
 ---
 
