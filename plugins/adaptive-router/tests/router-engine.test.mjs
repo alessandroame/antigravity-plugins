@@ -905,4 +905,106 @@ describe('Adaptive Model & Effort Router Engine', () => {
       rmSync(tmpRoot, { recursive: true, force: true });
     }
   });
+
+  it('detects builtin .checksum drift and newly selected uncalibrated Gemini families immediately on Turn 1 of PreInvocation', () => {
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'adaptive-router-turn1-detect-'));
+    try {
+      const analyticsDir = join(tmpRoot, 'analytics');
+      const builtinDir = join(tmpRoot, 'builtin');
+      mkdirSync(analyticsDir, { recursive: true });
+      mkdirSync(builtinDir, { recursive: true });
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v1-initial', 'utf-8');
+
+      const env = {
+        ...process.env,
+        ANTIGRAVITY_ANALYTICS_DIR: analyticsDir,
+        ANTIGRAVITY_BUILTIN_DIR: builtinDir
+      };
+
+      // Baseline calibrated registry with Carbon/Argon/Hydrogen and initial checksum
+      const calFile = join(tmpRoot, 'calibration.json');
+      writeFileSync(
+        calFile,
+        JSON.stringify({
+          sourceDocs: ['antigravity.google/docs'],
+          calibratedFamilies: {
+            'Gemini 4 Hydrogen': { roleClass: 'FAST_EXECUTION', officialSummaryIt: 'Veloce.' },
+            'Gemini 4 Argon': { roleClass: 'EFFICIENT_CODING', officialSummaryIt: 'Coding.' },
+            'Gemini 4 Carbon': { roleClass: 'FRONTIER_HEAVYWEIGHT', officialSummaryIt: 'Architettura.' }
+          }
+        }),
+        'utf-8'
+      );
+      execFileSync(process.execPath, [CLI_SCRIPT, '--apply-calibration', calFile], {
+        env,
+        encoding: 'utf-8'
+      });
+
+      // 1. User selects a newly released server-side Gemini family ("Gemini 4 Neon") -> fires IMMEDIATELY on Turn 1
+      const neonTurn1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-neon-t1',
+            invocationNum: 1,
+            modelName: 'gemini-4-neon-medium',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(neonTurn1.injectSteps));
+      assert.match(neonTurn1.injectSteps[0].systemMessage.systemMessage, /CALIBRATE_MODEL_ROSTER_ONCE/);
+      assert.match(neonTurn1.injectSteps[0].systemMessage.systemMessage, /Gemini 4 Neon/);
+
+      // Second turn on the same uncalibrated family stays silent (no repeated spam)
+      const neonTurn2 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-neon-t1',
+            invocationNum: 1,
+            modelName: 'gemini-4-neon-medium',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(neonTurn2, {});
+
+      // 2. Antigravity IDE updates builtin/.checksum -> fires IMMEDIATELY on Turn 1 even with a calibrated model
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v2-updated', 'utf-8');
+      const driftTurn1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-drift-t1',
+            invocationNum: 1,
+            modelName: 'gemini-4-carbon-medium',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(driftTurn1.injectSteps));
+      assert.match(driftTurn1.injectSteps[0].systemMessage.systemMessage, /CALIBRATE_MODEL_ROSTER_ONCE/);
+
+      // Next turn after drift notice is silent again
+      const driftTurn2 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-drift-t1',
+            invocationNum: 1,
+            modelName: 'gemini-4-carbon-medium',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(driftTurn2, {});
+    } finally {
+      rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
 });

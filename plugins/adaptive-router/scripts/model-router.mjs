@@ -133,7 +133,10 @@ export function inspectPreInvocationContract(builtinDir) {
  * contract in `docs/hooks.md` to detect when programmatic model/effort override becomes available (`NOTE-004`).
  */
 export function probeBuiltinChecksumDrift(registry, customBuiltinDir) {
-  const builtinDir = customBuiltinDir || join(homedir(), '.gemini', 'antigravity', 'builtin');
+  const builtinDir =
+    customBuiltinDir ||
+    (process.env.ANTIGRAVITY_BUILTIN_DIR ? resolve(process.env.ANTIGRAVITY_BUILTIN_DIR) : null) ||
+    join(homedir(), '.gemini', 'antigravity', 'builtin');
   const checksumPath = join(builtinDir, '.checksum');
   if (!existsSync(checksumPath)) {
     return {
@@ -416,6 +419,7 @@ if (isDirectEntry) {
     const calPayload = parseJsonArgOrFile(args[applyCalIdx + 1]);
     const reg = loadCapabilityRegistry();
     const updatedReg = applyOfficialDocsCalibration(reg, calPayload);
+    probeBuiltinChecksumDrift(updatedReg);
     saveCapabilityRegistry(updatedReg);
     didMutateLut = true;
     syncSummary = {

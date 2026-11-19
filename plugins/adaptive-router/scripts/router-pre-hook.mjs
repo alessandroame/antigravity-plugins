@@ -16,6 +16,7 @@ import {
   classifyPromptRoute,
   extractExplicitReasoningMode,
   extractLatestTurnSettingsChange,
+  extractModelBaseFamily,
   formatHumanModelLabel,
   inferModelCapability,
   normalizeCanonicalModelId,
@@ -26,6 +27,7 @@ import {
   getAnalyticsDir,
   getBrainDir,
   loadCapabilityRegistry,
+  probeBuiltinChecksumDrift,
   saveCapabilityRegistry
 } from './model-router.mjs';
 
@@ -185,10 +187,50 @@ async function main() {
     );
 
     if (invocationNum === 1) {
+      let registryDirty = false;
+      const hadPrevChecksum = Boolean(registry.builtinChecksum);
+      const drift = probeBuiltinChecksumDrift(registry);
+      if (drift.drifted) {
+        registryDirty = true;
+        if (hadPrevChecksum) {
+          registry.pendingRosterRefresh = {
+            required: true,
+            detectedAtMs: Date.now(),
+            notifiedAtMs: null
+          };
+        }
+      }
+
+      if (activeUiModel && registry.lutCalibration?.calibratedAtMs) {
+        const activeFamily = extractModelBaseFamily(activeUiModel);
+        const calibratedMap = registry.lutCalibration.calibratedFamilies || {};
+        if (
+          activeFamily &&
+          /^(?:gemini\b|orchestrator\b)/i.test(activeFamily) &&
+          !calibratedMap[activeFamily]
+        ) {
+          const prevUncal = Array.isArray(registry.pendingDocCalibration?.uncalibratedFamilies)
+            ? registry.pendingDocCalibration.uncalibratedFamilies
+            : [];
+          const isNewlyDetectedFamily = !prevUncal.includes(activeFamily);
+          if (isNewlyDetectedFamily || !registry.pendingDocCalibration?.required) {
+            registry.pendingDocCalibration = {
+              required: true,
+              uncalibratedFamilies: [...new Set([...prevUncal, activeFamily])],
+              detectedAtMs: Date.now(),
+              notifiedAtMs: isNewlyDetectedFamily
+                ? null
+                : (registry.pendingDocCalibration?.notifiedAtMs ?? null)
+            };
+            registryDirty = true;
+          }
+        }
+      }
+
       if (registry.pendingHarnessUpgradeNotice && !registry.pendingHarnessUpgradeNotice.notifiedAtMs) {
         const notice = registry.pendingHarnessUpgradeNotice;
         notice.notifiedAtMs = Date.now();
-        saveCapabilityRegistry(registry, analyticsDir);
+        registryDirty = true;
         injectSteps.push({
           systemMessage: {
             systemMessage: `[ADAPTIVE-ROUTER: HARNESS_CONTRACT_UPDATED] Antigravity updated its PreInvocation hook contract (.checksum=${notice.currentChecksum}, modelOverrideSupported=${Boolean(notice.preInvocationModelOverrideSupported)}). Inform the user in 2 plain Italian lines prefixed with '[Plugin: adaptive-router]' so NOTE-004 automatic model/mode switching can be verified.`
@@ -211,7 +253,7 @@ async function main() {
         if (needsDocCalibration && registry.pendingDocCalibration) {
           registry.pendingDocCalibration.notifiedAtMs = nowMs;
         }
-        saveCapabilityRegistry(registry, analyticsDir);
+        registryDirty = true;
         const uncalLabel =
           (registry.pendingDocCalibration?.uncalibratedFamilies || []).join(', ') ||
           'aggiornamento roster modelli';
@@ -220,6 +262,10 @@ async function main() {
             systemMessage: `[ADAPTIVE-ROUTER: CALIBRATE_MODEL_ROSTER_ONCE] Model roster changed or contains uncalibrated Gemini families (${uncalLabel}). Perform a one-time LUT calibration: (1) call swarm{action:"models"} and pass its JSON to 'model-router.mjs --sync-swarm-models', (2) consult official Google/Antigravity documentation (gemini_search_docs / search_web on antigravity.google or blog.google) ONCE for any uncalibrated Gemini family, and (3) save calibrated roles and R1..R6 targets via 'model-router.mjs --apply-calibration'.`
           }
         });
+      }
+
+      if (registryDirty) {
+        saveCapabilityRegistry(registry, analyticsDir);
       }
 
       const shouldAskLutUpgrade =
