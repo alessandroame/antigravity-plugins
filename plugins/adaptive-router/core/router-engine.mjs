@@ -24,11 +24,13 @@ export const CALIBRATION_MIN_SAMPLES = 5;
 export function sanitizeModelSelectionName(rawModel) {
   if (typeof rawModel !== 'string') return '';
   return rawModel
+    .replace(/(?:\\[rn])+/g, ' ')
+    .replace(/[\r\n]+/g, ' ')
     .trim()
     .replace(/^`+|`+$/g, '')
     .replace(/\.?\s+No need to comment on this change[\s\S]*$/i, '')
     .replace(/\.?\s+If reporting what model you are[\s\S]*$/i, '')
-    .replace(/\.$/, '')
+    .replace(/[.\s]+$/g, '')
     .replace(/^`+|`+$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -106,7 +108,7 @@ export function formatHumanModelLabel(rawModel) {
     return `Orchestrator (${v.charAt(0).toUpperCase() + v.slice(1).toLowerCase()})`;
   }
   if (/\s/.test(clean) && /[A-Z]/.test(clean)) {
-    return clean;
+    return clean.replace(/\s+tiered(?=\s*\(|$)/gi, '').replace(/\s+/g, ' ').trim();
   }
 
   let base = clean;
@@ -118,6 +120,7 @@ export function formatHumanModelLabel(rawModel) {
       m === 'xhigh' ? 'XHigh' : m === 'high' ? 'High' : m === 'medium' ? 'Medium' : 'Low';
     base = base.slice(0, -modeMatch[0].length);
   }
+  base = base.replace(/[-_\s]+tiered$/i, '');
 
   base = base.replace(/-(\d)-(\d)(?=-|$)/g, ' $1.$2');
   const words = base
@@ -221,7 +224,53 @@ export const PROMPT_ARCHETYPES = Object.freeze({
 export function extractModelBaseFamily(modelLabelOrSlug) {
   const human = formatHumanModelLabel(modelLabelOrSlug);
   if (!human) return '';
-  return human.replace(/\s*\(\s*(?:xhigh|high|medium|med|low|minimal)\s*\)\s*$/i, '').trim();
+  return human
+    .replace(/\s*\(\s*(?:xhigh|high|medium|med|low|minimal)\s*\)\s*$/i, '')
+    .replace(/\s+tiered$/i, '')
+    .trim();
+}
+
+const ROLE_CLASS_ALIASES = Object.freeze({
+  DYNAMIC_ORCHESTRATOR: 'DYNAMIC_ORCHESTRATOR',
+  ORCHESTRATOR: 'DYNAMIC_ORCHESTRATOR',
+  FRONTIER_HEAVYWEIGHT: 'FRONTIER_HEAVYWEIGHT',
+  FRONTIER_REASONING: 'FRONTIER_HEAVYWEIGHT',
+  EFFICIENT_CODING: 'EFFICIENT_CODING',
+  BALANCED_CODING: 'EFFICIENT_CODING',
+  FAST_EXECUTION: 'FAST_EXECUTION',
+  FAST_WORKHORSE: 'FAST_EXECUTION',
+  LIGHTWEIGHT_TIER: 'FAST_EXECUTION',
+  LEGACY_FAST: 'FAST_EXECUTION'
+});
+
+/**
+ * Normalizes roleClass strings across kebab-case, snake_case, and SCREAMING_SNAKE_CASE.
+ *
+ * @param {unknown} rawRole
+ * @returns {string | null}
+ */
+export function normalizeRoleClass(rawRole) {
+  if (typeof rawRole !== 'string' || !rawRole.trim()) return null;
+  const normalized = rawRole.trim().toUpperCase().replace(/[-\s]+/g, '_');
+  return ROLE_CLASS_ALIASES[normalized] || normalized;
+}
+
+/**
+ * Returns true if the given UI model name or slug resolves to a dynamic Orchestrator.
+ *
+ * @param {unknown} modelName
+ * @param {object} [registry]
+ * @returns {boolean}
+ */
+export function isDynamicOrchestratorModel(modelName, registry) {
+  const clean = sanitizeModelSelectionName(modelName);
+  if (!clean) return false;
+  if (/\borchestrator\b/i.test(clean)) return true;
+  const mappedDisplay = registry?.swarmDisplayNames?.[clean.toLowerCase()] || formatHumanModelLabel(clean);
+  if (/\borchestrator\b/i.test(mappedDisplay)) return true;
+  const baseFamily = extractModelBaseFamily(mappedDisplay);
+  const rawRole = registry?.lutCalibration?.calibratedFamilies?.[baseFamily]?.roleClass;
+  return normalizeRoleClass(rawRole) === 'DYNAMIC_ORCHESTRATOR';
 }
 
 export function createDefaultCapabilityRegistry() {
@@ -331,6 +380,26 @@ export function inferModelCapability(modelName, metrics = {}) {
       effort: explicitMode.effort,
       confidence: 'lexical',
       reason: `modalità di ragionamento esplicita (${explicitMode.modeLabel}) rilevata dal selettore UI`
+    };
+  }
+
+  // Stage 0b: Dynamic Orchestrators natively route across Carbon/Argon and Hydrogen
+  if (/\borchestrator\b/i.test(clean)) {
+    if (/\bargon\b/i.test(clean)) {
+      return {
+        tier: 'MEDIUM',
+        effort: 'medium',
+        confidence: 'lexical',
+        isDynamicOrchestrator: true,
+        reason: 'orchestratore dinamico bilanciato (Argon + Hydrogen)'
+      };
+    }
+    return {
+      tier: 'HIGH',
+      effort: 'high',
+      confidence: 'lexical',
+      isDynamicOrchestrator: true,
+      reason: 'orchestratore dinamico multi-step (Carbon + Hydrogen)'
     };
   }
 
@@ -515,6 +584,16 @@ export function evaluateUiModelAlignment(promptTier, activeUiModel, registry) {
   }
 
   const reg = registry || createDefaultCapabilityRegistry();
+  if (isDynamicOrchestratorModel(cleanUiModel, reg)) {
+    const orchCap = inferModelCapability(cleanUiModel);
+    return {
+      mismatchType: 'NONE',
+      uiModelTier: orchCap.tier,
+      isDynamicOrchestrator: true,
+      recommendation: null
+    };
+  }
+
   const key = cleanUiModel.toLowerCase();
   const explicitMode = extractExplicitReasoningMode(cleanUiModel);
   const known = reg.models?.[key];
@@ -543,6 +622,30 @@ export function evaluateUiModelAlignment(promptTier, activeUiModel, registry) {
   return { mismatchType: 'NONE', uiModelTier, recommendation: null };
 }
 
+const DEFAULT_ORCHESTRATOR_BY_ARCHETYPE = Object.freeze({
+  R4_SINGLE_MODULE_DEV: Object.freeze({
+    model: 'Orchestrator (Argon)',
+    whenToSelectIt:
+      'Ideale per sviluppo e test su singolo modulo: alterna Argon e Hydrogen automaticamente senza cambi manuali.'
+  }),
+  R5_MULTI_FILE_REFACTOR: Object.freeze({
+    model: 'Orchestrator (Carbon)',
+    whenToSelectIt:
+      'Ideale per refactoring multi-file e workflow end-to-end: alterna Carbon sui passaggi complessi e Hydrogen su quelli meccanici.'
+  }),
+  R6_DEEP_ARCH_TRADEOFF: Object.freeze({
+    model: 'Orchestrator (Carbon)',
+    whenToSelectIt:
+      'Consigliato se al piano/audit segue implementazione multi-step nella stessa sessione senza dover cambiare modello.'
+  })
+});
+
+const DEFAULT_ALT_UI_BY_ARCHETYPE = Object.freeze({
+  R4_SINGLE_MODULE_DEV: 'Orchestrator (Argon)',
+  R5_MULTI_FILE_REFACTOR: 'Gemini 4 Carbon (High)',
+  R6_DEEP_ARCH_TRADEOFF: 'Orchestrator (Carbon)'
+});
+
 const IS_ARCH_PLAN_OR_AUDIT_RX =
   /\b(?:fai\s+un\s+piano|audit\b|verifica\s+(?:approfondita|architetturale|completa|integrit[aà])|pro\s+e\s+contro|vantaggi\s+e\s+svantaggi|trade[- ]?off|come\s+conviene|strategi\w+\s+conviene|approcci\w+\s+miglior\w+|progett\w+|analizza\s+il\s+problema)\b/i;
 
@@ -561,22 +664,28 @@ export function resolveLutRoute(archetypeId, registry, activeUiModel) {
   const reg = registry || createDefaultCapabilityRegistry();
   const arch = PROMPT_ARCHETYPES[archetypeId] || PROMPT_ARCHETYPES.R4_SINGLE_MODULE_DEV;
   const calibratedTarget = reg.lutCalibration?.archetypeTargets?.[arch.archetypeId] || null;
+  const recommendedOrchestrator = DEFAULT_ORCHESTRATOR_BY_ARCHETYPE[arch.archetypeId] || null;
 
   let recommendedUiModel = calibratedTarget?.primaryUiModel || null;
-  const alternativeUiModel = calibratedTarget?.alternativeUiModel || null;
+  const alternativeUiModel =
+    calibratedTarget?.alternativeUiModel || DEFAULT_ALT_UI_BY_ARCHETYPE[arch.archetypeId] || null;
 
   if (!recommendedUiModel) {
-    const candidates = Object.entries(reg.models || {})
-      .filter(([, m]) => m && m.tier === arch.tier && m.source === 'auto-discovered')
-      .sort((a, b) => (b[1].samples || 0) - (a[1].samples || 0));
-    recommendedUiModel =
-      candidates.length > 0
-        ? candidates[0][1].displayName || formatHumanModelLabel(candidates[0][0])
-        : arch.tier === 'HIGH'
-          ? 'Gemini 4 Carbon (High)'
-          : arch.tier === 'MEDIUM'
-            ? 'Gemini 4 Argon (Medium)'
-            : 'Gemini 4 Hydrogen (Low)';
+    if (arch.archetypeId === 'R5_MULTI_FILE_REFACTOR') {
+      recommendedUiModel = 'Orchestrator (Carbon)';
+    } else {
+      const candidates = Object.entries(reg.models || {})
+        .filter(([, m]) => m && m.tier === arch.tier && m.source === 'auto-discovered')
+        .sort((a, b) => (b[1].samples || 0) - (a[1].samples || 0));
+      recommendedUiModel =
+        candidates.length > 0
+          ? candidates[0][1].displayName || formatHumanModelLabel(candidates[0][0])
+          : arch.tier === 'HIGH'
+            ? 'Gemini 4 Carbon (High)'
+            : arch.tier === 'MEDIUM'
+              ? 'Gemini 4 Argon (Medium)'
+              : 'Gemini 4 Hydrogen (Low)';
+    }
   }
 
   const desiredSubagentTier = calibratedTarget?.subagentModel || arch.defaultSubagentModel;
@@ -585,27 +694,31 @@ export function resolveLutRoute(archetypeId, registry, activeUiModel) {
   const executionSubagentModel = resolveSafeSubagentModel(tierForSafeResolve, reg);
   const executionSubagentType = calibratedTarget?.subagentType || arch.defaultSubagentType;
 
+  const buildLutResult = (switchAction, rationaleIt) => ({
+    archetypeId: arch.archetypeId,
+    archetypeLabelIt: arch.labelIt,
+    targetTier: arch.tier,
+    recommendedUiModel,
+    alternativeUiModel,
+    recommendedOrchestrator,
+    executionSubagentModel,
+    executionSubagentType,
+    switchAction,
+    rationaleIt
+  });
+
   const cleanActive = sanitizeModelSelectionName(activeUiModel);
   if (!cleanActive || /^(?:auto|none|default)$/i.test(cleanActive) || arch.archetypeId === 'R1_MECHANICAL_OPS') {
-    return {
-      archetypeId: arch.archetypeId,
-      archetypeLabelIt: arch.labelIt,
-      targetTier: arch.tier,
-      recommendedUiModel,
-      alternativeUiModel,
-      executionSubagentModel,
-      executionSubagentType,
-      switchAction: 'NONE',
-      rationaleIt: null
-    };
+    return buildLutResult('NONE', null);
   }
 
   const mappedDisplay = reg.swarmDisplayNames?.[cleanActive.toLowerCase()] || formatHumanModelLabel(cleanActive);
   const baseFamily = extractModelBaseFamily(mappedDisplay);
   const familyProfile = reg.lutCalibration?.calibratedFamilies?.[baseFamily] || null;
-  const roleClass =
+  const roleClass = normalizeRoleClass(
     familyProfile?.roleClass ||
-    (/\borchestrator\b/i.test(mappedDisplay) ? 'DYNAMIC_ORCHESTRATOR' : null);
+      (isDynamicOrchestratorModel(mappedDisplay || cleanActive, reg) ? 'DYNAMIC_ORCHESTRATOR' : null)
+  );
   const explicitMode = extractExplicitReasoningMode(mappedDisplay || cleanActive);
   const activeTier = explicitMode
     ? explicitMode.tier
@@ -614,17 +727,7 @@ export function resolveLutRoute(archetypeId, registry, activeUiModel) {
 
   // Official-docs invariant: Antigravity Orchestrator natively swaps between Carbon/Argon and Hydrogen
   if (roleClass === 'DYNAMIC_ORCHESTRATOR') {
-    return {
-      archetypeId: arch.archetypeId,
-      archetypeLabelIt: arch.labelIt,
-      targetTier: arch.tier,
-      recommendedUiModel,
-      alternativeUiModel,
-      executionSubagentModel,
-      executionSubagentType,
-      switchAction: 'NONE',
-      rationaleIt: familyProfile?.officialSummaryIt || null
-    };
+    return buildLutResult('NONE', familyProfile?.officialSummaryIt || null);
   }
 
   const recFamilyProfile =
@@ -632,7 +735,7 @@ export function resolveLutRoute(archetypeId, registry, activeUiModel) {
 
   // 1-Click Upgrade check (underprovisioned mode or lightweight fast model on complex multi-file/audit task)
   const isFastFamilyOnHigh =
-    (roleClass === 'LEGACY_FAST' || roleClass === 'FAST_EXECUTION') &&
+    roleClass === 'FAST_EXECUTION' &&
     arch.tier === 'HIGH' &&
     !isXHigh;
   const isLowOnMutativeMedium =
@@ -640,19 +743,10 @@ export function resolveLutRoute(archetypeId, registry, activeUiModel) {
   const isLowOnHigh = arch.tier === 'HIGH' && activeTier === 'LOW';
 
   if (isLowOnHigh || isLowOnMutativeMedium || isFastFamilyOnHigh) {
-    return {
-      archetypeId: arch.archetypeId,
-      archetypeLabelIt: arch.labelIt,
-      targetTier: arch.tier,
-      recommendedUiModel,
-      alternativeUiModel,
-      executionSubagentModel,
-      executionSubagentType,
-      switchAction: 'ASK_1CLICK_UPGRADE',
-      rationaleIt:
-        recFamilyProfile?.officialSummaryIt ||
-        `Richiede capacità ${arch.tier} (${arch.labelIt}).`
-    };
+    return buildLutResult(
+      'ASK_1CLICK_UPGRADE',
+      recFamilyProfile?.officialSummaryIt || `Richiede capacità ${arch.tier} (${arch.labelIt}).`
+    );
   }
 
   // 0-Click Downgrade hint check (heavy frontier High mode used on lightweight R2/R3 tasks)
@@ -662,29 +756,79 @@ export function resolveLutRoute(archetypeId, registry, activeUiModel) {
     (roleClass === 'FRONTIER_HEAVYWEIGHT' || roleClass === 'EFFICIENT_CODING' || !roleClass);
 
   if (isHeavyHighOnLight) {
+    return buildLutResult('SUGGEST_0CLICK_DOWNGRADE', recFamilyProfile?.officialSummaryIt || null);
+  }
+
+  return buildLutResult('NONE', null);
+}
+
+/**
+ * Detects multi-phase sessions alternating across complexity tiers on a static UI model
+ * and suggests Orchestrator (Carbon) or Orchestrator (Argon) at most once per session.
+ */
+export function evaluateMixedSessionOrchestratorHint({
+  tierHistory = [],
+  mismatchCountInSession = 0,
+  currentRoute,
+  activeUiModel,
+  registry,
+  lutSnoozed = false,
+  orchestratorSuggestedAtMs = null
+} = {}) {
+  const cleanActive = sanitizeModelSelectionName(activeUiModel);
+  if (
+    lutSnoozed ||
+    orchestratorSuggestedAtMs ||
+    !cleanActive ||
+    /^(?:auto|none|default)$/i.test(cleanActive) ||
+    isDynamicOrchestratorModel(cleanActive, registry)
+  ) {
+    return { shouldSuggest: false, orchestratorModel: null, reasonIt: null, messageIt: null };
+  }
+
+  if (
+    !currentRoute ||
+    currentRoute.archetypeId === 'R1_MECHANICAL_OPS' ||
+    currentRoute.signals?.includes('manual_force_low') ||
+    currentRoute.signals?.includes('manual_force_high')
+  ) {
+    return { shouldSuggest: false, orchestratorModel: null, reasonIt: null, messageIt: null };
+  }
+
+  const history = Array.isArray(tierHistory) ? tierHistory : [];
+  if (history.length < 2) {
+    return { shouldSuggest: false, orchestratorModel: null, reasonIt: null, messageIt: null };
+  }
+
+  const hasHigh = history.some((h) => h && h.tier === 'HIGH');
+  const hasMedium = history.some((h) => h && h.tier === 'MEDIUM');
+  const hasDevMedium = history.some((h) => h && h.archetypeId === 'R4_SINGLE_MODULE_DEV');
+  const hasLow = history.some((h) => h && h.tier === 'LOW');
+
+  const isMixedHigh = hasHigh && (hasLow || hasMedium);
+  const isMixedMediumLow = hasDevMedium && hasLow;
+  const isRepeatedFriction = mismatchCountInSession >= 2;
+
+  if (!isMixedHigh && !isMixedMediumLow && !isRepeatedFriction) {
+    return { shouldSuggest: false, orchestratorModel: null, reasonIt: null, messageIt: null };
+  }
+
+  if (hasHigh) {
     return {
-      archetypeId: arch.archetypeId,
-      archetypeLabelIt: arch.labelIt,
-      targetTier: arch.tier,
-      recommendedUiModel,
-      alternativeUiModel,
-      executionSubagentModel,
-      executionSubagentType,
-      switchAction: 'SUGGEST_0CLICK_DOWNGRADE',
-      rationaleIt: recFamilyProfile?.officialSummaryIt || null
+      shouldSuggest: true,
+      orchestratorModel: 'Orchestrator (Carbon)',
+      reasonIt: 'sessione mista multi-fase con passaggi HIGH',
+      messageIt:
+        'Sessione mista multi-fase rilevata: selezionando **Orchestrator (Carbon)** nel menu modello eviti cambi manuali (smista in automatico tra Carbon sui passaggi complessi e Hydrogen su quelli rapidi).'
     };
   }
 
   return {
-    archetypeId: arch.archetypeId,
-    archetypeLabelIt: arch.labelIt,
-    targetTier: arch.tier,
-    recommendedUiModel,
-    alternativeUiModel,
-    executionSubagentModel,
-    executionSubagentType,
-    switchAction: 'NONE',
-    rationaleIt: null
+    shouldSuggest: true,
+    orchestratorModel: 'Orchestrator (Argon)',
+    reasonIt: 'sessione operativa mista LOW/MEDIUM',
+    messageIt:
+      'Sessione operativa mista (`LOW`/`MEDIUM`): selezionando **Orchestrator (Argon)** nel menu modello ottieni sviluppo fluido su singolo modulo e risposte rapide sui comandi senza cambiare modalità.'
   };
 }
 
@@ -941,9 +1085,17 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
 
     const stepTs = step.created_at ? new Date(step.created_at).getTime() : null;
     const content = typeof step.content === 'string' ? step.content : '';
+    const isUserStep =
+      step.type === 'USER_INPUT' || step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
 
-    // 0. Probe embedded `swarm{action:"models"}` catalog JSON outputs in transcript steps
-    if (content.includes('"models":[') && content.includes('"display_names":{')) {
+    // 0. Probe embedded `swarm{action:"models"}` catalog JSON outputs in dedicated tool response steps only
+    if (
+      !isUserStep &&
+      step.type !== 'SYSTEM_MESSAGE' &&
+      step.type !== 'PLANNER_RESPONSE' &&
+      content.trimStart().startsWith('{"models":[') &&
+      content.includes('"display_names":{')
+    ) {
       const jsonIdx = content.indexOf('{"models":[');
       if (jsonIdx !== -1) {
         try {
@@ -956,8 +1108,8 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
       }
     }
 
-    // 1. Probe <USER_SETTINGS_CHANGE> for new models and new effort/thinking modes
-    if (content.includes('<USER_SETTINGS_CHANGE>')) {
+    // 1. Probe <USER_SETTINGS_CHANGE> ONLY inside real USER_INPUT steps (never tool outputs/file reads/docs)
+    if (isUserStep && content.includes('<USER_SETTINGS_CHANGE>')) {
       const settingsBlocks = content.matchAll(/<USER_SETTINGS_CHANGE>([\s\S]*?)<\/USER_SETTINGS_CHANGE>/gi);
       for (const match of settingsBlocks) {
         const block = match[1] || '';
@@ -1017,23 +1169,25 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
 
     if (step.type === 'PLANNER_RESPONSE' || step.source === 'MODEL') {
       if (typeof step.model === 'string' && step.model.trim()) {
-        const rawM = step.model.trim();
+        const rawM = sanitizeModelSelectionName(step.model);
         const mKey = rawM.toLowerCase();
-        activeModel = rawM;
-        if (!base.models[mKey]) {
-          const inferred = inferModelCapability(rawM);
-          base.models[mKey] = {
-            displayName: rawM,
-            tier: inferred.tier,
-            effort: inferred.effort,
-            confidence: inferred.confidence,
-            source: 'auto-discovered',
-            samples: 0,
-            avgDurationMs: 0,
-            avgOutputTokens: 0,
-            errorRate: 0
-          };
-          newlyDiscoveredModels.push(rawM);
+        if (mKey && !/^(?:auto|none|default)$/i.test(mKey)) {
+          activeModel = rawM;
+          if (!base.models[mKey]) {
+            const inferred = inferModelCapability(rawM);
+            base.models[mKey] = {
+              displayName: rawM,
+              tier: inferred.tier,
+              effort: inferred.effort,
+              confidence: inferred.confidence,
+              source: 'auto-discovered',
+              samples: 0,
+              avgDurationMs: 0,
+              avgOutputTokens: 0,
+              errorRate: 0
+            };
+            newlyDiscoveredModels.push(rawM);
+          }
         }
       }
       if (typeof step.output_tokens === 'number') {
@@ -1126,6 +1280,43 @@ export function cleanPollutedModelRegistry(registry) {
   }
 
   cloned.models = nextModels;
+
+  if (cloned.swarmDisplayNames && typeof cloned.swarmDisplayNames === 'object') {
+    const cleanSwarm = {};
+    for (const [slug, disp] of Object.entries(cloned.swarmDisplayNames)) {
+      const cleanSlug = sanitizeModelSelectionName(slug).toLowerCase();
+      if (cleanSlug) {
+        cleanSwarm[cleanSlug] = sanitizeModelSelectionName(disp) || formatHumanModelLabel(cleanSlug);
+      }
+    }
+    cloned.swarmDisplayNames = cleanSwarm;
+  }
+
+  if (cloned.pendingDocCalibration && Array.isArray(cloned.pendingDocCalibration.uncalibratedFamilies)) {
+    const hasRoster = Array.isArray(cloned.availableRoster) && cloned.availableRoster.length > 0;
+    const rosterFamilies = hasRoster
+      ? new Set(
+          cloned.availableRoster
+            .map((slug) =>
+              extractModelBaseFamily(cloned.swarmDisplayNames?.[String(slug).toLowerCase()] || slug)
+            )
+            .filter(Boolean)
+        )
+      : null;
+    const calibratedMap = cloned.lutCalibration?.calibratedFamilies || {};
+    const cleanedFamilies = [
+      ...new Set(
+        cloned.pendingDocCalibration.uncalibratedFamilies
+          .map((fam) => extractModelBaseFamily(fam))
+          .filter((fam) => fam && !calibratedMap[fam] && (!rosterFamilies || rosterFamilies.has(fam)))
+      )
+    ];
+    cloned.pendingDocCalibration.uncalibratedFamilies = cleanedFamilies;
+    if (cleanedFamilies.length === 0) {
+      cloned.pendingDocCalibration.required = false;
+    }
+  }
+
   return cloned;
 }
 
@@ -1163,7 +1354,9 @@ export function resolveActiveUiModelFromTranscript(transcriptSource) {
     }
 
     const content = typeof step.content === 'string' ? step.content : '';
-    if (content.includes('<USER_SETTINGS_CHANGE>')) {
+    const isUserStep =
+      step.type === 'USER_INPUT' || step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
+    if (isUserStep && content.includes('<USER_SETTINGS_CHANGE>')) {
       const matches = [...content.matchAll(/<USER_SETTINGS_CHANGE>([\s\S]*?)<\/USER_SETTINGS_CHANGE>/gi)];
       for (let m = matches.length - 1; m >= 0; m -= 1) {
         const block = matches[m][1] || '';

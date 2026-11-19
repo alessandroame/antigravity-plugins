@@ -53,12 +53,20 @@ When the user invokes `/model-router` (or when `[ADAPTIVE-ROUTER: CALIBRATE_MODE
 1. **`R1_MECHANICAL_OPS` (`LOW`)**: Git, test runners, `/memory-sync`, `"sì"`, `"procedi"` -> `Gemini 4 Hydrogen (Low)`, `switchAction: 'NONE'` (`0` popups even on `Carbon (High)`).
 2. **`R2_QUICK_LOOKUP_MICROEDIT` (`LOW`)**: File lookups, typos, renames -> `Gemini 4 Hydrogen (Low)` (`0-click` `user_markdown` hint only after `>= 2` consecutive turns on `High`).
 3. **`R3_CODE_INSPECTION` (`MEDIUM`)**: `/how-its-made`, read-only flow explanations -> `Gemini 4 Hydrogen (Medium)` (alt `Gemini 4 Argon (Low)`).
-4. **`R4_SINGLE_MODULE_DEV` (`MEDIUM`)**: Feature, bugfix, or unit test in `1–2` files -> `Gemini 4 Argon (Medium)` (1-click subagent `self` / `flash` if UI is stuck on `Low`).
-5. **`R5_MULTI_FILE_REFACTOR` (`HIGH`)**: Multi-file refactoring (`>= 3` files) -> `Orchestrator (Carbon)` (alt `Gemini 4 Argon (High)`, 1-click subagent `self` / `pro`).
-6. **`R6_DEEP_ARCH_TRADEOFF` (`HIGH`)**: Audits, architectural plans, multi-domain trade-offs -> `Gemini 4 Carbon (High)` (alt `Gemini 4 Hydrogen (XHigh)`, 1-click subagent `research` / `pro`).
+4. **`R4_SINGLE_MODULE_DEV` (`MEDIUM`)**: Feature, bugfix, or unit test in `1–2` files -> `Gemini 4 Argon (Medium)` (alt `Orchestrator (Argon)`, 1-click subagent `self` / `flash` if UI is stuck on `Low`).
+5. **`R5_MULTI_FILE_REFACTOR` (`HIGH`)**: Multi-file refactoring (`>= 3` files) -> `Orchestrator (Carbon)` (alt `Gemini 4 Carbon (High)`, 1-click subagent `self` / `pro`).
+6. **`R6_DEEP_ARCH_TRADEOFF` (`HIGH`)**: Audits, architectural plans, multi-domain trade-offs -> `Gemini 4 Carbon (High)` (alt `Orchestrator (Carbon)`, 1-click subagent `research` / `pro`).
 
 ---
 
-## Step 4 — Semantic Drill-Down Presentation (`L0 -> L1`)
+## Step 4 — When to Recommend `Orchestrator (Carbon)` vs `Orchestrator (Argon)`
+
+1. **`Orchestrator (Carbon)`**: Recommend on `R5_MULTI_FILE_REFACTOR`, end-to-end workflows (plan + multi-file edits + test verification), or mixed-phase sessions reaching `HIGH` (`router-pre-hook.mjs` emits a one-time `user_markdown` hint or includes it in `ask_question`).
+2. **`Orchestrator (Argon)`**: Recommend on `R4_SINGLE_MODULE_DEV` paired with quick lookups/commands (`R1..R3`) in mixed `LOW`/`MEDIUM` sessions.
+3. **Zero-Noise Invariant**: When `Orchestrator (Carbon)` or `Orchestrator (Argon)` is active (`normalizeRoleClass(roleClass) === 'DYNAMIC_ORCHESTRATOR'` or `/\borchestrator\b/i`), ALWAYS emit `switchAction: 'NONE'` and `mismatchType: 'NONE'` across all `R1..R6` archetypes.
+
+---
+
+## Step 5 — Semantic Drill-Down Presentation (`L0 -> L1`)
 
 Present `/model-router` output in plain Italian starting at `L0` with calibration status and active model alignment, placing the full `R1..R6` LUT matrix and empirical telemetry inside closed `<details>` drawers (`L1`/`L2`) with a mandatory blank line after `</summary>`.

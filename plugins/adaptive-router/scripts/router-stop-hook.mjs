@@ -79,9 +79,25 @@ async function main() {
 
       if (res.newlyDiscoveredModels.length > 0 && registry.lutCalibration?.calibratedAtMs) {
         const calibratedMap = registry.lutCalibration.calibratedFamilies || {};
+        const hasRoster = Array.isArray(registry.availableRoster) && registry.availableRoster.length > 0;
+        const rosterFamilies = hasRoster
+          ? new Set(
+              registry.availableRoster
+                .map((slug) =>
+                  extractModelBaseFamily(registry.swarmDisplayNames?.[String(slug).toLowerCase()] || slug)
+                )
+                .filter(Boolean)
+            )
+          : null;
         const newGeminiFamilies = res.newlyDiscoveredModels
           .map((m) => extractModelBaseFamily(m))
-          .filter((fam) => fam && /^(?:gemini\b|orchestrator\b)/i.test(fam) && !calibratedMap[fam]);
+          .filter(
+            (fam) =>
+              fam &&
+              /^(?:gemini\b|orchestrator\b)/i.test(fam) &&
+              !calibratedMap[fam] &&
+              (!rosterFamilies || rosterFamilies.has(fam))
+          );
         if (newGeminiFamilies.length > 0) {
           const prevUncal = registry.pendingDocCalibration?.uncalibratedFamilies || [];
           registry.pendingDocCalibration = {

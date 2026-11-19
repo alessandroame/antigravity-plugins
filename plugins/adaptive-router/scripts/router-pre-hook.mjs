@@ -14,11 +14,13 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   classifyPromptRoute,
+  evaluateMixedSessionOrchestratorHint,
   extractExplicitReasoningMode,
   extractLatestTurnSettingsChange,
   extractModelBaseFamily,
   formatHumanModelLabel,
   inferModelCapability,
+  isDynamicOrchestratorModel,
   normalizeCanonicalModelId,
   resolveActiveUiModelFromTranscript,
   sanitizeModelSelectionName
@@ -149,26 +151,89 @@ async function main() {
     }
 
     const lutSnoozed = Boolean(prevRoute?.lutSnoozed);
+    const isOrchActive = isDynamicOrchestratorModel(activeUiModel, registry);
     let consecutiveOverprovisioned = prevRoute?.consecutiveOverprovisioned || 0;
-    if (route.lutRoute?.switchAction === 'SUGGEST_0CLICK_DOWNGRADE' && !lutSnoozed) {
+    if (route.lutRoute?.switchAction === 'SUGGEST_0CLICK_DOWNGRADE' && !lutSnoozed && !isOrchActive) {
       consecutiveOverprovisioned += 1;
     } else if (route.archetypeId !== 'R1_MECHANICAL_OPS') {
       consecutiveOverprovisioned = 0;
     }
 
-    if (invocationNum === 1 && consecutiveOverprovisioned >= 2 && !lutSnoozed) {
+    const prevTierHistory = Array.isArray(prevRoute?.tierHistory) ? prevRoute.tierHistory : [];
+    const tierHistory =
+      invocationNum === 1
+        ? [...prevTierHistory, { tier: route.tier, archetypeId: route.archetypeId }].slice(-6)
+        : prevTierHistory;
+
+    const hasMismatchThisTurn = Boolean(
+      !isOrchActive &&
+        (route.lutRoute?.switchAction === 'ASK_1CLICK_UPGRADE' ||
+          route.lutRoute?.switchAction === 'SUGGEST_0CLICK_DOWNGRADE' ||
+          (route.alignment?.mismatchType && route.alignment.mismatchType !== 'NONE'))
+    );
+    let mismatchCountInSession = prevRoute?.mismatchCountInSession || 0;
+    if (invocationNum === 1 && hasMismatchThisTurn) {
+      mismatchCountInSession += 1;
+    }
+
+    const shouldAskLutUpgrade = Boolean(
+      invocationNum === 1 &&
+        !lutSnoozed &&
+        !isOrchActive &&
+        !route.signals.includes('manual_force_low') &&
+        (route.lutRoute?.switchAction === 'ASK_1CLICK_UPGRADE' ||
+          route.alignment.mismatchType === 'UNDERPROVISIONED_UI_MODEL')
+    );
+
+    let didEmitOverprovisionedBanner = false;
+    if (invocationNum === 1 && consecutiveOverprovisioned >= 2 && !lutSnoozed && !isOrchActive) {
       const altHint = route.lutRoute?.alternativeUiModel
         ? ` *(oppure **${route.lutRoute.alternativeUiModel}**)*`
         : '';
+      const orchHint =
+        uiTierLabel === 'HIGH'
+          ? '**Orchestrator (Carbon)** / **Orchestrator (Argon)**'
+          : '**Orchestrator (Argon)**';
       injectSteps.push({
         systemMessage: {
           systemMessage: '',
           metadata: {
-            user_markdown: `> **[adaptive-router · LUT]** Modello attivo **${currentHumanLabel || activeUiModel}** sovradimensionato per 2 turni leggeri consecutivi (\`${route.lutRoute.archetypeLabelIt}\`) · Consigliato nel selettore: **${route.lutRoute.recommendedUiModel}**${altHint}.`
+            user_markdown: `> **[adaptive-router · LUT]** Modello attivo **${currentHumanLabel || activeUiModel}** sovradimensionato per 2 turni leggeri consecutivi (\`${route.lutRoute.archetypeLabelIt}\`) · Consigliato nel selettore: **${route.lutRoute.recommendedUiModel}**${altHint}, oppure ${orchHint} se alterni domande rapide e sviluppo.`
           }
         }
       });
       consecutiveOverprovisioned = 0;
+      didEmitOverprovisionedBanner = true;
+    }
+
+    let orchestratorSuggestedAtMs = prevRoute?.orchestratorSuggestedAtMs || null;
+    const mixedHint = evaluateMixedSessionOrchestratorHint({
+      tierHistory,
+      mismatchCountInSession,
+      currentRoute: route,
+      activeUiModel,
+      registry,
+      lutSnoozed,
+      orchestratorSuggestedAtMs
+    });
+
+    if (
+      invocationNum === 1 &&
+      mixedHint.shouldSuggest &&
+      !shouldAskLutUpgrade &&
+      !didEmitOverprovisionedBanner
+    ) {
+      injectSteps.push({
+        systemMessage: {
+          systemMessage: '',
+          metadata: {
+            user_markdown: `> **[adaptive-router · Orchestrator]** ${mixedHint.messageIt}`
+          }
+        }
+      });
+      orchestratorSuggestedAtMs = Date.now();
+    } else if (shouldAskLutUpgrade && mixedHint.shouldSuggest && !orchestratorSuggestedAtMs) {
+      orchestratorSuggestedAtMs = Date.now();
     }
 
     writeFileSync(
@@ -181,6 +246,9 @@ async function main() {
         humanModelLabel: currentHumanLabel || null,
         lutSnoozed,
         consecutiveOverprovisioned,
+        tierHistory,
+        mismatchCountInSession,
+        orchestratorSuggestedAtMs,
         ...route
       }) + '\n',
       'utf-8'
@@ -298,22 +366,29 @@ async function main() {
         saveCapabilityRegistry(registry, analyticsDir);
       }
 
-      const shouldAskLutUpgrade =
-        !lutSnoozed &&
-        !route.signals.includes('manual_force_low') &&
-        (route.lutRoute?.switchAction === 'ASK_1CLICK_UPGRADE' ||
-          route.alignment.mismatchType === 'UNDERPROVISIONED_UI_MODEL');
-
       if (shouldAskLutUpgrade) {
         const recUi = route.lutRoute?.recommendedUiModel || 'Gemini 4 Carbon (High)';
         const altUi = route.lutRoute?.alternativeUiModel;
+        const recOrch = route.lutRoute?.recommendedOrchestrator?.model || null;
         const subModel = route.lutRoute?.executionSubagentModel || 'pro';
         const subType = route.lutRoute?.executionSubagentType || 'self';
         const archLabel = route.lutRoute?.archetypeLabelIt || route.tier;
         const rationale = route.lutRoute?.rationaleIt || route.reason;
+        const activeLabel = currentHumanLabel || activeUiModel;
+
+        const orchChoiceLabel = recOrch
+          ? recUi === recOrch
+            ? `${recOrch}${altUi ? ` (oppure ${altUi})` : ''}`
+            : `${recOrch} o ${recUi}`
+          : recUi;
+        const orchNote = recOrch
+          ? ` Consiglio sessione: ${recOrch} adatta in automatico ${recOrch.includes('Carbon') ? 'Carbon' : 'Argon'} e Hydrogen evitando ulteriori conferme nei prossimi turni.`
+          : '';
+        const mixedNote = mixedHint.shouldSuggest ? ` (${mixedHint.reasonIt})` : '';
+
         injectSteps.push({
           systemMessage: {
-            systemMessage: `[ADAPTIVE-ROUTER MISMATCH: UNDERPROVISIONED_UI_MODEL] [LUT_ARCHETYPE: ${route.archetypeId}] Active UI model '${currentHumanLabel || activeUiModel}' is underprovisioned for '${archLabel}' (${route.reason}). LUT target: '${recUi}'${altUi ? ` (alt: '${altUi}')` : ''} — ${rationale}. BEFORE deep analysis or editing files, call ask_question in plain Italian opening with '[Plugin: adaptive-router]' (merge into a single ask_question if proactive-mentorship also triggers) stating active model '${currentHumanLabel || activeUiModel}' vs LUT target '${recUi}', with options: '(Recommended) Esegui subito in 1-click sul profilo LUT (${recUi} tramite subagent ${subType} Model: ${subModel})', 'Ho passato il selettore modello su ${recUi}: procedi nel thread principale', 'Procedi comunque con ${currentHumanLabel || activeUiModel} per questo turno', 'Silenzia i suggerimenti LUT per questa sessione' (if chosen, run 'model-router.mjs --snooze-session ${convId}').`
+            systemMessage: `[ADAPTIVE-ROUTER MISMATCH: UNDERPROVISIONED_UI_MODEL] [LUT_ARCHETYPE: ${route.archetypeId}] Active UI model '${activeLabel}' is underprovisioned for '${archLabel}' (${route.reason}). LUT target: '${recUi}'${altUi ? ` (alt: '${altUi}')` : ''}${recOrch ? `, Orchestrator: '${recOrch}'` : ''}${mixedNote} — ${rationale}.${orchNote} BEFORE deep analysis or editing files, call ask_question in plain Italian opening with '[Plugin: adaptive-router]' (merge into a single ask_question if proactive-mentorship also triggers) stating active model '${activeLabel}' vs LUT target '${recUi}' and the 1-line Orchestrator benefit, with max 4 options: '(Recommended) Esegui subito in 1-click tramite subagent ${subType} (Model: ${subModel})', 'Ho selezionato ${orchChoiceLabel} nel menu modello (auto-adattivo per tutta la sessione): procedi qui', 'Procedi comunque con ${activeLabel} per questo turno', 'Silenzia i suggerimenti LUT per questa sessione' (if chosen, run 'model-router.mjs --snooze-session ${convId}').`
           }
         });
       }

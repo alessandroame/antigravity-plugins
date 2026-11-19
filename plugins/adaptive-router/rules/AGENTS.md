@@ -8,10 +8,10 @@ Governs Prompt-to-Model+Mode LUT routing (`R1..R6` across `LOW`, `MEDIUM`, `HIGH
 2. **Turn Budget**: `LOW` (`R1_MECHANICAL_OPS`, `R2_QUICK_LOOKUP_MICROEDIT`): `0` subagents, `<= 2` tool turns; `MEDIUM` (`R3_CODE_INSPECTION`, `R4_SINGLE_MODULE_DEV`): `<= 4` tool turns; `HIGH` (`R5_MULTI_FILE_REFACTOR`, `R6_DEEP_ARCH_TRADEOFF`): deep verification (`skizzo` / `self` / `research`).
 
 ## 2. Switch Banner & 1-Click LUT Confirmation (`PreInvocation`)
-1. **Inline Banner (`metadata.user_markdown`, `0` Tokens)**: `router-pre-hook.mjs` renders `> **[adaptive-router]** Cambio modalità/modello attivo: **<precedente>** -> **<attuale>** ...` on UI model/mode switches and non-blocking hints after `>= 2` overprovisioned lightweight turns, staying `0-byte` silent on aligned turns, `Orchestrator (Carbon/Argon)`, and `R1_MECHANICAL_OPS`.
+1. **Inline Banner (`metadata.user_markdown`, `0` Tokens)**: `router-pre-hook.mjs` renders `> **[adaptive-router]** Cambio modalità/modello attivo: **<precedente>** -> **<attuale>** ...` on UI model/mode switches and non-blocking hints after `>= 2` overprovisioned lightweight turns or mixed-phase sessions, staying `0-byte` silent on aligned turns, `Orchestrator (Carbon/Argon)`, and `R1_MECHANICAL_OPS`.
 2. **1-Click Upgrade (`[ADAPTIVE-ROUTER MISMATCH: UNDERPROVISIONED_UI_MODEL]`)**: BEFORE deep analysis or edits, call `ask_question` in plain Italian opening with `[Plugin: adaptive-router]` (merging with `proactive-mentorship` if both fire on Turn 1):
-   - `(Recommended) Esegui subito in 1-click sul profilo LUT (<Modello UI> tramite subagent <self|research> Model: <pro|flash>)` -> delegate via `invoke_subagent`.
-   - `Ho passato il selettore modello su <Modello UI>: procedi nel thread principale`
+   - `(Recommended) Esegui subito in 1-click tramite subagent <self|research> (Model: <pro|flash>)` -> delegate via `invoke_subagent`.
+   - `Ho selezionato <Orchestrator (Carbon/Argon) o Modello UI> nel menu modello (auto-adattivo per tutta la sessione): procedi qui`
    - `Procedi comunque con <Modello Attivo> per questo turno`
    - `Silenzia i suggerimenti LUT per questa sessione` -> run `node ~/.gemini/config/plugins/adaptive-router/scripts/model-router.mjs --snooze-session <conversationId>`.
 

@@ -12,14 +12,17 @@ import {
   cleanPollutedModelRegistry,
   createDefaultCapabilityRegistry,
   discoverCapabilitiesFromTranscript,
+  evaluateMixedSessionOrchestratorHint,
   evaluateUiModelAlignment,
   extractExplicitReasoningMode,
   extractLatestTurnSettingsChange,
+  extractModelBaseFamily,
   formatHumanModelLabel,
   importSwarmModelsCatalog,
   inferModeCapability,
   inferModelCapability,
   normalizeCanonicalModelId,
+  normalizeRoleClass,
   resolveActiveUiModelFromTranscript,
   resolveLutRoute,
   resolveSafeSubagentModel,
@@ -882,6 +885,10 @@ describe('Adaptive Model & Effort Router Engine', () => {
         light2.injectSteps[0].systemMessage.metadata.user_markdown,
         /Consigliato nel selettore: \*\*Gemini 4 Hydrogen \(Low\)\*\*/
       );
+      assert.match(
+        light2.injectSteps[0].systemMessage.metadata.user_markdown,
+        /Orchestrator \(Carbon\)/
+      );
 
       // 5. Session snooze suppresses 1-click upgrade popup
       execFileSync(process.execPath, [CLI_SCRIPT, '--snooze-session', 'conv-snoozed'], {
@@ -1006,5 +1013,332 @@ describe('Adaptive Model & Effort Router Engine', () => {
     } finally {
       rmSync(tmpRoot, { recursive: true, force: true });
     }
+  });
+
+  it('normalizes roleClass variants, classifies Orchestrator (Carbon/Argon) lexically, and avoids false mismatches on R2 and R6', () => {
+    assert.equal(normalizeRoleClass('dynamic-orchestrator'), 'DYNAMIC_ORCHESTRATOR');
+    assert.equal(normalizeRoleClass('DYNAMIC_ORCHESTRATOR'), 'DYNAMIC_ORCHESTRATOR');
+    assert.equal(normalizeRoleClass('frontier-reasoning'), 'FRONTIER_HEAVYWEIGHT');
+    assert.equal(normalizeRoleClass('balanced-coding'), 'EFFICIENT_CODING');
+    assert.equal(normalizeRoleClass('fast-workhorse'), 'FAST_EXECUTION');
+    assert.equal(normalizeRoleClass('lightweight-tier'), 'FAST_EXECUTION');
+    assert.equal(normalizeRoleClass('LEGACY_FAST'), 'FAST_EXECUTION');
+
+    const carbonOrch = inferModelCapability('Orchestrator (Carbon)', {
+      samples: 10,
+      avgDurationMs: 12000,
+      avgOutputTokens: 300,
+      errorRate: 0
+    });
+    assert.equal(carbonOrch.tier, 'HIGH');
+    assert.equal(carbonOrch.effort, 'high');
+    assert.equal(carbonOrch.confidence, 'lexical');
+    assert.equal(carbonOrch.isDynamicOrchestrator, true);
+
+    const argonOrch = inferModelCapability('gemini-pro-orchestrator-argon', {
+      samples: 10,
+      avgDurationMs: 70000,
+      avgOutputTokens: 3000,
+      errorRate: 0
+    });
+    assert.equal(argonOrch.tier, 'MEDIUM');
+    assert.equal(argonOrch.effort, 'medium');
+    assert.equal(argonOrch.confidence, 'lexical');
+    assert.equal(argonOrch.isDynamicOrchestrator, true);
+
+    // Zero mismatch for both Orchestrators on both R2 (LOW) and R6 (HIGH)
+    for (const orch of [
+      'Orchestrator (Carbon)',
+      'gemini-pro-orchestrator',
+      'Orchestrator (Argon)',
+      'gemini-pro-orchestrator-argon'
+    ]) {
+      assert.equal(evaluateUiModelAlignment('LOW', orch).mismatchType, 'NONE');
+      assert.equal(evaluateUiModelAlignment('HIGH', orch).mismatchType, 'NONE');
+    }
+
+    // Kebab-case roleClass in registry must also bypass switchAction on R2 and R6
+    const kebabReg = createDefaultCapabilityRegistry();
+    kebabReg.lutCalibration.calibratedFamilies = {
+      'Orchestrator (Carbon)': { roleClass: 'dynamic-orchestrator', officialSummaryIt: 'Carbon.' },
+      'Orchestrator (Argon)': { roleClass: 'dynamic-orchestrator', officialSummaryIt: 'Argon.' }
+    };
+    assert.equal(resolveLutRoute('R2_QUICK_LOOKUP_MICROEDIT', kebabReg, 'Orchestrator (Carbon)').switchAction, 'NONE');
+    assert.equal(resolveLutRoute('R6_DEEP_ARCH_TRADEOFF', kebabReg, 'Orchestrator (Argon)').switchAction, 'NONE');
+  });
+
+  it('sanitizes trailing escaped newlines/dots and normalizes -tiered- runtime slugs without false uncalibratedFamilies', () => {
+    assert.equal(sanitizeModelSelectionName('Gemini 4 Argon (High).\\n'), 'Gemini 4 Argon (High)');
+    assert.equal(sanitizeModelSelectionName('Gemini 4 Argon (High).\r\n..'), 'Gemini 4 Argon (High)');
+    assert.equal(formatHumanModelLabel('gemini-4-hydrogen-tiered-xhigh'), 'Gemini 4 Hydrogen (XHigh)');
+    assert.equal(extractModelBaseFamily('gemini-4-hydrogen-tiered-xhigh'), 'Gemini 4 Hydrogen');
+    assert.equal(extractModelBaseFamily('Gemini 4 Hydrogen Tiered'), 'Gemini 4 Hydrogen');
+    assert.equal(extractModelBaseFamily('Gemini 4 Argon (High).\\n'), 'Gemini 4 Argon');
+
+    const dirtyReg = createDefaultCapabilityRegistry();
+    dirtyReg.lutCalibration.calibratedFamilies = {
+      'Gemini 4 Hydrogen': { roleClass: 'lightweight-tier', officialSummaryIt: 'Veloce.' },
+      'Gemini 4 Argon': { roleClass: 'balanced-coding', officialSummaryIt: 'Coding.' }
+    };
+    dirtyReg.pendingDocCalibration = {
+      required: true,
+      uncalibratedFamilies: ['Gemini 4 Hydrogen Tiered', 'Gemini 4 Argon (High).\\n'],
+      detectedAtMs: 1234,
+      notifiedAtMs: 1234
+    };
+    dirtyReg.models['gemini 4 argon (high)'] = {
+      displayName: 'Gemini 4 Argon (High)',
+      tier: 'HIGH',
+      effort: 'high',
+      samples: 5,
+      avgDurationMs: 20000,
+      avgOutputTokens: 500,
+      errorRate: 0
+    };
+    dirtyReg.models['gemini 4 argon (high).\\n'] = {
+      displayName: 'Gemini 4 Argon (High).\\n',
+      tier: 'MEDIUM',
+      effort: 'medium',
+      confidence: 'fallback',
+      samples: 1,
+      avgDurationMs: 10000,
+      avgOutputTokens: 200,
+      errorRate: 0
+    };
+    dirtyReg.models['orchestrator (carbon)'] = {
+      displayName: 'Orchestrator (Carbon)',
+      tier: 'MEDIUM',
+      effort: 'medium',
+      confidence: 'fallback',
+      samples: 0
+    };
+
+    const cleaned = cleanPollutedModelRegistry(dirtyReg);
+    assert.ok(!cleaned.models['gemini 4 argon (high).\\n']);
+    assert.equal(cleaned.models['gemini 4 argon (high)'].samples, 6);
+    assert.equal(cleaned.models['gemini 4 argon (high)'].tier, 'HIGH');
+    assert.equal(cleaned.models['orchestrator (carbon)'].tier, 'HIGH');
+    assert.equal(cleaned.models['orchestrator (carbon)'].confidence, 'lexical');
+    assert.equal(cleaned.pendingDocCalibration.required, false);
+    assert.deepEqual(cleaned.pendingDocCalibration.uncalibratedFamilies, []);
+  });
+
+  it('proposes Orchestrator (Carbon/Argon) in resolveLutRoute, ask_question, mixed-phase sessions (once per session), and --lut output', () => {
+    const reg = createDefaultCapabilityRegistry();
+    const r4 = resolveLutRoute('R4_SINGLE_MODULE_DEV', reg, 'gemini-4-carbon-low');
+    assert.equal(r4.alternativeUiModel, 'Orchestrator (Argon)');
+    assert.equal(r4.recommendedOrchestrator?.model, 'Orchestrator (Argon)');
+
+    const r5 = resolveLutRoute('R5_MULTI_FILE_REFACTOR', reg, 'gemini-4-carbon-low');
+    assert.equal(r5.recommendedUiModel, 'Orchestrator (Carbon)');
+    assert.equal(r5.recommendedOrchestrator?.model, 'Orchestrator (Carbon)');
+
+    const r6 = resolveLutRoute('R6_DEEP_ARCH_TRADEOFF', reg, 'gemini-4-carbon-low');
+    assert.equal(r6.recommendedOrchestrator?.model, 'Orchestrator (Carbon)');
+
+    const r2 = resolveLutRoute('R2_QUICK_LOOKUP_MICROEDIT', reg, 'gemini-4-carbon-low');
+    assert.equal(r2.recommendedOrchestrator, null);
+
+    // Pure mixed-session helper: LOW + MEDIUM -> Argon; HIGH + LOW -> Carbon; Orchestrator -> silent
+    const argonHint = evaluateMixedSessionOrchestratorHint({
+      tierHistory: [
+        { tier: 'LOW', archetypeId: 'R2_QUICK_LOOKUP_MICROEDIT' },
+        { tier: 'MEDIUM', archetypeId: 'R4_SINGLE_MODULE_DEV' }
+      ],
+      mismatchCountInSession: 0,
+      currentRoute: classifyPromptRoute('aggiungi un test unitario per sanitizeModelSelectionName', {
+        registry: reg,
+        activeUiModel: 'Gemini 4 Argon (Medium)'
+      }),
+      activeUiModel: 'Gemini 4 Argon (Medium)',
+      registry: reg,
+      lutSnoozed: false,
+      orchestratorSuggestedAtMs: null
+    });
+    assert.equal(argonHint.shouldSuggest, true);
+    assert.equal(argonHint.orchestratorModel, 'Orchestrator (Argon)');
+
+    const alreadyOrchHint = evaluateMixedSessionOrchestratorHint({
+      tierHistory: [
+        { tier: 'LOW', archetypeId: 'R2_QUICK_LOOKUP_MICROEDIT' },
+        { tier: 'HIGH', archetypeId: 'R6_DEEP_ARCH_TRADEOFF' }
+      ],
+      mismatchCountInSession: 0,
+      currentRoute: classifyPromptRoute('dove si trova validate.mjs?', {
+        registry: reg,
+        activeUiModel: 'Orchestrator (Carbon)'
+      }),
+      activeUiModel: 'Orchestrator (Carbon)',
+      registry: reg,
+      lutSnoozed: false,
+      orchestratorSuggestedAtMs: null
+    });
+    assert.equal(alreadyOrchHint.shouldSuggest, false);
+
+    // End-to-end hook verification
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'adaptive-router-orch-ux-'));
+    try {
+      const analyticsDir = join(tmpRoot, 'analytics');
+      mkdirSync(analyticsDir, { recursive: true });
+      const env = { ...process.env, ANTIGRAVITY_ANALYTICS_DIR: analyticsDir };
+
+      // 1. UNDERPROVISIONED ask_question includes Orchestrator (Carbon) option
+      const upgradeOut = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-orch-ask',
+            invocationNum: 1,
+            modelName: 'gemini-4-carbon-low',
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(upgradeOut.injectSteps));
+      assert.match(upgradeOut.injectSteps[0].systemMessage.systemMessage, /Orchestrator \(Carbon\)/);
+
+      // 2. Mixed-phase session: HIGH (R6) on Carbon High -> LOW (R2) emits Orchestrator (Carbon) ONCE, then silent on 3rd turn
+      const mix1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-mixed-high',
+            invocationNum: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(mix1, {});
+
+      const mix2 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-mixed-high',
+            invocationNum: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'dove si trova il file validate.mjs?'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(mix2.injectSteps));
+      assert.match(mix2.injectSteps[0].systemMessage.metadata.user_markdown, /Orchestrator \(Carbon\)/);
+
+      const mix3 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-mixed-high',
+            invocationNum: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'aggiungi un test unitario per sanitizeModelSelectionName'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(mix3, {});
+
+      // 3. Active Orchestrator (Carbon) or Orchestrator (Argon) produces ZERO popups and ZERO mixed hints
+      for (const orch of ['Orchestrator (Carbon)', 'Orchestrator (Argon)']) {
+        for (const p of [
+          'dove si trova il file validate.mjs?',
+          'fai un audit approfondito sul piano architetturale'
+        ]) {
+          const out = JSON.parse(
+            execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+              input: JSON.stringify({
+                conversationId: `conv-silent-${orch}`,
+                invocationNum: 1,
+                modelName: orch,
+                lastUserInput: p
+              }),
+              env,
+              encoding: 'utf-8'
+            })
+          );
+          assert.deepEqual(out, {});
+        }
+      }
+
+      // 4. --lut Markdown includes Orchestrator selection guide
+      const lutMd = execFileSync(process.execPath, [CLI_SCRIPT, '--lut'], {
+        env,
+        encoding: 'utf-8'
+      });
+      assert.match(lutMd, /Quando Scegliere Orchestrator/);
+      assert.match(lutMd, /Orchestrator \(Carbon\)/);
+      assert.match(lutMd, /Orchestrator \(Argon\)/);
+    } finally {
+      rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores <USER_SETTINGS_CHANGE> inside non-USER_INPUT transcript steps and filters phantom uncalibratedFamilies against availableRoster', () => {
+    const pollutedTranscript = [
+      JSON.stringify({
+        step_index: 0,
+        type: 'USER_INPUT',
+        source: 'USER_EXPLICIT',
+        content:
+          '<USER_SETTINGS_CHANGE>Changed `Model Selection` from `None` to `Gemini 4 Carbon (High)`.</USER_SETTINGS_CHANGE><USER_REQUEST>Leggi i test</USER_REQUEST>'
+      }),
+      JSON.stringify({
+        step_index: 1,
+        type: 'GENERIC',
+        source: 'MODEL',
+        content:
+          'File contents: <USER_SETTINGS_CHANGE>Changed `Model Selection` from `Default` to `Gemini 5.0 Deep Reasoner`.</USER_SETTINGS_CHANGE>\n{"models":["gemini-9-phantom-high"],"display_names":{"gemini-9-phantom-high":"Gemini 9 Phantom (High)"}}'
+      }),
+      JSON.stringify({
+        step_index: 2,
+        type: 'SYSTEM_MESSAGE',
+        source: 'SYSTEM',
+        content:
+          'Example doc: <USER_SETTINGS_CHANGE>Changed `Model Selection` from `Default` to `Orchestrator (Neon)`.</USER_SETTINGS_CHANGE>'
+      }),
+      JSON.stringify({
+        step_index: 3,
+        type: 'PLANNER_RESPONSE',
+        source: 'MODEL',
+        model: 'Gemini 4 Carbon (High)',
+        content:
+          'Ho letto <USER_SETTINGS_CHANGE>Changed `Model Selection` from `Default` to `Orchestrator (Neon)`.</USER_SETTINGS_CHANGE>'
+      })
+    ].join('\n');
+
+    assert.equal(resolveActiveUiModelFromTranscript(pollutedTranscript), 'Gemini 4 Carbon (High)');
+
+    const discovered = discoverCapabilitiesFromTranscript(pollutedTranscript);
+    assert.ok(!discovered.newlyDiscoveredModels.includes('Gemini 5.0 Deep Reasoner'));
+    assert.ok(!discovered.newlyDiscoveredModels.includes('Orchestrator (Neon)'));
+    assert.ok(!discovered.registry.models['gemini 5.0 deep reasoner']);
+    assert.ok(!discovered.registry.models['orchestrator (neon)']);
+    assert.ok(!discovered.registry.models['gemini 9 phantom (high)']);
+
+    // When availableRoster is populated, cleanPollutedModelRegistry strips phantom families not in availableRoster
+    const regWithRoster = createDefaultCapabilityRegistry();
+    regWithRoster.availableRoster = ['gemini-4-carbon-high', 'gemini-pro-orchestrator'];
+    regWithRoster.swarmDisplayNames = {
+      'gemini-4-carbon-high': 'Gemini 4 Carbon (High)',
+      'gemini-pro-orchestrator': 'Orchestrator (Carbon)'
+    };
+    regWithRoster.lutCalibration.calibratedFamilies = {
+      'Gemini 4 Carbon': { roleClass: 'FRONTIER_HEAVYWEIGHT', officialSummaryIt: 'Carbon.' },
+      'Orchestrator (Carbon)': { roleClass: 'DYNAMIC_ORCHESTRATOR', officialSummaryIt: 'Orch.' }
+    };
+    regWithRoster.pendingDocCalibration = {
+      required: true,
+      uncalibratedFamilies: ['Orchestrator (Neon)', 'Gemini 5.0 Deep Reasoner'],
+      detectedAtMs: 1234,
+      notifiedAtMs: null
+    };
+
+    const cleaned = cleanPollutedModelRegistry(regWithRoster);
+    assert.equal(cleaned.pendingDocCalibration.required, false);
+    assert.deepEqual(cleaned.pendingDocCalibration.uncalibratedFamilies, []);
   });
 });

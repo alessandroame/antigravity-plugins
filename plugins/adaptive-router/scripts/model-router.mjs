@@ -348,6 +348,17 @@ export function formatLutMarkdown(registry, activeUiModel = null) {
     );
   }
 
+  lines.push(
+    '',
+    '## 3. Quando Scegliere Orchestrator (Carbon vs Argon)',
+    '',
+    '| Modello Orchestrator | Quando Selezionarlo nel Menu UI | Beneficio Operativo |',
+    '| :--- | :--- | :--- |',
+    '| **`Orchestrator (Carbon)`** | Refactoring multi-file (`R5`), workflow end-to-end (piano + codice + test) o sessioni miste con passaggi `HIGH` | Alterna automaticamente `Carbon` sui passaggi complessi e `Hydrogen` su quelli rapidi evitando cambi manuali |',
+    '| **`Orchestrator (Argon)`** | Sviluppo e bugfix su singolo modulo (`R4`) alternati a comandi e ispezioni (`R1..R3`), o sessioni miste `LOW`/`MEDIUM` | Alterna automaticamente `Argon` e `Hydrogen` con sviluppo fluido e zero frizione sui comandi |',
+    '| **Modello fisso (`Carbon High` / `Hydrogen Low`)** | Audit/piani puri ad altissima profondità (`R6`) oppure sole micro-modifiche/comandi ripetuti (`R1`/`R2`) | Controllo deterministico massimo o minimo costo fisso su sessioni mono-fascia |'
+  );
+
   return lines.join('\n');
 }
 
