@@ -6,7 +6,9 @@
   "scripts": {
     "validate": "node scripts/validate.mjs --all",
     "test": "node scripts/run-all-tests.mjs",
-    "sync": "node scripts/sync-to-global.mjs"
+    "sync": "node scripts/sync-to-global.mjs",
+    "auto-update": "node scripts/git-auto-update.mjs --force",
+    "hooks:install": "node scripts/git-auto-update.mjs --install-hooks"
   },
   "keywords": [
     "antigravity",

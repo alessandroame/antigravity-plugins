@@ -1091,9 +1091,15 @@ if (isMain) {
   const args = process.argv.slice(2);
   if (args.includes('--background-sync')) {
     const repoRoot = resolveCatalogRepoRoot(undefined, { autoCloneInCloud: true });
+    const autoUpdateScript = join(repoRoot, 'scripts', 'git-auto-update.mjs');
     const syncScript = join(repoRoot, 'scripts', 'sync-to-global.mjs');
-    if (existsSync(syncScript)) {
-      spawnSync(process.execPath, [syncScript, '--auto-pull', '--if-needed', '--quiet'], {
+    const useAutoUpdate = existsSync(autoUpdateScript);
+    const targetScript = useAutoUpdate ? autoUpdateScript : syncScript;
+    if (existsSync(targetScript)) {
+      const targetArgs = useAutoUpdate
+        ? [targetScript, '--quiet']
+        : [targetScript, '--auto-pull', '--if-needed', '--quiet'];
+      spawnSync(process.execPath, targetArgs, {
         cwd: repoRoot,
         encoding: 'utf-8',
         timeout: 30000,

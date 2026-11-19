@@ -1,0 +1,26 @@
+#!/bin/sh
+# antigravity-plugins-auto-sync (post-checkout)
+# $1 = prev HEAD, $2 = new HEAD, $3 = branch checkout flag (1 = branch/clone, 0 = file)
+if [ "${ANTIGRAVITY_SKIP_GIT_HOOK:-0}" = "1" ]; then
+  exit 0
+fi
+
+if [ "${3:-0}" != "1" ]; then
+  exit 0
+fi
+
+REPO_TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$REPO_TOP" ]; then
+  cd "$REPO_TOP" || exit 0
+fi
+
+if command -v node >/dev/null 2>&1; then
+  if [ -f "./scripts/sync-to-global.mjs" ]; then
+    node "./scripts/sync-to-global.mjs" --if-needed --quiet >/dev/null 2>&1 || true
+  fi
+  if [ "${ANTIGRAVITY_SKIP_REMOTE_CHECK:-0}" != "1" ] && [ -f "./scripts/git-auto-update.mjs" ]; then
+    node "./scripts/git-auto-update.mjs" --detached --quiet >/dev/null 2>&1 || true
+  fi
+fi
+
+exit 0

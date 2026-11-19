@@ -1,0 +1,16 @@
+#!/bin/sh
+# antigravity-plugins-auto-sync (post-merge)
+if [ "${ANTIGRAVITY_SKIP_GIT_HOOK:-0}" = "1" ]; then
+  exit 0
+fi
+
+REPO_TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$REPO_TOP" ]; then
+  cd "$REPO_TOP" || exit 0
+fi
+
+if [ -f "./scripts/sync-to-global.mjs" ] && command -v node >/dev/null 2>&1; then
+  node "./scripts/sync-to-global.mjs" --if-needed --quiet >/dev/null 2>&1 || true
+fi
+
+exit 0

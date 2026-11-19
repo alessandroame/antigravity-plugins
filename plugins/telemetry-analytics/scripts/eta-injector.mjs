@@ -37,7 +37,7 @@ if (isDirectEntry) {
   safetyWatchdog.unref();
 }
 
-const DEFAULT_SYNC_TTL_MS = 30 * 60 * 1000;
+const DEFAULT_SYNC_TTL_MS = 15 * 60 * 1000;
 
 function isValidCatalogRepoRoot(dir) {
   if (!dir || typeof dir !== 'string') return false;
@@ -204,7 +204,7 @@ function triggerCrossMachineAutoSync({ analyticsDir, nowMs, ttlMs = DEFAULT_SYNC
         {
           ...existing,
           lastCheckAtMs: nowMs,
-          headSha: decision.headSha,
+          lastTriggerAtMs: nowMs,
           repoRoot: decision.repoRoot,
           lastTriggerReason: decision.reason
         },
@@ -218,8 +218,13 @@ function triggerCrossMachineAutoSync({ analyticsDir, nowMs, ttlMs = DEFAULT_SYNC
   }
 
   try {
+    const autoUpdateScript = join(decision.repoRoot, 'scripts', 'git-auto-update.mjs');
     const syncScript = join(decision.repoRoot, 'scripts', 'sync-to-global.mjs');
-    const args = [syncScript, '--auto-pull', '--if-needed', '--quiet'];
+    const useAutoUpdate = existsSync(autoUpdateScript);
+    const targetScript = useAutoUpdate ? autoUpdateScript : syncScript;
+    const args = useAutoUpdate
+      ? [targetScript, '--quiet', ...(decision.reason === 'ttl-expired-remote-check' ? ['--force'] : [])]
+      : [targetScript, '--auto-pull', '--if-needed', '--quiet'];
     const child = spawn(process.execPath, args, {
       cwd: decision.repoRoot,
       detached: true,
@@ -418,6 +423,7 @@ async function main() {
     // Fallback to empty object on invalid JSON
   }
 
+  const isSessionStart = process.argv.includes('--session-start');
   const nowMs = Date.now();
   const conversationId = payload.conversationId || 'unknown-session';
   const transcriptPath = payload.transcriptPath;
@@ -426,8 +432,13 @@ async function main() {
   const analyticsDir = getAnalyticsDir();
   mkdirSync(analyticsDir, { recursive: true });
 
-  if (invocationNum === 1) {
+  if (isSessionStart || invocationNum === 1) {
     triggerCrossMachineAutoSync({ analyticsDir, nowMs });
+  }
+
+  if (isSessionStart) {
+    process.stdout.write('{}\n');
+    process.exit(0);
   }
 
   const stateFile = join(analyticsDir, `.eta_${conversationId}.json`);

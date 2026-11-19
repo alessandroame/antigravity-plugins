@@ -187,6 +187,36 @@ async function main() {
     );
 
     if (invocationNum === 1) {
+      const syncStatePath = join(analyticsDir, 'plugin-sync-state.json');
+      if (existsSync(syncStatePath)) {
+        try {
+          const syncState = JSON.parse(readFileSync(syncStatePath, 'utf-8'));
+          const notice = syncState?.pendingUpdateNotice;
+          if (notice && !notice.notifiedAtMs && notice.toSha) {
+            notice.notifiedAtMs = Date.now();
+            writeFileSync(syncStatePath, JSON.stringify(syncState, null, 2) + '\n', 'utf-8');
+            const fromShort = String(notice.fromSha || '').slice(0, 7) || 'prev';
+            const toShort = String(notice.toSha || '').slice(0, 7);
+            const behindLabel =
+              typeof notice.behind === 'number' && notice.behind > 0 ? `, +${notice.behind} commit` : '';
+            const countLabel =
+              typeof notice.syncedCount === 'number'
+                ? `: ${notice.syncedCount} plugin e ${notice.syncedSkillsCount || 0} skill sincronizzati`
+                : ' e plugin sincronizzati';
+            injectSteps.push({
+              systemMessage: {
+                systemMessage: '',
+                metadata: {
+                  user_markdown: `> **[antigravity-plugins]** Aggiornamento remoto applicato (\`${fromShort}\` -> \`${toShort}\`${behindLabel})${countLabel}.`
+                }
+              }
+            });
+          }
+        } catch {
+          // Ignore unreadable sync state
+        }
+      }
+
       let registryDirty = false;
       const hadPrevChecksum = Boolean(registry.builtinChecksum);
       const drift = probeBuiltinChecksumDrift(registry);

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function getAnalyticsDir(customAnalyticsDir) {
+export function getAnalyticsDir(customAnalyticsDir) {
   if (customAnalyticsDir) {
     return path.resolve(customAnalyticsDir);
   }
@@ -165,49 +165,114 @@ export function computeCatalogFingerprint(repoRoot = DEFAULT_REPO_ROOT) {
 }
 
 /**
- * Installs an idempotent `.git/hooks/post-merge` hook so any manual or IDE `git pull`
- * inside `antigravity-plugins` automatically synchronizes `~/.gemini/config/plugins/`.
+ * Configures Git `core.hooksPath = .githooks` when both `.git` and `.githooks/` exist
+ * so versioned `post-merge` and `post-checkout` hooks automatically keep plugins synced.
+ * Never throws or fails in temporary test directories without `.git`.
  * @param {string} [repoRoot]
- * @returns {boolean}
+ * @returns {{ installed: boolean, alreadyConfigured: boolean, hooksPath: string | null, reason?: string }}
  */
-export function installGitPostMergeHook(repoRoot = DEFAULT_REPO_ROOT) {
+export function installGitHooks(repoRoot = DEFAULT_REPO_ROOT) {
   try {
-    const hooksDir = path.join(repoRoot, '.git', 'hooks');
-    if (!fs.existsSync(hooksDir)) return false;
-    const hookPath = path.join(hooksDir, 'post-merge');
-    const marker = '# antigravity-plugins-auto-sync';
-    const hookContent = [
-      '#!/bin/sh',
-      marker,
-      'node "./scripts/sync-to-global.mjs" --if-needed --quiet >/dev/null 2>&1 || true',
-      ''
-    ].join('\n');
-
-    if (fs.existsSync(hookPath)) {
-      const existing = fs.readFileSync(hookPath, 'utf-8');
-      if (existing.includes(marker)) return true;
-      return false;
+    const gitDir = path.join(repoRoot, '.git');
+    const githooksDir = path.join(repoRoot, '.githooks');
+    if (!fs.existsSync(gitDir) || !fs.existsSync(githooksDir)) {
+      return {
+        installed: false,
+        alreadyConfigured: false,
+        hooksPath: null,
+        reason: 'missing-git-or-githooks'
+      };
     }
 
-    fs.writeFileSync(hookPath, hookContent, { encoding: 'utf-8', mode: 0o755 });
-    return true;
-  } catch {
-    return false;
+    for (const hookName of ['post-merge', 'post-checkout']) {
+      const hookFile = path.join(githooksDir, hookName);
+      if (fs.existsSync(hookFile)) {
+        try {
+          fs.chmodSync(hookFile, 0o755);
+        } catch {
+          // Ignore chmod errors on non-POSIX mounts
+        }
+      }
+    }
+
+    const currentRes = spawnSync('git', ['config', '--get', 'core.hooksPath'], {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true
+    });
+    const currentPath = currentRes.status === 0 ? (currentRes.stdout || '').trim() : '';
+    if (currentPath === '.githooks') {
+      return { installed: true, alreadyConfigured: true, hooksPath: '.githooks' };
+    }
+
+    const setRes = spawnSync('git', ['config', 'core.hooksPath', '.githooks'], {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true
+    });
+    if (setRes.status === 0) {
+      return { installed: true, alreadyConfigured: false, hooksPath: '.githooks' };
+    }
+    return {
+      installed: false,
+      alreadyConfigured: false,
+      hooksPath: currentPath || null,
+      reason: (setRes.stderr || setRes.stdout || 'git-config-failed').trim()
+    };
+  } catch (err) {
+    return {
+      installed: false,
+      alreadyConfigured: false,
+      hooksPath: null,
+      reason: err instanceof Error ? err.message : String(err)
+    };
   }
 }
 
 /**
- * Performs a safe fast-forward `git pull --ff-only` on `antigravity-plugins` before syncing.
+ * Backward-compatible alias that ensures `.githooks` is configured as `core.hooksPath`.
  * @param {string} [repoRoot]
- * @returns {{ attempted: boolean, ok: boolean, output: string }}
+ * @returns {boolean}
+ */
+export function installGitPostMergeHook(repoRoot = DEFAULT_REPO_ROOT) {
+  return installGitHooks(repoRoot).installed;
+}
+
+/**
+ * Performs a safe fast-forward `git pull --ff-only` on `antigravity-plugins` before syncing,
+ * skipping automatically when tracked files have uncommitted changes.
+ * @param {string} [repoRoot]
+ * @returns {{ attempted: boolean, ok: boolean, skippedDirty?: boolean, output: string }}
  */
 export function pullCatalogFastForward(repoRoot = DEFAULT_REPO_ROOT) {
   try {
+    const statusRes = spawnSync('git', ['status', '--porcelain', '--untracked-files=no'], {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true
+    });
+    if (statusRes.status === 0 && (statusRes.stdout || '').trim().length > 0) {
+      return {
+        attempted: false,
+        ok: false,
+        skippedDirty: true,
+        output: 'Skipped fast-forward pull: dirty tracked working tree'
+      };
+    }
+
     const res = spawnSync('git', ['pull', '--ff-only', '--quiet'], {
       cwd: repoRoot,
       encoding: 'utf-8',
       timeout: 15000,
-      windowsHide: true
+      windowsHide: true,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
+        ANTIGRAVITY_SKIP_GIT_HOOK: '1'
+      }
     });
     return {
       attempted: true,
@@ -455,6 +520,7 @@ export function syncPluginsToGlobal(options = {}) {
       ...prevState,
       lastCheckAtMs: nowMs,
       headSha: catalogMeta.headSha,
+      syncedHeadSha: catalogMeta.headSha,
       repoRoot,
       lastPullOk: pullResult.ok
     });
@@ -764,16 +830,19 @@ export function syncPluginsToGlobal(options = {}) {
     }
   }
 
-  const hookInstalled = installGitPostMergeHook(repoRoot);
-  if (hookInstalled) {
-    log('   [OK] Verified Git post-merge auto-sync hook (.git/hooks/post-merge)');
+  const hooksResult = installGitHooks(repoRoot);
+  if (hooksResult.installed) {
+    log('   [OK] Verified Git hooks path (core.hooksPath = .githooks: post-merge, post-checkout)');
   }
 
+  const latestState = loadSyncState(stateFile) || prevState;
   saveSyncState(stateFile, {
+    ...latestState,
     lastSyncedAtMs: nowMs,
     lastCheckAtMs: nowMs,
     lastSyncedFingerprint: catalogMeta.fingerprint,
     headSha: catalogMeta.headSha,
+    syncedHeadSha: catalogMeta.headSha,
     syncedPluginCount: syncedPluginNames.length,
     syncedSkillsCount,
     repoRoot,

@@ -1,5 +1,12 @@
 {
   "telemetry-collector": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node ./scripts/eta-injector.mjs --session-start",
+        "timeout": 5
+      }
+    ],
     "PreInvocation": [
       {
         "type": "command",
