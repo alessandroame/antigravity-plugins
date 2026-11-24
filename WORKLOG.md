@@ -14,6 +14,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-24 — Studio Ciclo di Scoperta Orchestrato Guidato da Oracoli (`oracle-guided-discovery-loop`)
+- **Tipo**: Studio Architetturale & Pianificazione Prioritaria (`.agents/plans/oracle-guided-discovery-loop.md`, `DESIDERATA.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-24_oracle-guided-discovery-loop-study.md`](./.agents/worklog.d/2026-11-24_oracle-guided-discovery-loop-study.md)
+- **Sintesi**:
+  - Codificato come prossima attività prioritaria il protocollo di scoperta da 1h+ a `0 B` inline basato su mutatori non convenzionali (utente distratto, abolizionista, scettico/fuzzer), worktree isolati (`run_workflow`), 4 oracoli oggettivi (dati reali, fuzzing, test cognitivo cieco su screenshot, sonde tecniche) e selezione umana finale.
+
+---
+
 ## 2026-11-19 — Valutazione AI-Native SDLC Playbook e Piano dei 3 Innesti Chirurgici (`sdlc-three-grafts`)
 - **Tipo**: Analisi Architetturale & Pianificazione Esecutiva (`.agents/plans/sdlc-three-grafts.md`, `DESIDERATA.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-19_ai-native-sdlc-three-grafts-plan.md`](./.agents/worklog.d/2026-11-19_ai-native-sdlc-three-grafts-plan.md)

@@ -9,6 +9,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note / Specifica di Riferimento (<= 160 char) |
 | :--- | :---: | :---: | :--- |
+| Ciclo di Scoperta Guidato da Oracoli (`oracle-guided-discovery-loop`) | Plugin (`ab-bench` / nuovo) | `🔴 Prioritario` | Studio 1h+: mutatori irrazionali su worktree, oracoli dati/ciechi e `0 B` inline ([piano](./.agents/plans/oracle-guided-discovery-loop.md)). |
 | Laboratorio Metodologico Notturno (`interaction-lab`) | Plugin (`mapek`) | `🔴 Prioritario` | `mapek` v1.2.0: slot `02:30`/`08:30`, replay `<= 6 KB`, SSOT padronanza e `0 B` inline ([piano](./.agents/plans/nightly-interaction-lab.md)). |
 | Verifica Deriva `Piano <-> Diff` (`diff-triage --plan`) | Plugin (`engineering-workflow`) | `⚪ Pianificato` | Fase 1: confronto `0`-token tra percorsi in `.agents/plans/*.md` e `git diff` ([piano](./.agents/plans/sdlc-three-grafts.md)). |
 | Regressione Automatica Trigger Skill (`skill-trigger-eval`) | Plugin (`skill-governance`) | `⚪ Pianificato` | Fase 2: ranking deterministico `BM25` su `SKILL.md` per bloccare skill mute post-refactor ([piano](./.agents/plans/sdlc-three-grafts.md)). |
