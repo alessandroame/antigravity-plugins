@@ -93,25 +93,25 @@ export const MUTATION_ARCHETYPES = Object.freeze([
 export const ORACLE_STACK = Object.freeze([
   Object.freeze({
     id: 'empirical-data',
-    labelIt: '1. Oracolo Empirico (Dati Reali)',
+    labelIt: '1. Verifica Empirica (Dati Reali)',
     blocking: true,
     rejects: 'Formulas or heuristics that fail offline backtest/hindcast against baseline on real data.'
   }),
   Object.freeze({
     id: 'invariance-fuzzing',
-    labelIt: '2. Oracolo di Invarianza & Fuzzing',
+    labelIt: '2. Verifica Casi Limite & Coerenza',
     blocking: true,
     rejects: 'Cross-view contradictions, partial-input failures, or pathological synthetic edge-case breaks.'
   }),
   Object.freeze({
     id: 'blind-cognitive',
-    labelIt: '3. Oracolo Cognitivo Cieco',
+    labelIt: '3. Verifica Cognitiva Cieca',
     blocking: true,
     rejects: 'Interfaces or outputs that pass technical layout checks yet confuse a fresh unprimed observer.'
   }),
   Object.freeze({
     id: 'technical-ab-bench',
-    labelIt: '4. Oracolo Tecnico & Cieco (/ab-bench)',
+    labelIt: '4. Verifica Tecnica & 5 Dita (/ab-bench)',
     blocking: true,
     rejects: 'Test regressions, tampered tests, DOM/SVG overlap violations, or 5-Finger presentation bias.'
   })
@@ -865,7 +865,7 @@ export function evaluateStopCondition(runState = {}, stopPolicy = DISCOVERY_PROF
       shouldStop: true,
       exitReason: EXIT_REASONS.RESOURCE_BUDGET_REACHED,
       triggeredLimits,
-      reasonIt: `Esaurito il budget deterministico di risorse (${triggeredLimits.join(', ')}).`,
+      reasonIt: `Esaurito il limite di risorse (${triggeredLimits.join(', ')}).`,
       remainingBudget
     };
   }
@@ -875,7 +875,7 @@ export function evaluateStopCondition(runState = {}, stopPolicy = DISCOVERY_PROF
       shouldStop: true,
       exitReason: EXIT_REASONS.TARGET_SATISFICED,
       triggeredLimits: ['targetSatisficingCount'],
-      reasonIt: `Obiettivo soddisfatto in anticipo: ${satisficingOrthogonalCount} varianti ortogonali superano tutti gli oracoli e la baseline.`,
+      reasonIt: `Obiettivo raggiunto in anticipo: ${satisficingOrthogonalCount} varianti distinte superano tutti i controlli e la baseline.`,
       remainingBudget
     };
   }
@@ -893,8 +893,8 @@ export function evaluateStopCondition(runState = {}, stopPolicy = DISCOVERY_PROF
       exitReason: EXIT_REASONS.YIELD_COLLAPSE,
       triggeredLimits: causes,
       reasonIt: zeroYieldCollapse
-        ? `Collasso della resa: 0 varianti valide per ${consecutiveZeroYieldWaves} ondate consecutive.`
-        : `Collasso della resa: tasso di ipotesi duplicate al ${(lastWaveDuplicateRate * 100).toFixed(0)}% (oltre ${(policy.maxDuplicateRate * 100).toFixed(0)}%).`,
+        ? `Nessun risultato utile: 0 varianti valide per ${consecutiveZeroYieldWaves} cicli consecutivi.`
+        : `Troppi duplicati: ipotesi ripetute al ${(lastWaveDuplicateRate * 100).toFixed(0)}% (oltre ${(policy.maxDuplicateRate * 100).toFixed(0)}%).`,
       remainingBudget
     };
   }
@@ -904,7 +904,7 @@ export function evaluateStopCondition(runState = {}, stopPolicy = DISCOVERY_PROF
       shouldStop: true,
       exitReason: EXIT_REASONS.PARETO_CONVERGED,
       triggeredLimits: ['stagnationWaves'],
-      reasonIt: `Frontiera di Pareto convergente: nessun miglioramento significativo nelle ultime ${consecutiveStagnantWaves} ondate.`,
+      reasonIt: `Nessun ulteriore miglioramento significativo negli ultimi ${consecutiveStagnantWaves} cicli.`,
       remainingBudget
     };
   }
@@ -1040,25 +1040,25 @@ export function renderDiscoveryReportMarkdown(verdict) {
   );
   lines.push('');
   lines.push(
-    `- **Imbuto Oracoli**: \`${f.generatedCount || 0}\` varianti generate -> \`${f.rejectedByOraclesCount || 0}\` scartate dagli oracoli (\`${f.rejectionRatePct || 0}%\`) -> \`${f.passedCount || 0}\` idonee -> **\`${f.frontierCount || 0}\` in frontiera di Pareto**.`
+    `- **Filtro Verifiche**: \`${f.generatedCount || 0}\` varianti generate -> \`${f.rejectedByOraclesCount || 0}\` scartate dai controlli (\`${f.rejectionRatePct || 0}%\`) -> \`${f.passedCount || 0}\` idonee -> **\`${f.frontierCount || 0}\` migliori in confronto finale**.`
   );
   lines.push(
     `- **Protezione Branch**: \`main\` invariato (\`mainBranchUntouched: ${Boolean(verdict.mainBranchUntouched)}\`); nessuna modifica applicata senza conferma esplicita.`
   );
   lines.push(
-    '- **Selezione Umana**: esamina la frontiera di Pareto nei dettagli sotto per promuovere una variante o scartare il lotto.'
+    '- **Selezione Umana**: esamina le migliori varianti nei dettagli sotto per promuoverne una o scartare il lotto.'
   );
   lines.push('');
   lines.push('<details>');
   lines.push(
-    '<summary><strong>Analisi Comparativa Frontiera di Pareto, Telemetria Oracoli e Budget (Espandi)</strong></summary>'
+    '<summary><strong>Confronto Varianti Migliori, Esito Verifiche e Risorse (Espandi)</strong></summary>'
   );
   lines.push('');
-  lines.push('| Candidato | Archetipo | Oracoli | 5 Dita | Delta / Complessità |');
+  lines.push('| Candidato | Approccio | Verifiche | 5 Dita | Delta / Complessità |');
   lines.push('| :--- | :--- | :---: | :---: | :--- |');
 
   if (!verdict.humanSelectionOptions || verdict.humanSelectionOptions.length === 0) {
-    lines.push('| *Nessun sopravvissuto* | — | `0/4` | — | Nessuna variante ha superato gli oracoli |');
+    lines.push('| *Nessun sopravvissuto* | — | `0/4` | — | Nessuna variante ha superato i controlli |');
   } else {
     for (const opt of verdict.humanSelectionOptions) {
       const fingers = opt.fiveFingerScore !== null ? `\`${opt.fiveFingerScore}/5\`` : 'N/D';
@@ -1074,13 +1074,13 @@ export function renderDiscoveryReportMarkdown(verdict) {
   const rs = verdict.runState || {};
   const elapsedSec = ((rs.elapsedMs || 0) / 1000).toFixed(1);
   lines.push(
-    `- **Telemetria Esecuzione**: \`${rs.wavesCompleted || 0}\` ondate · \`${rs.subagentCalls || 0}\` subagent · \`${rs.totalTokens || 0}\` token · \`${elapsedSec}s\`.`
+    `- **Telemetria Esecuzione**: \`${rs.wavesCompleted || 0}\` cicli · \`${rs.subagentCalls || 0}\` subagent · \`${rs.totalTokens || 0}\` token · \`${elapsedSec}s\`.`
   );
   const breakdownStr = Object.entries(f.oracleRejectBreakdown || {})
     .map(([id, cnt]) => `\`${id}\`: ${cnt}`)
     .join(' · ');
   if (breakdownStr) {
-    lines.push(`- **Scarti per Oracolo**: ${breakdownStr}.`);
+    lines.push(`- **Scarti per Verifica**: ${breakdownStr}.`);
   }
   lines.push('');
   lines.push('<details>');
@@ -1090,7 +1090,7 @@ export function renderDiscoveryReportMarkdown(verdict) {
   lines.push('');
 
   if (!verdict.rejectedVariants || verdict.rejectedVariants.length === 0) {
-    lines.push('- Nessuna variante scartata dagli oracoli in questo ciclo.');
+    lines.push('- Nessuna variante scartata dai controlli in questo ciclo.');
   } else {
     for (const rv of verdict.rejectedVariants) {
       lines.push(

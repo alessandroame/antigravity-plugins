@@ -59,21 +59,21 @@ Quando `SKIZZO = ON` ma il Gate 0 rileva un comando operativo, una domanda di so
 
 - **Cosa cambia per te**: [1 riga concreta in italiano semplice sul miglioramento pratico].
 - **Contributo dei domini attivati (in ordine di importanza)**: [1 riga sintetica su cosa ha garantito ciascuno dei 2..4 ruoli istanziati].
-- **Conflitto risolto tra i ruoli (e perché vince questa sintesi)**: [1 riga sul compromesso superato] — **Controlli**: `Tutti i test/oracoli superati (X/X OK)`.
+- **Conflitto risolto tra i ruoli (e perché vince questa sintesi)**: [1 riga sul compromesso superato] — **Controlli**: `Tutti i controlli superati (X/X OK)`.
 
 <details>
 <summary><strong>Dettagli Tecnici, Matrice Multi-Dominio Ordinata per Importanza e Verifiche</strong></summary>
 
-| # Dominio (Per Importanza) | Skill & Mandato | Proposta Chiave | Oracolo & Esito |
+| # Dominio (Per Importanza) | Skill & Mandato | Proposta Chiave | Verifica & Esito |
 | :--- | :--- | :--- | :--- |
-| **1° `<Ruolo Alpha>`** | `<skills-alpha>` — [Mandato] | [Proposta Alpha] | `PASS` — [Oracolo Alpha] |
-| **2° `<Ruolo Beta>`** | `<skills-beta>` — [Mandato] | [Proposta Beta] | `PASS` — [Oracolo Beta] |
-| **[3° `<Ruolo Delta>`]** | `<skills-delta>` — [Mandato] | [Proposta Delta] | `PASS` — [Oracolo Delta] |
-| **[4° `<Ruolo Epsilon>`]** | `<skills-epsilon>` — [Mandato] | [Proposta Epsilon] | `PASS` — [Oracolo Epsilon] |
+| **1° `<Ruolo Alpha>`** | `<skills-alpha>` — [Mandato] | [Proposta Alpha] | `PASS` — [Verifica Alpha] |
+| **2° `<Ruolo Beta>`** | `<skills-beta>` — [Mandato] | [Proposta Beta] | `PASS` — [Verifica Beta] |
+| **[3° `<Ruolo Delta>`]** | `<skills-delta>` — [Mandato] | [Proposta Delta] | `PASS` — [Verifica Delta] |
+| **[4° `<Ruolo Epsilon>`]** | `<skills-epsilon>` — [Mandato] | [Proposta Epsilon] | `PASS` — [Verifica Epsilon] |
 
 - **Sintesi Unificata & Criterio di Priorità (`Max 4`)**: [Come sono state fuse le proposte e motivazione dell'ordinamento ed eventuali domini secondari accorpati/esclusi].
 - **Dietro le quinte (Cross-Critique / Negoziazione `Gamma`)**: [Sintesi dei punti di attrito risolti].
-- **Verifiche & File Aggiornati**: `Oracolo Alpha: PASS` | `Oracolo Beta: PASS` — [File e metriche].
+- **Verifiche & File Aggiornati**: `Verifica Alpha: PASS` | `Verifica Beta: PASS` — [File e metriche].
 
 </details>
 ```

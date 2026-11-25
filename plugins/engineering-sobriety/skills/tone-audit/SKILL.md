@@ -14,6 +14,7 @@ Guides systematic scanning and sanitization of codebase, UI copy, and documentat
 ### Step 1: Lexical & Decorative Emoji Scan
 Search text files, documentation, comments, and UI markup for:
 - **Forbidden Hype Terms**: `rivoluzionario`, `game-changer`, `stato dell'arte`, `eccellenza`, `battle-tested`, `bulletproof`, `cockpit`, `tattico`, `radar`, `pulsante magico`, `silver bullet`.
+- **Pseudo-Academic / Literal Calque Jargon (in Italian prose/UI)**: `ondate`, `multi-ondata`, `oracolo`, `oracoli deterministici`, `imbuto oracoli`, `budget deterministico`.
 - **Sycophantic Openers**: Polite filler in system prompts and automated responses.
 - **Decorative Emojis**: Non-functional symbols in UI views and headings (`📈`, `🎙️`, `⏱️`, `ℹ️`, `🚀`, `✨`, `🔥`, `🎉`, `💡`).
 

@@ -59,6 +59,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit�
 - **Auto-Discovery Test, Guardia Integrità Asserzioni, `/review-diff` e Gate `Stop` sul Transcript (`engineering-workflow` v1.3.0)**:
   - *Insidia*: Liste di test cablate saltano nuove suite, patch che indeboliscono asserzioni in `tests/` mascherano regressioni e ritocchi `edit_file` dopo l'ultimo test invalidano le verifiche.
   - *Regola*: Usare `discoverRepositoryTestFiles` in [`run-all-tests.mjs`](./scripts/run-all-tests.mjs), filtrare i diff con [`diff-triage.mjs`](./plugins/engineering-workflow/scripts/diff-triage.mjs), eseguire i flussi multi-viewport con [`ui-smoke-runner.mjs`](./plugins/engineering-workflow/scripts/ui-smoke-runner.mjs) e verificare `edit_file < test/probe` su `Stop` tramite [`delivery-gate-hook.mjs`](./plugins/engineering-workflow/scripts/delivery-gate-hook.mjs).
+- **Sobrietà Lessicale e Bando Calchi Inglesi (`engineering-sobriety`, `ab-bench`, `skizzo`)**:
+  - *Insidia*: Calchi letterali nei template (`ondate`, `oracoli deterministici`, `imbuto oracoli`) producono italiano innaturale in chat.
+  - *Regola*: Usare italiano semplice (`cicli di prova`, `test automatici`, `filtro verifiche`) come da [`engineering-sobriety/rules/AGENTS.md`](./plugins/engineering-sobriety/rules/AGENTS.md) e guardia `B4` in [`discovery-engine.test.mjs`](./plugins/ab-bench/tests/discovery-engine.test.mjs).
 
 ---
 

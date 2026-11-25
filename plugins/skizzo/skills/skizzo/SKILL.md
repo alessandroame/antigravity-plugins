@@ -71,8 +71,8 @@ Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Is
 1. **Dichiarazione Skill alla Partenza (Rigo 1 Obbligatorio)**: apri al rigo 1 con **Skill Attive (<trackId> - <Ruolo>)**: seguito dagli ID `kebab-case`.
 2. **Budget di Ricerca Chirurgica (`<= 4` turni di tool)**: se il task tocca file del workspace, usa `grep_search` e letture mirate (`<= 150` righe per chiamata, zero scansioni integrali di file lunghi) per individuare in massimo 4 turni i punti esatti coinvolti (`#Lxx-Lyy`).
 3. **Prospettiva Non Negoziabile**: valuta e progetta la soluzione difendendo rigorosamente i principi, i vincoli e gli interessi del tuo dominio specifico (`<Mandato su misura generato dall'LLM>`). Non annacquare la tua posizione per compiacere gli altri domini.
-4. **Oracolo di Verifica (`<trackId>`)**: definisci il test, l'invariante o il criterio oggettivo che certifica il rispetto del tuo dominio.
-5. **Formato Output**: restituisci (a) Proposta operativa (e file/righe `#Lxx-Lyy` se applicabile), (b) Beneficio concreto o rischio evitato dal tuo punto di vista (in 1 frase chiara senza gergo), (c) Specifica dell'Oracolo di Verifica, (d) Confini non negoziabili.
+4. **Criterio di Verifica (`<trackId>`)**: definisci il test, il vincolo o il criterio oggettivo che certifica il rispetto del tuo dominio.
+5. **Formato Output**: restituisci (a) Proposta operativa (e file/righe `#Lxx-Lyy` se applicabile), (b) Beneficio concreto o rischio evitato dal tuo punto di vista (in 1 frase chiara senza gergo), (c) Specifica del Criterio di Verifica, (d) Confini non negoziabili.
 6. **Replica Peer-to-Peer al Mediatore (`send_message`)**: se risvegliato da `Subagent Gamma` (`sender=<id-gamma>`), rispondi con `send_message(Recipient: "<id-gamma>", Message: "...")` e termina il turno.
 ```
 
@@ -81,7 +81,7 @@ Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Is
 ## 5. Step 2, Step 3 & Step 4: Cross-Critique, Post-Edit Verification & "Human-First" Output (`~600px`)
 
 1. **Cross-Critique / Mediator**: Synthesize a unified solution satisfying **all active oracles** (or invoke `Subagent Gamma` when `--mediator` is set).
-2. **No Blind Self-Certification in Step 3**: After the final `edit_file`/`write_file`, run real verification commands (`npm test`, `diff-triage.mjs`, `ui-geometry-probe.js`) and report measured results in `Oracolo & Esito` (`PASS (0 tamper, 14/14 test)`).
+2. **No Blind Self-Certification in Step 3**: After the final `edit_file`/`write_file`, run real verification commands (`npm test`, `diff-triage.mjs`, `ui-geometry-probe.js`) and report measured results in `Verifica & Esito` (`PASS (0 tamper, 14/14 test)`).
 3. **Mandatory "Human-First" Delivery Format (Fixed 4-Column Table inside `<details>`)**:
 
 ```markdown
@@ -92,21 +92,21 @@ Agisci esclusivamente come **Subagent <trackId> (<Titolo del Ruolo di Dominio Is
 
 - **Cosa cambia per te**: [1 riga concreta sul risultato pratico].
 - **Contributo dei domini attivati (in ordine di importanza)**: [1 riga sintetica su cosa ha garantito ciascuno dei 2..4 ruoli istanziati].
-- **Conflitto risolto tra i ruoli (e perché vince questa sintesi)**: [1 riga sul compromesso superato] — **Controlli**: `Tutti i test/oracoli superati (X/X OK)`.
+- **Conflitto risolto tra i ruoli (e perché vince questa sintesi)**: [1 riga sul compromesso superato] — **Controlli**: `Tutti i controlli superati (X/X OK)`.
 
 <details>
 <summary><strong>Dettagli Tecnici, Matrice Multi-Dominio Ordinata per Importanza e Verifiche</strong></summary>
 
-| # Dominio (Per Importanza) | Skill & Mandato | Proposta Chiave | Oracolo & Esito |
+| # Dominio (Per Importanza) | Skill & Mandato | Proposta Chiave | Verifica & Esito |
 | :--- | :--- | :--- | :--- |
-| **1° `<Ruolo Alpha>`** | `<skills-alpha>` — [Mandato] | [Proposta Alpha] | `PASS` — [Oracolo Alpha] |
-| **2° `<Ruolo Beta>`** | `<skills-beta>` — [Mandato] | [Proposta Beta] | `PASS` — [Oracolo Beta] |
-| **[3° `<Ruolo Delta>`]** | `<skills-delta>` — [Mandato] | [Proposta Delta] | `PASS` — [Oracolo Delta] |
-| **[4° `<Ruolo Epsilon>`]** | `<skills-epsilon>` — [Mandato] | [Proposta Epsilon] | `PASS` — [Oracolo Epsilon] |
+| **1° `<Ruolo Alpha>`** | `<skills-alpha>` — [Mandato] | [Proposta Alpha] | `PASS` — [Verifica Alpha] |
+| **2° `<Ruolo Beta>`** | `<skills-beta>` — [Mandato] | [Proposta Beta] | `PASS` — [Verifica Beta] |
+| **[3° `<Ruolo Delta>`]** | `<skills-delta>` — [Mandato] | [Proposta Delta] | `PASS` — [Verifica Delta] |
+| **[4° `<Ruolo Epsilon>`]** | `<skills-epsilon>` — [Mandato] | [Proposta Epsilon] | `PASS` — [Verifica Epsilon] |
 
-- **Sintesi Unificata & Criterio di Priorità (`Max 4`)**: [Come sono state fuse le proposte e perché sono stati scelti questi `N` domini].
+- **Sintesi Unificata & Criterio di Priorità (`Max 4`)**: [Come sono state fuse le proposte e motivazione dell'ordinamento].
 - **Dietro le quinte (Cross-Critique tra i `N` domini)**: [Sintesi dei punti di attrito risolti].
-- **Verifiche & File Aggiornati**: [Stato oracoli e file toccati].
+- **Verifiche & File Aggiornati**: [Stato verifiche e file toccati].
 
 </details>
 ```

@@ -21,4 +21,4 @@ Governs adaptive multi-domain orchestration (**`2..4` subagents ranked by import
 3. **Phase 3 & 4 (Verified Check & Output)**: Run real tests / `diff-triage.mjs` / probes after last `edit_file` (no blind `PASS`). Open Line 1 with:
    `> [!IMPORTANT]`
    `> MODALITÀ SKIZZO ATTIVA (DUAL-TRACK | TRI-TRACK | QUAD-TRACK — N Domini per Importanza) — Subagent: [1° <Ruolo Alpha>](conversation://<id-alpha>) · [2° <Ruolo Beta>](conversation://<id-beta>) [· [3° <Ruolo Delta>](conversation://<id-delta>) · [4° <Ruolo Epsilon>](conversation://<id-epsilon>)]`
-   Show **Cosa cambia per te**, **Contributo dei domini attivati (in ordine di importanza)**, **Conflitto risolto tra i ruoli** — **Controlli**: `Tutti i test/oracoli superati (X/X OK)`, plus a `<details>` 4-column table (`# Dominio | Skill & Mandato | Proposta Chiave | Oracolo & Esito`).
+   Show **Cosa cambia per te**, **Contributo dei domini attivati (in ordine di importanza)**, **Conflitto risolto tra i ruoli** — **Controlli**: `Tutti i controlli superati (X/X OK)`, plus a `<details>` 4-column table (`# Dominio | Skill & Mandato | Proposta Chiave | Verifica & Esito`).

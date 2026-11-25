@@ -23,7 +23,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 | `ab-bench` (v1.1.0) & `/discovery-loop` | Plugin | `🟢 Completato` | Pure-skill (`0 B` inline), core Pareto headless, 4 oracoli, uscita composita 5-condizioni, template `run_workflow` e pilota reale ([ADR](./WORKLOG.md)). |
 | Snellimento Budget Inline (`48 KB`) & Anti-Mirroring | Catalogo | `🟢 Completato` | Ridotto peso inline del 32,7% (61,8->41,6 KB), tetto L3 48 KB, skill pure ab-bench/code-inspector e blocco self-mirroring ([ADR](./WORKLOG.md)). |
 | Standard Ibrido `EN/IT` & Benchmark `/ab-bench` | Catalogo | `🟢 Completato` | Verdetto `GO` (`-21,6%` B, `+1` dito `S2`), 56 file migrati in `EN` logico + `IT` utente ([piano](./.agents/plans/hybrid-en-it-migration.md)). |
-| `engineering-sobriety` | Plugin | `🟢 Completato` | Regole anti-hype, bonifica lessicale, zero emoji decorative e skill `tone-audit` ([README](./plugins/engineering-sobriety/README.md)). |
+| `engineering-sobriety` | Plugin | `🟢 Completato` | Regole anti-hype, bando calchi IT (`ondate`/`oracoli`), zero emoji decorative e skill `tone-audit` ([README](./plugins/engineering-sobriety/README.md)). |
 | `laws-of-ux` (v1.1.0) | Plugin | `🟢 Completato` | 30 leggi UX, Budget 60/40, Gerarchia 3s, Ricevuta Visiva a 4 Misure e `ux-outdoor-and-field-ergonomics` ([README](./plugins/laws-of-ux/README.md)). |
 | `execution-guard` | Plugin | `🟢 Completato` | Watchdog anti-freeze, circuit breaker, timeout script e guardia mock API ([README](./plugins/execution-guard/README.md)). |
 | `engineering-workflow` (v1.3.0) | Plugin | `🟢 Completato` | Git chirurgico, `/review-diff`, guardia test, `ui-smoke-runner.mjs` e hook `delivery-gate-hook.mjs` ([README](./plugins/engineering-workflow/README.md)). |

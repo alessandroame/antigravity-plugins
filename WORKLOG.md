@@ -14,6 +14,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-25 — Bonifica Calchi Lessicali IT (`ondate`/`oracoli`) in `engineering-sobriety`, `ab-bench` e `skizzo`
+- **Tipo**: Auto-Apprendimento `L2a`/`L2b`/`L3`, Sobrietà Output & Test Invariante (`plugins/engineering-sobriety/`, `plugins/ab-bench/`, `plugins/skizzo/`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-25_plain-italian-jargon-cleanup.md`](./.agents/worklog.d/2026-11-25_plain-italian-jargon-cleanup.md)
+- **Sintesi**:
+  - Vietati i calchi `ondate`/`oracoli deterministici`/`imbuto oracoli`/`budget deterministico` in [`engineering-sobriety/rules/AGENTS.md`](./plugins/engineering-sobriety/rules/AGENTS.md), ripuliti i testi IT in `ab-bench` e `skizzo` e aggiunta la guardia `B4` in [`discovery-engine.test.mjs`](./plugins/ab-bench/tests/discovery-engine.test.mjs) (`144/144` test verdi, sync OK).
+
+---
+
 ## 2026-11-25 — Rilascio `ab-bench` v1.1.0 & Skill `/discovery-loop` (Motore Pareto, 4 Oracoli, Uscita Composita e Pilota Reale)
 - **Tipo**: Estensione Plugin Pure-Skill (`0 B` inline), Core Headless, Workflow Python & Pilota End-to-End (`plugins/ab-bench/` v1.1.0, `README.md`, `DESIDERATA.md`, `MEMORY.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-25_ab-bench-v110-discovery-loop.md`](./.agents/worklog.d/2026-11-25_ab-bench-v110-discovery-loop.md)
@@ -115,13 +123,4 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Sintesi**:
   - Creato il plugin [`pattern-harvester`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/README.md) con motore headless [`harvester-engine.mjs`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/core/harvester-engine.mjs) (`8/8` test in [`pattern-harvester.test.mjs`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/tests/pattern-harvester.test.mjs)): estrazione a 3 canali (n-grammi RLE di tool call `3..5`, scheletri CLI con `unwrapTranscriptString` e clustering Jaccard su 2-shingle), deduplicazione sul catalogo installato e matrice decisionale ROI KLM/GOMS (`>= 120s` per `NEW_SKILL`, `>= 240s` per `NEW_PLUGIN`).
   - Configurato il controllo periodico silenzioso sull'evento `Stop` ([`periodic-harvester-hook.mjs`](file:///c:/github/antigravity-plugins/plugins/pattern-harvester/scripts/periodic-harvester-hook.mjs), `< 5ms`, avvio detached ogni `5` sessioni umane o `24h`), la skill `/pattern-harvester` e il generatore di scaffold `--scaffold <patternId>` conforme a `scripts/validate.mjs`.
-
----
-
-## 2026-10-28 — Guardia Portabilità Multi-Macchina (`HARDCODED_USER_PATH`), Shim `pwsh` e Audit `skill-collision-check` Cross-Workspace
-- **Tipo**: Portabilità Multi-Macchina, Validatore Statico `L3` & Igiene Skill Workspace (`scripts/validate.mjs`, `plugins/*`, `c:/github/*`)
-- **Dettagli**: [`.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md)
-- **Sintesi**:
-  - Rimossi i puntamenti hardcoded `C:/Users/aless/` in 4 file dei plugin e in `GlideMind/.agents/rules/constraints.md` a favore del percorso canonico `c:/github/antigravity-plugins/plugins/...`, codificando la guardia statica `HARDCODED_USER_PATH` (`L3`) in [`scripts/validate.mjs`](file:///c:/github/antigravity-plugins/scripts/validate.mjs#L82-L100) e lo shim `pwsh.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps`.
-  - Eseguito `skill-collision-check` su `191` skill locali/globali (`0` collisioni `P0`), specializzando i trigger in `Quiz_VDS-VL`, compattando `14` `description` entro `[80, 250]` char (`Quiz_VDS-VL`, `WeatherNerdWearOs`, `AgentBridge`) e convertendo a `trigger: model_decision` le regole verticali di `ParaMeteo*`.
 

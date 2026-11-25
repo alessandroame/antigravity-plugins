@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import {
   DISCOVERY_PROFILES,
   EXIT_REASONS,
+  ORACLE_STACK,
   buildDiscoveryVerdict,
   computeHypothesisDuplicateRate,
   computeParetoFrontier,
@@ -423,5 +424,84 @@ describe('Oracle Beta (Ergonomics, CLI End-to-End & Workflow Template)', () => {
       assert.ok(pySrc.includes(token), `Python template missing '${token}'`);
     }
     assert.equal(/[cC]:[\\/]+Users[\\/]+(?!<)[a-zA-Z0-9._-]+[\\/]/.test(pySrc), false);
+  });
+
+  it('B4: avoids pseudo-academic jargon (ondate/oracoli/deterministico) in Italian user-facing output', () => {
+    const jargonRx = /\b(?:ondat[ae]|oracol[oi]|deterministic[oi]|imbuto oracoli)\b/i;
+
+    for (const item of ORACLE_STACK) {
+      assert.equal(
+        jargonRx.test(item.labelIt),
+        false,
+        `ORACLE_STACK labelIt contains jargon: ${item.labelIt}`
+      );
+    }
+
+    const policy = DISCOVERY_PROFILES.deep;
+    const stopStates = [
+      { wavesCompleted: 1, elapsedMs: 60000 },
+      { wavesCompleted: 2, consecutiveStagnantWaves: 2 },
+      { wavesCompleted: 1, satisficingOrthogonalCount: 2 },
+      { wavesCompleted: 4, variantsPrototyped: 8 },
+      { wavesCompleted: 2, consecutiveZeroYieldWaves: 2 },
+      { wavesCompleted: 1, lastWaveHypothesisCount: 4, lastWaveDuplicateRate: 0.75 },
+      { elapsedMs: policy.maxWallClockMinutes * 60000 }
+    ];
+
+    for (const state of stopStates) {
+      const stopRes = evaluateStopCondition(state, policy);
+      assert.equal(
+        jargonRx.test(stopRes.reasonIt),
+        false,
+        `evaluateStopCondition reasonIt contains jargon: ${stopRes.reasonIt}`
+      );
+    }
+
+    const brief = createDiscoveryBrief({
+      goal: 'Verify plain Italian report',
+      targetScope: ['plugins/skizzo/scripts/triage.mjs'],
+      profile: 'quick',
+      baseline: { metrics: { empiricalScore: 0.7, complexityCost: 1 } }
+    });
+    const verdictWithVariants = buildDiscoveryVerdict({
+      brief,
+      runState: { wavesCompleted: 1, satisficingOrthogonalCount: 1, elapsedMs: 12000 },
+      variants: [
+        {
+          id: 'v-pass',
+          mutatorArchetype: 'distracted-user',
+          worktreeBranch: 'share/v-pass',
+          fiveFingerScore: 5,
+          metrics: { empiricalScore: 0.9, complexityCost: 0.8 },
+          oracles: {
+            'empirical-data': { passed: true },
+            'invariance-fuzzing': { passed: true },
+            'blind-cognitive': { passed: true },
+            'technical-ab-bench': { passed: true }
+          }
+        },
+        {
+          id: 'v-reject',
+          mutatorArchetype: 'domain-skeptic',
+          oracles: {
+            'empirical-data': { passed: false, reason: 'Regression' },
+            'invariance-fuzzing': { passed: true },
+            'blind-cognitive': { passed: true },
+            'technical-ab-bench': { passed: true }
+          }
+        }
+      ],
+      blindReveal: { 'Candidato A': 'v-pass' }
+    });
+    const verdictEmpty = buildDiscoveryVerdict({
+      brief,
+      runState: { wavesCompleted: 2, consecutiveZeroYieldWaves: 2, elapsedMs: 10000 },
+      variants: []
+    });
+
+    for (const verdict of [verdictWithVariants, verdictEmpty]) {
+      const md = renderDiscoveryReportMarkdown(verdict);
+      assert.equal(jargonRx.test(md), false, `Rendered markdown contains jargon:\n${md}`);
+    }
   });
 });

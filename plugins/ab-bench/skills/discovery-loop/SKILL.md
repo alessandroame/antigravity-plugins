@@ -59,21 +59,21 @@ Present the verified summary in plain Italian (`L0` <= `12` lines + `L1`/`L2` `<
 > [!IMPORTANT]
 > **DISCOVERY-LOOP (`[quick|deep|overnight]` — `[exitReason]`)**: [Motivo di uscita in 1 frase chiara].
 
-- **Imbuto Oracoli**: `[N]` varianti generate -> `[M]` scartate dagli oracoli (`[P]%`) -> `[K]` in frontiera di Pareto.
+- **Filtro Verifiche**: `[N]` varianti generate -> `[M]` scartate dai controlli (`[P]%`) -> `[K]` migliori in confronto finale.
 - **Protezione Branch**: `main` invariato; nessuna modifica applicata senza conferma esplicita.
 - **Selezione Umana**: scegli una delle varianti sopravvissute nei dettagli qui sotto oppure scarta il lotto.
 
 <details>
-<summary><strong>Analisi Comparativa Frontiera di Pareto, Telemetria Oracoli e Budget (Espandi)</strong></summary>
+<summary><strong>Confronto Varianti Migliori, Esito Verifiche e Risorse (Espandi)</strong></summary>
 
-| Candidato | Archetipo | Oracoli | 5 Dita | Delta / Complessità |
+| Candidato | Approccio | Verifiche | 5 Dita | Delta / Complessità |
 | :--- | :--- | :---: | :---: | :--- |
-| **Candidato A** (`[id]`) | `[archetipo]` | `4/4` | `[X]/5` | `+[D]%` · costo `[C]` |
+| **Candidato A** (`[id]`) | `[approccio]` | `4/4` | `[X]/5` | `+[D]%` · costo `[C]` |
 
 <details>
 <summary><strong>Audit Varianti Scartate e Istruzioni Worktree</strong></summary>
 
-- **`[id-scartato]`** -> [Motivo oggettivo dell'oracolo].
+- **`[id-scartato]`** -> [Motivo oggettivo del controllo fallito].
 
 </details>
 

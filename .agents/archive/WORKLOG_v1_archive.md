@@ -439,3 +439,12 @@ A seguito dell'audit delle direttive e dei comportamenti richiesti agli agenti n
 - **Sintesi**:
   - Creato [`session-backfill.mjs`](../../plugins/telemetry-analytics/core/session-backfill.mjs) (`5/5` test in [`session-backfill.test.mjs`](../../plugins/telemetry-analytics/tests/session-backfill.test.mjs)) per indicizzare incrementalmente `~/.gemini/antigravity/brain/` (`sessions-index.json` schema `v3`, tempi attivi netti, abitudini orarie, modelli, slash command e `promptsBreakdown[]` per singolo prompt) e corretto il supporto `read_file`/`totalSessions` in [`collector.mjs`](../../plugins/telemetry-analytics/scripts/collector.mjs).
   - Introdotta la Dashboard HTML a 5 tab ([`usage-dashboard-template.html`](../../plugins/telemetry-analytics/references/usage-dashboard-template.html)), il flag `--session <id>` in [`report.mjs`](../../plugins/telemetry-analytics/scripts/report.mjs) e la regola del footer minimale a 3 valori in [`rules/AGENTS.md`](../../plugins/telemetry-analytics/rules/AGENTS.md) (`> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`).
+
+---
+
+## 2026-10-28 — Guardia Portabilità Multi-Macchina (`HARDCODED_USER_PATH`), Shim `pwsh` e Audit `skill-collision-check` Cross-Workspace
+- **Tipo**: Portabilità Multi-Macchina, Validatore Statico `L3` & Igiene Skill Workspace (`scripts/validate.mjs`, `plugins/*`, `c:/github/*`)
+- **Dettagli**: [`.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-28_multi-machine-path-portability-and-workspace-audit.md)
+- **Sintesi**:
+  - Rimossi i puntamenti hardcoded `C:/Users/aless/` in 4 file dei plugin e in `GlideMind/.agents/rules/constraints.md` a favore del percorso canonico `c:/github/antigravity-plugins/plugins/...`, codificando la guardia statica `HARDCODED_USER_PATH` (`L3`) in [`scripts/validate.mjs`](file:///c:/github/antigravity-plugins/scripts/validate.mjs#L82-L100) e lo shim `pwsh.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps`.
+  - Eseguito `skill-collision-check` su `191` skill locali/globali (`0` collisioni `P0`), specializzando i trigger in `Quiz_VDS-VL`, compattando `14` `description` entro `[80, 250]` char (`Quiz_VDS-VL`, `WeatherNerdWearOs`, `AgentBridge`) e convertendo a `trigger: model_decision` le regole verticali di `ParaMeteo*`.
