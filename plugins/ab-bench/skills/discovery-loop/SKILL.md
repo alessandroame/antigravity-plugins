@@ -46,7 +46,8 @@ Launch `run_workflow` with `ScriptPath` set to `plugins/ab-bench/references/disc
 
 ## 4. Step 3: 4-Oracle Filtering & Blind Evaluation (`discovery.mjs --evaluate`)
 
-Before any candidate reaches the user, enforce all 4 blocking oracles (`empirical-data`, `invariance-fuzzing`, `blind-cognitive`, `technical-ab-bench`), strip mutator/worktree labels via `--sanitize-batch`, and rank surviving non-dominated variants on the Pareto frontier (`--evaluate`).
+Before any candidate reaches the user, enforce all 4 blocking oracles (`empirical-data`, `invariance-fuzzing`, `blind-cognitive`, `technical-ab-bench`), normalize `complexityCost` uniformly from `git diff --numstat` (`1.0 + (added - deleted) / 100` clamped in `[0.1, 5.0]`), strip mutator/worktree labels via `--sanitize-batch`, and rank surviving non-dominated variants on the Pareto frontier (`--evaluate`).
+- At completion, export surviving diffs to `<output_dir>/patches/*.patch` and automatically remove temporary `workflow-self-*` worktrees (`keep_worktrees: true` in `Args` to retain them).
 
 ---
 

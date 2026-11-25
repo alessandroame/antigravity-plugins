@@ -414,7 +414,11 @@ describe('Oracle Beta (Ergonomics, CLI End-to-End & Workflow Template)', () => {
       'workspace=',
       'schema=',
       'try:',
-      'except Exception'
+      'except Exception',
+      '"worktree", "remove"',
+      '"worktree", "prune"',
+      'patches',
+      'linesAdded'
     ]) {
       assert.ok(pySrc.includes(token), `Python template missing '${token}'`);
     }

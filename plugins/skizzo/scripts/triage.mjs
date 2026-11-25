@@ -21,18 +21,33 @@ const TRACK_SLOTS = ['Alpha', 'Beta', 'Delta', 'Epsilon'];
 
 const FORCE_PATTERNS = [
   /(?:^|\s)--force(?:\s|$)/i,
-  /(?:^|\s)-f(?:\s|$)/i,
   /\b(?:forza\s+skizzo|usa\s+skizzo|con\s+skizzo\s+completo|dual[- ]track\s+forzato)\b/i
 ];
+const FORCE_SHORT_FLAG_REGEX = /(?:^|\s)-f(?:\s|$)/i;
 
 const SKIP_PATTERNS = [
   /(?:^|\s)--(?:skip|fast)(?:\s|$)/i,
   /\b(?:senza\s+skizzo|salta\s+skizzo|risposta\s+veloce|vai\s+veloce|fast[- ]pass)\b/i
 ];
 
+// Guard G0: Explicit deactivation commands that turn sticky Skizzo OFF
+const STOP_PATTERNS = [
+  /^\s*\/skizzo\s+(?:--)?(?:stop|off)(?:\s+(?:adesso|ora|grazie|per\s+favore))?\s*[.!]?$/i,
+  /^\s*(?:ok\s+|va\s+bene\s+)?(?:stop|ferma|disattiva|spegni)\s+skizzo(?:\s+(?:adesso|ora|grazie|per\s+favore))?\s*[.!]?$/i
+];
+
 const MEDIATOR_PATTERNS = [
-  /(?:^|\s)--mediator(?:\s|$)/i,
-  /(?:^|\s)-m(?:\s|$)/i
+  /(?:^|\s)--mediator(?:\s|$)/i
+];
+const MEDIATOR_SHORT_FLAG_REGEX = /(?:^|\s)-m(?:\s|$)/i;
+
+const LOG_AND_TRACE_LINE_PATTERNS = [
+  /^\s*at\s+(?:async\s+)?(?:.+\([^)]*(?::\d+(?::\d+)?|<anonymous>|native)\)|.+:\d+(?::\d+)?|\S+\s+\((?:<anonymous>|native)\))\s*$/i,
+  /^\s*[\w.$<>[\]-]*@(?:https?:\/\/|file:\/\/|[\w./\\-]+):\d+(?::\d+)?\s*$/i,
+  /^\s*(?:\[?(?:\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?|\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]?\s*)?(?:\[[^\]]+\]\s*)*(?:[\w./\\-]+\.(?:m?js|tsx?|jsx?|cjs|css|html|json|py|go|rs|java|rb|php)(?:\?[^\s:]*)?|VM\d+):\d+(?::\d+)?(?:\s|$).*$/i,
+  /^\s*(?:Uncaught\s+(?:\([^)]+\)\s+)?)?(?:TypeError|ReferenceError|SyntaxError|RangeError|Error|EvalError|URIError|AggregateError|AssertionError|DOMException|UnhandledPromiseRejection(?:Warning)?)\s*:.*$/i,
+  /^\s*(?:\[(?:ERROR|WARN(?:ING)?|INFO|DEBUG|TRACE|LOG|FATAL|VERBOSE|hmr|vite|webpack|i18n)\]|(?:ERROR|WARN(?:ING)?|FATAL|TRACE)\s*:|console\.(?:log|warn|error|info|debug)\b|\(node:\d+\)\s+|Failed to load resource:).*$/i,
+  /^\s*(?:(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+https?:\/\/\S+.*|Traceback \(most recent call last\):.*|File "[^"]+", line \d+.*|Caused by:\s+.*|\.\.\.\s+\d+\s+more\s*|\d+\s*\|\s*.*|\^+)$/i
 ];
 
 const TRACKS_FLAG_REGEX = /(?:^|\s)--(?:tracks|agents)\s+(\d+)\b/i;
@@ -62,9 +77,14 @@ const MICRO_EDIT_PATTERNS = [
   /\b(?:correggi\s+(?:il\s+)?(?:typo|refuso)|fix\s+typo|rinomina|rename|cambia\s+il\s+(?:colore|testo|padding|margine|titolo|numero|valore)|aggiorna\s+la\s+versione|bump\s+version|fix\s+(?:lint|import))\b/i
 ];
 
-// Signals that indicate genuine design, architectural, or multi-perspective trade-offs (overrides G2a/G3)
+// Signals that indicate genuine design, architectural, or multi-perspective trade-offs (overrides G3, and G2a only with imperative/creation intent)
 const DESIGN_INTENT_PATTERNS = [
   /\b(?:fai\s+un\s+piano|progetta(?:re)?|architettura|nuova\s+funzionalit[aà]|nuovo\s+(?:plugin|modulo|sistema|flusso|metodo|percorso)|rifattorizza(?:re)?|refactor|migliora(?:re|menti)?|modalit[aà]\s+auto|sistema\s+per\s+filtrare|bivio|compromesso|trade[- ]?off|auto[- ]?apprendimento|struttura(?:re)?|imposta(?:re)?|organizza(?:re)?|decidere\s+come|bilancia(?:re)?)\b/i
+];
+
+// Imperative/creation intent required before DESIGN_INTENT_PATTERNS overrides READONLY_START_PATTERNS
+const IMPERATIVE_DESIGN_INTENT_PATTERNS = [
+  /\b(?:fai\s+un\s+piano|progetta|progettiamo|implementa|implementiamo|crea|creiamo|costruisci|costruiamo|ridisegna|ridisegniamo|rifattorizza|rifattorizziamo|refactorizza|fai\s+(?:il\s+)?refactor|imposta|impostiamo|organizza|organizziamo|strutturiamo|bilanciamo|dobbiamo\s+(?:progettare|rifattorizzare|strutturare|decidere|implementare|creare)|(?:vorrei|voglio)\s+(?:progettare|implementare|creare|migliorare|rifattorizzare))\b/i
 ];
 
 // Additive Scoring Dimension 1 (+2 pt): Structural design, planning, architecture, methodology, or system organization
@@ -113,6 +133,104 @@ function parseRequestedTracks(rawTracks) {
   const num = Number(rawTracks);
   if (!Number.isFinite(num) || num <= 0) return null;
   return /** @type {2 | 3 | 4} */ (Math.min(MAX_TRACKS, Math.max(MIN_TRACKS, Math.round(num))));
+}
+
+/**
+ * Strips fenced code blocks and pasted console/stack-trace lines from a prompt
+ * so pasted logs or snippets do not inflate tension scores or file mention counts.
+ * @param {unknown} rawText
+ * @returns {string}
+ */
+export function stripFencedCodeAndLogs(rawText) {
+  if (typeof rawText !== 'string') return '';
+  const withoutInlineFences = rawText.replace(/(```|~~~)[^\n]*?\1/g, ' ');
+  const lines = withoutInlineFences.split(/\r?\n/);
+  const kept = [];
+  let activeFence = null;
+
+  for (const line of lines) {
+    const fenceMatch = line.match(/^\s*(```|~~~)/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      if (!activeFence) {
+        activeFence = marker;
+      } else if (activeFence === marker) {
+        activeFence = null;
+      }
+      continue;
+    }
+    if (activeFence) continue;
+    if (LOG_AND_TRACE_LINE_PATTERNS.some((rx) => rx.test(line))) continue;
+    kept.push(line);
+  }
+
+  return kept.join('\n').trim();
+}
+
+/**
+ * Strips inline backticked and quoted spans for CLI flag inspection while
+ * preserving Italian apostrophes (e.g. `c'è`, `l'app`, `sull'app`).
+ * @param {unknown} text
+ * @returns {string}
+ */
+export function stripQuotedAndBackticked(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .replace(/`+[^`\n]*`+/g, ' ')
+    .replace(/"(?:\\.|[^"\\\n])*"/g, ' ')
+    .replace(/(^|[\s(\[{:=])'(?:\\.|[^'\\\n])*?'(?=$|[\s.,;:!?)\]}])/g, '$1 ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Extracts leading `/skizzo` and contiguous leading CLI flag tokens so short
+ * flags (`-f`, `-m`) are only honored in command-head position.
+ * @param {unknown} text
+ * @returns {string}
+ */
+export function extractCommandHead(text) {
+  if (typeof text !== 'string') return '';
+  const trimmed = text.trimStart();
+  if (!trimmed) return '';
+  const tokens = trimmed.split(/\s+/);
+  const headTokens = [];
+  let i = 0;
+
+  if (tokens[0] && /^\/skizzo$/i.test(tokens[0])) {
+    headTokens.push(tokens[0]);
+    i = 1;
+  }
+
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (/^--(?:tracks|agents)$/i.test(tok) && tokens[i + 1] && /^\d+$/.test(tokens[i + 1])) {
+      headTokens.push(tok, tokens[i + 1]);
+      i += 2;
+      continue;
+    }
+    if (/^(?:--[a-z][a-z-]*|-[fm])$/i.test(tok)) {
+      headTokens.push(tok);
+      i += 1;
+      continue;
+    }
+    break;
+  }
+
+  return headTokens.join(' ');
+}
+
+/**
+ * Counts unique file mentions (`@path/file.ext` or `file.ext`) via Set so
+ * repeated mentions of the same file do not trigger multi-file scope inflation.
+ * @param {unknown} text
+ * @returns {number}
+ */
+export function countUniqueFileMentions(text) {
+  if (typeof text !== 'string') return 0;
+  const matches = text.match(/@[\w./-]+|\b[\w-]+\.(?:mjs|js|ts|md|json|html|css)\b/g) || [];
+  const unique = new Set(matches.map((token) => token.replace(/^@/, '').toLowerCase()));
+  return unique.size;
 }
 
 /**
@@ -237,24 +355,31 @@ export function rankAndCapDomains(candidateDomains, options = {}) {
  */
 export function classifySkizzoTask(rawPrompt, options = {}) {
   const safeRaw = typeof rawPrompt === 'string' ? rawPrompt.trim() : '';
-  const cleanText = normalizePromptText(safeRaw);
+  const intentSurface = stripFencedCodeAndLogs(safeRaw);
+  const flagSurface = stripQuotedAndBackticked(intentSurface);
+  const commandHead = extractCommandHead(flagSurface);
+  const cleanText = normalizePromptText(intentSurface);
 
-  const flagTracksMatch = safeRaw.match(TRACKS_FLAG_REGEX) || safeRaw.match(NATURAL_TRACKS_REGEX);
+  const flagTracksMatch = flagSurface.match(TRACKS_FLAG_REGEX) || flagSurface.match(NATURAL_TRACKS_REGEX);
   const requestedTracks =
     parseRequestedTracks(options.tracks) ??
     (flagTracksMatch ? parseRequestedTracks(flagTracksMatch[1]) : null);
 
-  const hasExplicitCommand = /(?:^|\s)\/skizzo\b/i.test(safeRaw);
+  const hasExplicitCommand = /(?:^|\s)\/skizzo\b/i.test(flagSurface);
   const isForced =
     Boolean(options.force || options.always || requestedTracks) ||
-    FORCE_PATTERNS.some((rx) => rx.test(safeRaw));
+    FORCE_PATTERNS.some((rx) => rx.test(flagSurface)) ||
+    FORCE_SHORT_FLAG_REGEX.test(commandHead);
   const explicitTrigger = hasExplicitCommand || isForced;
   const stickySessionActive =
     options.stickySessionActive !== undefined ? Boolean(options.stickySessionActive) : explicitTrigger;
   const isImplicitMode = !explicitTrigger && !stickySessionActive;
   const threshold = isImplicitMode ? 4 : 3;
 
-  const hasMediator = Boolean(options.mediator) || MEDIATOR_PATTERNS.some((rx) => rx.test(safeRaw));
+  const hasMediator =
+    Boolean(options.mediator) ||
+    MEDIATOR_PATTERNS.some((rx) => rx.test(flagSurface)) ||
+    MEDIATOR_SHORT_FLAG_REGEX.test(commandHead);
   const activeRoute = hasMediator ? 'DUAL-TRACK+MEDIATOR' : 'DUAL-TRACK';
   const activeTrackMode =
     requestedTracks === 4
@@ -265,13 +390,34 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
           ? 'DUAL-TRACK'
           : 'MULTI-TRACK';
 
-  const fastPassBounds = {
+  /**
+   * Builds a canonical 14-key FAST-PASS result object preserving JS-API backward compatibility.
+   * @param {{ score: number, reason: string, signals: string[], silentFastPass?: boolean, keepStickyOn?: boolean, extra?: object }} fields
+   */
+  const buildFastPassResult = ({
+    score,
+    reason,
+    signals,
+    silentFastPass = isImplicitMode,
+    keepStickyOn = true,
+    extra = {}
+  }) => ({
     trackMode: /** @type {'FAST-PASS'} */ ('FAST-PASS'),
     minTracks: 0,
     maxTracks: 0,
     requestedTracks: null,
-    personaSelection: /** @type {'NONE'} */ ('NONE')
-  };
+    personaSelection: /** @type {'NONE'} */ ('NONE'),
+    route: 'FAST-PASS',
+    score,
+    threshold,
+    ...extra,
+    reason,
+    signals,
+    explicitTrigger,
+    silentFastPass,
+    keepStickyOn,
+    estimatedSavedSeconds: 110
+  });
 
   const activeBounds = {
     trackMode: /** @type {'DUAL-TRACK' | 'TRI-TRACK' | 'QUAD-TRACK' | 'MULTI-TRACK'} */ (activeTrackMode),
@@ -281,24 +427,28 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
     personaSelection: /** @type {'LLM_DYNAMIC_RANKED'} */ ('LLM_DYNAMIC_RANKED')
   };
 
-  // 0. Empty or whitespace-only input -> safe FAST-PASS
+  // 0a. Explicit stop/off command -> turn sticky Skizzo OFF cleanly
+  if (STOP_PATTERNS.some((rx) => rx.test(safeRaw))) {
+    return buildFastPassResult({
+      score: -100,
+      reason: 'disattivazione esplicita della modalità skizzo (/skizzo stop)',
+      signals: ['guard_stop'],
+      silentFastPass: true,
+      keepStickyOn: false
+    });
+  }
+
+  // 0b. Empty or whitespace-only input -> safe FAST-PASS
   if (!cleanText) {
-    return {
-      ...fastPassBounds,
-      route: 'FAST-PASS',
+    return buildFastPassResult({
       score: 0,
-      threshold,
       reason: 'messaggio vuoto o solo comando di stato',
-      signals: ['empty_input'],
-      explicitTrigger,
-      silentFastPass: isImplicitMode,
-      keepStickyOn: true,
-      estimatedSavedSeconds: 110
-    };
+      signals: ['empty_input']
+    });
   }
 
   // 1. Explicit user overrides (--force / --always / --tracks N vs --skip / --fast)
-  const isSkipped = Boolean(options.fast || options.skip) || SKIP_PATTERNS.some((rx) => rx.test(safeRaw));
+  const isSkipped = Boolean(options.fast || options.skip) || SKIP_PATTERNS.some((rx) => rx.test(flagSurface));
   if (isForced && !isSkipped) {
     return {
       ...activeBounds,
@@ -315,82 +465,49 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
   }
 
   if (isSkipped) {
-    return {
-      ...fastPassBounds,
-      route: 'FAST-PASS',
+    return buildFastPassResult({
       score: -50,
-      threshold,
       reason: 'risposta rapida richiesta dall\'utente (--skip)',
-      signals: ['manual_skip'],
-      explicitTrigger,
-      silentFastPass: isImplicitMode,
-      keepStickyOn: true,
-      estimatedSavedSeconds: 110
-    };
+      signals: ['manual_skip']
+    });
   }
 
   // 2. Hard Read-Only Override anywhere in the prompt (e.g. "non agire è solo una domanda")
   if (READONLY_OVERRIDE_PATTERNS.some((rx) => rx.test(cleanText))) {
-    return {
-      ...fastPassBounds,
-      route: 'FAST-PASS',
+    return buildFastPassResult({
       score: -60,
-      threshold,
       reason: 'clausola esplicita di sola lettura (non agire / solo una domanda)',
-      signals: ['guard_readonly', 'readonly_override_clause'],
-      explicitTrigger,
-      silentFastPass: isImplicitMode,
-      keepStickyOn: true,
-      estimatedSavedSeconds: 110
-    };
+      signals: ['guard_readonly', 'readonly_override_clause']
+    });
   }
 
   // 3. Hard-Bypass Guards (G1, G2a, G3) when no structural design intent is present
   const hasDesignIntent = DESIGN_INTENT_PATTERNS.some((rx) => rx.test(cleanText));
+  const hasImperativeDesignIntent =
+    hasDesignIntent && IMPERATIVE_DESIGN_INTENT_PATTERNS.some((rx) => rx.test(cleanText));
 
   if (OPS_GUARD_PATTERNS.some((rx) => rx.test(cleanText))) {
-    return {
-      ...fastPassBounds,
-      route: 'FAST-PASS',
+    return buildFastPassResult({
       score: -99,
-      threshold,
       reason: 'comando operativo o esecuzione diretta di piano già approvato',
-      signals: ['guard_ops_or_plan_exec'],
-      explicitTrigger,
-      silentFastPass: isImplicitMode,
-      keepStickyOn: true,
-      estimatedSavedSeconds: 110
-    };
+      signals: ['guard_ops_or_plan_exec']
+    });
   }
 
-  if (!hasDesignIntent && READONLY_START_PATTERNS.some((rx) => rx.test(cleanText))) {
-    return {
-      ...fastPassBounds,
-      route: 'FAST-PASS',
+  if (!hasImperativeDesignIntent && READONLY_START_PATTERNS.some((rx) => rx.test(cleanText))) {
+    return buildFastPassResult({
       score: -40,
-      threshold,
       reason: 'domanda informativa o ispezione di sola lettura',
-      signals: ['guard_readonly'],
-      explicitTrigger,
-      silentFastPass: isImplicitMode,
-      estimatedSavedSeconds: 110,
-      keepStickyOn: true
-    };
+      signals: ['guard_readonly']
+    });
   }
 
   if (!hasDesignIntent && MICRO_EDIT_PATTERNS.some((rx) => rx.test(cleanText))) {
-    return {
-      ...fastPassBounds,
-      route: 'FAST-PASS',
+    return buildFastPassResult({
       score: 1,
-      threshold,
       reason: 'modifica puntuale a scelta unica senza bivi progettuali',
-      signals: ['guard_micro_edit'],
-      explicitTrigger,
-      silentFastPass: isImplicitMode,
-      keepStickyOn: true,
-      estimatedSavedSeconds: 110
-    };
+      signals: ['guard_micro_edit']
+    });
   }
 
   // 4. Additive Dialectical Tension Scoring (0..7 points)
@@ -414,8 +531,8 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
     signals.push('open_tradeoff');
   }
 
-  // Multi-file or complex scope boost
-  const fileMentions = (cleanText.match(/@[\w./-]+|\b[\w-]+\.(?:mjs|js|ts|md|json|html|css)\b/g) || []).length;
+  // Multi-file or complex scope boost (deduplicated unique files only)
+  const fileMentions = countUniqueFileMentions(cleanText);
   if (fileMentions >= 3 && score < 3) {
     score += 2;
     signals.push('multi_file_scope');
@@ -427,6 +544,7 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
       route: activeRoute,
       score,
       threshold,
+      uniqueFileMentions: fileMentions,
       reason: 'scelta multi-prospettiva con domini in tensione (selezione e ranking ruoli 2..4 delegati all\'LLM)',
       signals,
       explicitTrigger,
@@ -436,17 +554,40 @@ export function classifySkizzoTask(rawPrompt, options = {}) {
     };
   }
 
-  return {
-    ...fastPassBounds,
-    route: 'FAST-PASS',
+  return buildFastPassResult({
     score,
-    threshold,
     reason: 'richiesta diretta senza conflitti multi-dominio',
     signals: signals.length ? signals : ['low_tension_direct'],
-    explicitTrigger,
-    silentFastPass: isImplicitMode,
-    keepStickyOn: true,
-    estimatedSavedSeconds: 110
+    extra: { uniqueFileMentions: fileMentions }
+  });
+}
+
+/**
+ * Projects a full triage result into a compact single-line CLI payload
+ * (`<= 6` keys on normal FAST-PASS, `7` when `keepStickyOn === false`, `8` on active routes).
+ * @param {ReturnType<typeof classifySkizzoTask>} result
+ */
+export function formatCliResult(result) {
+  if (result.route === 'FAST-PASS') {
+    return {
+      route: result.route,
+      trackMode: result.trackMode,
+      score: result.score,
+      threshold: result.threshold,
+      silentFastPass: result.silentFastPass,
+      signals: result.signals,
+      ...(result.keepStickyOn === false ? { keepStickyOn: false } : {})
+    };
+  }
+  return {
+    route: result.route,
+    trackMode: result.trackMode,
+    score: result.score,
+    threshold: result.threshold,
+    signals: result.signals,
+    requestedTracks: result.requestedTracks,
+    minTracks: result.minTracks,
+    maxTracks: result.maxTracks
   };
 }
 
@@ -494,5 +635,5 @@ if (isMain) {
     stickySessionActive,
     tracks
   });
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify(formatCliResult(result))}\n`);
 }

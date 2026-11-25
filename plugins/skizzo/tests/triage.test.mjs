@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { classifySkizzoTask, rankAndCapDomains } from '../scripts/triage.mjs';
+import {
+  classifySkizzoTask,
+  countUniqueFileMentions,
+  formatCliResult,
+  rankAndCapDomains
+} from '../scripts/triage.mjs';
 import { sanitizeForBlindJudge } from '../../ab-bench/scripts/bench.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -231,5 +236,136 @@ describe('Skizzo Auto-Triage & Dynamic Domain Ranking Engine', () => {
     assert.ok(!clean.includes('Delta'));
     assert.ok(!clean.includes('Alpha'));
     assert.match(clean, /Suite di Verifica/);
+  });
+
+  it('emits compact single-line CLI JSON (<=6 FAST-PASS / <=8 active keys, <=170B) with lossless reconstruction', () => {
+    const fastPassStdout = execFileSync(process.execPath, [TRIAGE_SCRIPT, 'spiega come funziona validate.mjs'], {
+      encoding: 'utf-8'
+    });
+    const activeStdout = execFileSync(process.execPath, [TRIAGE_SCRIPT, '--tracks', '3', 'valuta questo flusso'], {
+      encoding: 'utf-8'
+    });
+
+    assert.equal(fastPassStdout.trimEnd().includes('\n'), false);
+    assert.equal(activeStdout.trimEnd().includes('\n'), false);
+
+    const fastPassOut = JSON.parse(fastPassStdout);
+    const activeOut = JSON.parse(activeStdout);
+
+    assert.ok(Object.keys(fastPassOut).length <= 6);
+    assert.ok(Object.keys(activeOut).length <= 8);
+    assert.ok(Buffer.byteLength(fastPassStdout, 'utf8') <= 170);
+    assert.ok(Buffer.byteLength(activeStdout, 'utf8') <= 170);
+    assert.equal(formatCliResult(classifySkizzoTask('spiega come funziona validate.mjs')).route, 'FAST-PASS');
+  });
+
+  it('routes explicit stop commands to FAST-PASS with keepStickyOn=false and silentFastPass=true', () => {
+    for (const cmd of ['/skizzo stop', 'stop skizzo', '/skizzo off']) {
+      const res = classifySkizzoTask(cmd);
+      assert.equal(res.route, 'FAST-PASS');
+      assert.equal(res.score, -100);
+      assert.equal(res.keepStickyOn, false);
+      assert.equal(res.silentFastPass, true);
+      assert.ok(res.signals.includes('guard_stop'));
+
+      const cliOut = JSON.parse(execFileSync(process.execPath, [TRIAGE_SCRIPT, cmd], { encoding: 'utf-8' }));
+      assert.equal(cliOut.route, 'FAST-PASS');
+      assert.equal(cliOut.keepStickyOn, false);
+      assert.equal(cliOut.silentFastPass, true);
+    }
+  });
+
+  it('keeps read-only questions with passive design nouns on FAST-PASS unless imperative design intent is present', () => {
+    const readonlyPrompts = [
+      'come funziona l architettura del plugin skizzo e il suo flusso?',
+      'spiega come funziona il sistema per filtrare e i suoi compromessi'
+    ];
+    for (const prompt of readonlyPrompts) {
+      const res = classifySkizzoTask(prompt, { stickySessionActive: false });
+      assert.equal(res.route, 'FAST-PASS', `Expected FAST-PASS for: ${prompt}`);
+      assert.ok(res.signals.includes('guard_readonly'));
+    }
+
+    const imperativeWithReadonlyOpener = classifySkizzoTask(
+      'spiega come funziona auth.js e poi progetta un nuovo modulo con input utente e tolleranza agli errori',
+      { stickySessionActive: false }
+    );
+    assert.equal(imperativeWithReadonlyOpener.route, 'DUAL-TRACK');
+    assert.ok(imperativeWithReadonlyOpener.score >= 4);
+  });
+
+  it('routes multi-line console/stack-trace dumps with repeated filenames to FAST-PASS (H1.1)', () => {
+    const prompt = [
+      'Guarda questo errore in console:',
+      'index-C-ZSovau.js:142 Uncaught TypeError: Cannot read properties of undefined (reading \'map\')',
+      '    at renderList (index-C-ZSovau.js:142:18)',
+      '    at commitHookEffectListMount (index-C-ZSovau.js:891:5)',
+      'i18n.js:6743 [WARN] Missing translation key for fallback error validation'
+    ].join('\n');
+
+    const res = classifySkizzoTask(prompt);
+    assert.equal(res.route, 'FAST-PASS');
+    assert.ok(res.score < 4);
+    assert.equal(res.uniqueFileMentions, 0);
+    assert.ok(!res.signals.includes('multi_file_scope'));
+  });
+
+  it('deduplicates repeated mentions of the same @triage.mjs file via Set (H1.2)', () => {
+    const prompt = 'Controlla @triage.mjs, aggiorna la validazione in @triage.mjs e verifica @triage.mjs';
+    assert.equal(countUniqueFileMentions(prompt), 1);
+
+    const res = classifySkizzoTask(prompt);
+    assert.equal(res.route, 'FAST-PASS');
+    assert.equal(res.uniqueFileMentions, 1);
+    assert.ok(!res.signals.includes('multi_file_scope'));
+
+    const multiRes = classifySkizzoTask(
+      'Controlla @alpha.mjs, aggiorna la validazione in @beta.mjs e verifica @gamma.mjs'
+    );
+    assert.equal(multiRes.uniqueFileMentions, 3);
+    assert.equal(multiRes.route, 'DUAL-TRACK');
+    assert.ok(multiRes.signals.includes('multi_file_scope'));
+  });
+
+  it('strips fenced code blocks containing tension keywords inside a micro-edit (H1.3)', () => {
+    const prompt = [
+      'cambia il padding del bottone da 8px a 12px usando questo snippet:',
+      '```css',
+      '/* progetta architettura responsive 360px dashboard headless core',
+      '   validazione input fallback concorrenza trade-off */',
+      '.btn { padding: 12px; }',
+      '```'
+    ].join('\n');
+
+    const res = classifySkizzoTask(prompt);
+    assert.equal(res.route, 'FAST-PASS');
+    assert.ok(res.score < 3);
+    assert.ok(res.signals.includes('guard_micro_edit'));
+  });
+
+  it('ignores metalinguistic flag mentions while honoring command-head -f and -m (H1.4)', () => {
+    const metaPrompts = [
+      'correggi il testo del flag -f in README.md',
+      'spiega cosa fa "--force"',
+      'spiega cosa fa `--force`',
+      'aggiorna la descrizione di "-m" in README.md'
+    ];
+
+    for (const prompt of metaPrompts) {
+      const res = classifySkizzoTask(prompt);
+      assert.equal(res.route, 'FAST-PASS', `Expected FAST-PASS for: ${prompt}`);
+      assert.ok(res.score < 4);
+      assert.ok(!res.signals.includes('manual_force'));
+    }
+
+    const headForce = classifySkizzoTask('/skizzo -f cambia il colore del pulsante primario');
+    assert.equal(headForce.route, 'DUAL-TRACK');
+    assert.equal(headForce.score, 99);
+    assert.ok(headForce.signals.includes('manual_force'));
+
+    const headMediator = classifySkizzoTask(
+      '/skizzo -m progetta il nuovo filtro di ricerca con input permissivi e architettura pura'
+    );
+    assert.equal(headMediator.route, 'DUAL-TRACK+MEDIATOR');
   });
 });

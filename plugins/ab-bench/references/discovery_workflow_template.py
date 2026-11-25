@@ -84,6 +84,9 @@ PROTOTYPE_SCHEMA = {
     "properties": {
         "implemented": {"type": "boolean"},
         "worktreeBranch": {"type": "string"},
+        "worktreePath": {"type": "string"},
+        "linesAdded": {"type": "integer"},
+        "linesDeleted": {"type": "integer"},
         "summary": {"type": "string"},
         "diffSummary": {"type": "string"},
         "empiricalScore": {"type": "number"},
@@ -168,6 +171,7 @@ prior_hypotheses = []
 all_variants = []
 best_frontier_delta = 0.0
 latest_reveal_map = {}
+worktree_by_id = {}
 
 state_file = output_dir / "run-state.json"
 hyp_file = output_dir / "wave-hypotheses.json"
@@ -256,7 +260,7 @@ for wave in range(1, max_waves + 1):
         mode_note = (
             "Read-only dry-run simulation: inspect target files, design the exact minimal patch without writing files, and run read-only baseline tests."
             if dry_run_builders
-            else "Implement this mutation inside your isolated share workspace (NEVER commit to main), run unit tests and checks, and report measured metrics."
+            else "Implement this mutation inside your isolated share workspace (NEVER commit to main), run unit tests and checks, and report worktreePath (`git rev-parse --show-toplevel`), worktreeBranch (`git rev-parse --abbrev-ref HEAD`), and exact `linesAdded` / `linesDeleted` from `git diff --numstat`."
         )
         prompt = (
             f"Prototype hypothesis '{hyp['id']}' on scope {target_scope}.\n"
@@ -303,16 +307,30 @@ for wave in range(1, max_waves + 1):
         inv_failures = int(d.get("invarianceFailures", 0))
         tests_ok = bool(d.get("testsPassed", False))
         emp_ok = bool(d.get("empiricalPassed", False))
+        lines_added = d.get("linesAdded")
+        lines_deleted = d.get("linesDeleted")
+        if isinstance(lines_added, int) and isinstance(lines_deleted, int):
+            net_delta = lines_added - lines_deleted
+            complexity_cost = round(max(0.1, min(5.0, 1.0 + net_delta / 100.0)), 3)
+        else:
+            raw_cost = float(d.get("complexityCost", 1.0))
+            complexity_cost = round(max(0.1, min(5.0, raw_cost)), 3)
+
+        wt_branch = d.get("worktreeBranch") or ("dry-run-readonly" if dry_run_builders else f"share/{var_id}")
+        wt_path = d.get("worktreePath") or ""
+        if wt_path:
+            worktree_by_id[var_id] = {"worktreePath": wt_path, "worktreeBranch": wt_branch}
+
         wave_variants.append({
             "id": var_id,
             "mutatorArchetype": hyp.get("mutatorArchetype", "unknown"),
-            "worktreeBranch": d.get("worktreeBranch") or ("dry-run-readonly" if dry_run_builders else f"share/{var_id}"),
+            "worktreeBranch": wt_branch,
             "summary": d.get("summary", hyp.get("claim", "")),
             "diffSummary": d.get("diffSummary", ""),
             "metrics": {
                 "empiricalScore": float(d.get("empiricalScore", 0.0)),
                 "invarianceRate": float(d.get("invarianceRate", 0.0)),
-                "complexityCost": float(d.get("complexityCost", 1.0)),
+                "complexityCost": complexity_cost,
             },
             "technicalChecks": {
                 "testsPassed": tests_ok,
@@ -461,5 +479,82 @@ final_out = run_discovery_cli([
     "--json",
 ])
 final_verdict = final_out.get("verdict", {})
-log(f"Discovery Loop finished: exitReason={final_verdict.get('exitReason')} report={report_file}")
-print(json.dumps({"exitReason": final_verdict.get("exitReason"), "verdictPath": str(verdict_file), "reportPath": str(report_file)}, indent=2))
+
+patches_dir = output_dir / "patches"
+exported_patches = []
+scope_paths = [p for p in brief.get("targetScope", []) if p]
+for opt in final_verdict.get("humanSelectionOptions", []):
+    vid = opt.get("variantId")
+    wt_info = worktree_by_id.get(vid, {})
+    wt_dir = wt_info.get("worktreePath", "")
+    if not wt_dir:
+        continue
+    wt_path_obj = Path(wt_dir)
+    if wt_path_obj.exists() and wt_path_obj.resolve() != repo_root.resolve():
+        diff_cmd = ["git", "-C", str(wt_path_obj), "diff"]
+        if scope_paths:
+            diff_cmd.extend(["--", *scope_paths])
+        diff_proc = subprocess.run(diff_cmd, capture_output=True, text=True)
+        if diff_proc.returncode == 0 and diff_proc.stdout.strip():
+            patches_dir.mkdir(parents=True, exist_ok=True)
+            patch_file = patches_dir / f"{vid}.patch"
+            patch_file.write_text(diff_proc.stdout, encoding="utf-8")
+            exported_patches.append(str(patch_file))
+
+removed_worktrees = []
+if not bool(args.get("keep_worktrees", False)):
+    wt_list_proc = subprocess.run(
+        ["git", "-C", str(repo_root), "worktree", "list", "--porcelain"],
+        capture_output=True,
+        text=True,
+    )
+    if wt_list_proc.returncode == 0:
+        blocks = [b for b in wt_list_proc.stdout.strip().split("\n\n") if b.strip()]
+        conv_id = str(globals().get("CONVERSATION_ID", "") or "")
+        for block in blocks:
+            wt_entry = ""
+            branch_name = ""
+            for line in block.splitlines():
+                if line.startswith("worktree "):
+                    wt_entry = line[len("worktree "):].strip()
+                elif line.startswith("branch refs/heads/"):
+                    branch_name = line[len("branch refs/heads/"):].strip()
+            if not wt_entry:
+                continue
+            try:
+                is_main_root = Path(wt_entry).resolve() == repo_root.resolve()
+            except Exception:
+                is_main_root = False
+            if is_main_root:
+                continue
+            belongs_to_run = (conv_id and conv_id in wt_entry) or any(
+                wt_info.get("worktreePath") and Path(wt_info["worktreePath"]).resolve() == Path(wt_entry).resolve()
+                for wt_info in worktree_by_id.values()
+            )
+            if belongs_to_run:
+                rm_res = subprocess.run(
+                    ["git", "-C", str(repo_root), "worktree", "remove", "--force", wt_entry],
+                    capture_output=True,
+                    text=True,
+                )
+                if rm_res.returncode == 0:
+                    removed_worktrees.append(wt_entry)
+                if branch_name.startswith("workflow-self-"):
+                    subprocess.run(
+                        ["git", "-C", str(repo_root), "branch", "-D", branch_name],
+                        capture_output=True,
+                        text=True,
+                    )
+        subprocess.run(["git", "-C", str(repo_root), "worktree", "prune"], capture_output=True, text=True)
+
+log(
+    f"Discovery Loop finished: exitReason={final_verdict.get('exitReason')} "
+    f"patches={len(exported_patches)} cleanedWorktrees={len(removed_worktrees)} report={report_file}"
+)
+print(json.dumps({
+    "exitReason": final_verdict.get("exitReason"),
+    "verdictPath": str(verdict_file),
+    "reportPath": str(report_file),
+    "exportedPatches": exported_patches,
+    "removedWorktrees": removed_worktrees,
+}, indent=2))
