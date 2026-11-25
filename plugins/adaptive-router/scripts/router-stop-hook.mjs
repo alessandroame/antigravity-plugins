@@ -15,7 +15,9 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   discoverCapabilitiesFromTranscript,
-  extractModelBaseFamily
+  extractModelBaseFamily,
+  isSubagentPromptOrTranscript,
+  sliceLatestExplicitUserTurnJsonl
 } from '../core/router-engine.mjs';
 import {
   getAnalyticsDir,
@@ -68,13 +70,15 @@ async function main() {
       registry.pendingRosterRefresh = {
         required: true,
         detectedAtMs: Date.now(),
-        notifiedAtMs: null
+        notifiedAtMs: null,
+        notifiedConversationIds: []
       };
     }
 
-    if (transcriptPath && existsSync(transcriptPath)) {
+    if (transcriptPath && existsSync(transcriptPath) && !isSubagentPromptOrTranscript('', transcriptPath)) {
       const rawJsonl = readFileSync(transcriptPath, 'utf-8');
-      const res = discoverCapabilitiesFromTranscript(rawJsonl, registry);
+      const latestSlice = sliceLatestExplicitUserTurnJsonl(rawJsonl);
+      const res = discoverCapabilitiesFromTranscript(latestSlice, registry);
       registry = res.registry;
 
       if (res.newlyDiscoveredModels.length > 0 && registry.lutCalibration?.calibratedAtMs) {
@@ -95,16 +99,34 @@ async function main() {
             (fam) =>
               fam &&
               /^(?:gemini\b|orchestrator\b)/i.test(fam) &&
-              !calibratedMap[fam] &&
-              (!rosterFamilies || rosterFamilies.has(fam))
+              !calibratedMap[fam]
           );
         if (newGeminiFamilies.length > 0) {
-          const prevUncal = registry.pendingDocCalibration?.uncalibratedFamilies || [];
+          if (rosterFamilies && newGeminiFamilies.some((fam) => !rosterFamilies.has(fam))) {
+            if (!registry.pendingRosterRefresh?.required) {
+              registry.pendingRosterRefresh = {
+                required: true,
+                detectedAtMs: Date.now(),
+                notifiedAtMs: null,
+                notifiedConversationIds: []
+              };
+            }
+          }
+          const prevUncal = Array.isArray(registry.pendingDocCalibration?.uncalibratedFamilies)
+            ? registry.pendingDocCalibration.uncalibratedFamilies
+            : [];
+          const addedUncal = newGeminiFamilies.filter((fam) => !prevUncal.includes(fam));
           registry.pendingDocCalibration = {
             required: true,
             uncalibratedFamilies: [...new Set([...prevUncal, ...newGeminiFamilies])],
-            detectedAtMs: Date.now(),
-            notifiedAtMs: null
+            detectedAtMs: registry.pendingDocCalibration?.detectedAtMs || Date.now(),
+            notifiedAtMs: addedUncal.length > 0 ? null : (registry.pendingDocCalibration?.notifiedAtMs ?? null),
+            notifiedConversationIds:
+              addedUncal.length > 0
+                ? []
+                : (Array.isArray(registry.pendingDocCalibration?.notifiedConversationIds)
+                    ? registry.pendingDocCalibration.notifiedConversationIds
+                    : [])
           };
         }
       }

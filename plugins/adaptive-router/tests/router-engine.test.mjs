@@ -1341,4 +1341,729 @@ describe('Adaptive Model & Effort Router Engine', () => {
     assert.equal(cleaned.pendingDocCalibration.required, false);
     assert.deepEqual(cleaned.pendingDocCalibration.uncalibratedFamilies, []);
   });
+
+  it('fires Turn-1 logic immediately on 0-indexed invocationNum: 0 without double-firing on invocationNum: 1', () => {
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'adaptive-router-zero-indexed-'));
+    try {
+      const analyticsDir = join(tmpRoot, 'analytics');
+      const builtinDir = join(tmpRoot, 'builtin');
+      mkdirSync(analyticsDir, { recursive: true });
+      mkdirSync(builtinDir, { recursive: true });
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v1-base', 'utf-8');
+
+      const env = {
+        ...process.env,
+        ANTIGRAVITY_ANALYTICS_DIR: analyticsDir,
+        ANTIGRAVITY_BUILTIN_DIR: builtinDir
+      };
+
+      const calFile = join(tmpRoot, 'cal.json');
+      writeFileSync(
+        calFile,
+        JSON.stringify({
+          sourceDocs: ['https://antigravity.google'],
+          calibratedFamilies: {
+            'Gemini 4 Hydrogen': { roleClass: 'FAST_EXECUTION', officialSummaryIt: 'Veloce.' },
+            'Gemini 4 Carbon': { roleClass: 'FRONTIER_HEAVYWEIGHT', officialSummaryIt: 'Architettura.' }
+          }
+        }),
+        'utf-8'
+      );
+      execFileSync(process.execPath, [CLI_SCRIPT, '--apply-calibration', calFile], {
+        env,
+        encoding: 'utf-8'
+      });
+
+      // 1. UNDERPROVISIONED_UI_MODEL fires immediately on invocationNum: 0, silent on follow-up invocationNum: 1, and fires again on Turn 2 (invocationNum: 0)
+      const underConv = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-zero-under',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-hydrogen-low',
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(underConv.injectSteps));
+      assert.match(underConv.injectSteps[0].systemMessage.systemMessage, /UNDERPROVISIONED_UI_MODEL/);
+
+      const underFollowUp = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-zero-under',
+            invocationNum: 1,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-hydrogen-low',
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(underFollowUp, {});
+
+      // Turn 2 with new initialNumSteps: 6 -> runs Turn-2 logic once
+      const turn2 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-zero-under',
+            invocationNum: 0,
+            initialNumSteps: 6,
+            modelName: 'gemini-4-hydrogen-low',
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(turn2.injectSteps));
+      assert.match(turn2.injectSteps[0].systemMessage.systemMessage, /UNDERPROVISIONED_UI_MODEL/);
+
+      // 2. Trigger builtin checksum drift -> Turn 1 invocationNum: 0 fires CALIBRATE_MODEL_ROSTER_ONCE immediately
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v2-updated', 'utf-8');
+
+      const t1Inv0 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-zero-idx',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(t1Inv0.injectSteps));
+      assert.match(t1Inv0.injectSteps[0].systemMessage.systemMessage, /CALIBRATE_MODEL_ROSTER_ONCE/);
+
+      // Same turn follow-up invocationNum: 1 with same initialNumSteps -> silent {}
+      const t1Inv1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-zero-idx',
+            invocationNum: 1,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(t1Inv1, {});
+    } finally {
+      rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('re-prompts pending roster refresh in new conversations until --sync-swarm-models resolves it and accurately reports --lut status', () => {
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'adaptive-router-retry-conv-'));
+    try {
+      const analyticsDir = join(tmpRoot, 'analytics');
+      const builtinDir = join(tmpRoot, 'builtin');
+      mkdirSync(analyticsDir, { recursive: true });
+      mkdirSync(builtinDir, { recursive: true });
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v1-base', 'utf-8');
+
+      const env = {
+        ...process.env,
+        ANTIGRAVITY_ANALYTICS_DIR: analyticsDir,
+        ANTIGRAVITY_BUILTIN_DIR: builtinDir
+      };
+
+      const swarmFile = join(tmpRoot, 'swarm.json');
+      writeFileSync(
+        swarmFile,
+        JSON.stringify({
+          models: ['gemini-4-hydrogen-low', 'gemini-4-carbon-high'],
+          display_names: {
+            'gemini-4-hydrogen-low': 'Gemini 4 Hydrogen (Low)',
+            'gemini-4-carbon-high': 'Gemini 4 Carbon (High)'
+          }
+        }),
+        'utf-8'
+      );
+      const calFile = join(tmpRoot, 'cal.json');
+      writeFileSync(
+        calFile,
+        JSON.stringify({
+          sourceDocs: ['https://antigravity.google'],
+          calibratedFamilies: {
+            'Gemini 4 Hydrogen': { roleClass: 'FAST_EXECUTION', officialSummaryIt: 'Veloce.' },
+            'Gemini 4 Carbon': { roleClass: 'FRONTIER_HEAVYWEIGHT', officialSummaryIt: 'Architettura.' }
+          }
+        }),
+        'utf-8'
+      );
+      execFileSync(
+        process.execPath,
+        [CLI_SCRIPT, '--sync-swarm-models', swarmFile, '--apply-calibration', calFile],
+        { env, encoding: 'utf-8' }
+      );
+
+      // Drift checksum -> pendingRosterRefresh.required becomes true
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v2-drifted', 'utf-8');
+
+      // conv-a Turn 1 receives CALIBRATE_MODEL_ROSTER_ONCE
+      const convAT1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-a',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.match(convAT1.injectSteps[0].systemMessage.systemMessage, /CALIBRATE_MODEL_ROSTER_ONCE/);
+
+      // conv-a Turn 2 stays silent (already notified in conv-a)
+      const convAT2 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-a',
+            invocationNum: 0,
+            initialNumSteps: 4,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(convAT2, {});
+
+      // New conversation conv-b still receives CALIBRATE_MODEL_ROSTER_ONCE because sync was not run
+      const convBT1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-b',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.match(convBT1.injectSteps[0].systemMessage.systemMessage, /CALIBRATE_MODEL_ROSTER_ONCE/);
+
+      // --lut reports REFRESH ROSTER PENDENTE and --lut --json exposes pendingRosterRefresh.required === true
+      const lutPendingMd = execFileSync(process.execPath, [CLI_SCRIPT, '--lut'], {
+        env,
+        encoding: 'utf-8'
+      });
+      assert.match(lutPendingMd, /REFRESH ROSTER PENDENTE/);
+      const lutPendingJson = JSON.parse(
+        execFileSync(process.execPath, [CLI_SCRIPT, '--lut', '--json'], {
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.equal(lutPendingJson.pendingRosterRefresh.required, true);
+
+      // Running --sync-swarm-models clears pendingRosterRefresh.required when no new uncalibrated families exist
+      execFileSync(process.execPath, [CLI_SCRIPT, '--sync-swarm-models', swarmFile], {
+        env,
+        encoding: 'utf-8'
+      });
+      const lutAlignedMd = execFileSync(process.execPath, [CLI_SCRIPT, '--lut'], {
+        env,
+        encoding: 'utf-8'
+      });
+      assert.match(lutAlignedMd, /ALLINEATA/);
+
+      const convCT1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-c',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-carbon-high',
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(convCT1, {});
+    } finally {
+      rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('recognizes XHigh effort mode, Orchestrator (Neon), and merges slug entries mapped in swarmDisplayNames', () => {
+    assert.equal(inferModeCapability('XHigh').mappedTier, 'HIGH');
+    assert.equal(inferModeCapability('XHigh').effort, 'high');
+    assert.equal(createDefaultCapabilityRegistry().effortModes.xhigh.mappedTier, 'HIGH');
+
+    const neonOrch = inferModelCapability('Orchestrator (Neon)');
+    assert.equal(neonOrch.tier, 'HIGH');
+    assert.equal(neonOrch.isDynamicOrchestrator, true);
+    assert.match(neonOrch.reason, /Neon/);
+
+    const neonReg = createDefaultCapabilityRegistry();
+    neonReg.lutCalibration.calibratedFamilies = {
+      'Gemini 4 Neon': { roleClass: 'EFFICIENT_CODING', officialSummaryIt: 'Neon.' },
+      'Orchestrator (Neon)': { roleClass: 'DYNAMIC_ORCHESTRATOR', officialSummaryIt: 'Orch Neon.' }
+    };
+    neonReg.lutCalibration.archetypeTargets = {
+      R4_SINGLE_MODULE_DEV: {
+        primaryUiModel: 'Gemini 4 Neon (Medium)',
+        alternativeUiModel: 'Orchestrator (Neon)',
+        subagentModel: 'flash',
+        subagentType: 'self'
+      }
+    };
+    const r4Neon = resolveLutRoute('R4_SINGLE_MODULE_DEV', neonReg, 'gemini-4-carbon-low');
+    assert.equal(r4Neon.recommendedOrchestrator?.model, 'Orchestrator (Neon)');
+
+    const regWithSlugDup = createDefaultCapabilityRegistry();
+    regWithSlugDup.swarmDisplayNames = {
+      'gemini-4-neon-xhigh': 'Gemini 4 Neon (XHigh)'
+    };
+    regWithSlugDup.models['gemini 4 neon (xhigh)'] = {
+      slug: 'gemini-4-neon-xhigh',
+      displayName: 'Gemini 4 Neon (XHigh)',
+      tier: 'HIGH',
+      effort: 'high',
+      source: 'auto-discovered',
+      samples: 2,
+      avgDurationMs: 100000,
+      avgOutputTokens: 4000,
+      errorRate: 0
+    };
+    regWithSlugDup.models['gemini-4-neon-xhigh'] = {
+      displayName: 'gemini-4-neon-xhigh',
+      tier: 'HIGH',
+      effort: 'high',
+      source: 'auto-discovered',
+      samples: 81,
+      avgDurationMs: 137272,
+      avgOutputTokens: 18750,
+      errorRate: 0.021
+    };
+    regWithSlugDup.models['claude-5-haiku-mini'] = {
+      displayName: 'claude-5-haiku-mini',
+      tier: 'LOW',
+      effort: 'low',
+      source: 'auto-discovered',
+      samples: 1
+    };
+
+    const cleaned = cleanPollutedModelRegistry(regWithSlugDup);
+    assert.ok(!cleaned.models['gemini-4-neon-xhigh']);
+    assert.equal(cleaned.models['gemini 4 neon (xhigh)'].samples, 83);
+    assert.equal(cleaned.models['gemini 4 neon (xhigh)'].slug, 'gemini-4-neon-xhigh');
+    assert.ok(cleaned.models['claude-5-haiku-mini']);
+  });
+
+  it('maintains Stop-hook idempotence without slug re-discovery or sample inflation and preserves server-side uncalibrated families', () => {
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'adaptive-router-stop-idem-'));
+    const STOP_HOOK_SCRIPT = join(__dirname, '..', 'scripts', 'router-stop-hook.mjs');
+    try {
+      const analyticsDir = join(tmpRoot, 'analytics');
+      const builtinDir = join(tmpRoot, 'builtin');
+      const transcriptPath = join(tmpRoot, 'transcript.jsonl');
+      mkdirSync(analyticsDir, { recursive: true });
+      mkdirSync(builtinDir, { recursive: true });
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v1-idem', 'utf-8');
+
+      const env = {
+        ...process.env,
+        ANTIGRAVITY_ANALYTICS_DIR: analyticsDir,
+        ANTIGRAVITY_BUILTIN_DIR: builtinDir
+      };
+
+      const swarmFile = join(tmpRoot, 'swarm.json');
+      writeFileSync(
+        swarmFile,
+        JSON.stringify({
+          models: ['gemini-4-neon-xhigh', 'gemini-4-carbon-high'],
+          display_names: {
+            'gemini-4-neon-xhigh': 'Gemini 4 Neon (XHigh)',
+            'gemini-4-carbon-high': 'Gemini 4 Carbon (High)'
+          }
+        }),
+        'utf-8'
+      );
+      const calFile = join(tmpRoot, 'cal.json');
+      writeFileSync(
+        calFile,
+        JSON.stringify({
+          sourceDocs: ['https://antigravity.google'],
+          calibratedFamilies: {
+            'Gemini 4 Neon': { roleClass: 'EFFICIENT_CODING', officialSummaryIt: 'Neon.' },
+            'Gemini 4 Carbon': { roleClass: 'FRONTIER_HEAVYWEIGHT', officialSummaryIt: 'Carbon.' }
+          }
+        }),
+        'utf-8'
+      );
+      execFileSync(
+        process.execPath,
+        [CLI_SCRIPT, '--sync-swarm-models', swarmFile, '--apply-calibration', calFile],
+        { env, encoding: 'utf-8' }
+      );
+
+      // Turn 1 transcript with slug `gemini-4-neon-xhigh`
+      const turn1Lines = [
+        JSON.stringify({
+          step_index: 0,
+          type: 'USER_INPUT',
+          source: 'USER_EXPLICIT',
+          created_at: '2026-11-25T08:00:00Z',
+          content: '<USER_REQUEST>Primo turno</USER_REQUEST>'
+        }),
+        JSON.stringify({
+          step_index: 1,
+          type: 'PLANNER_RESPONSE',
+          source: 'MODEL',
+          model: 'gemini-4-neon-xhigh',
+          output_tokens: 450,
+          created_at: '2026-11-25T08:00:12Z'
+        })
+      ];
+      writeFileSync(transcriptPath, turn1Lines.join('\n') + '\n', 'utf-8');
+
+      execFileSync(process.execPath, [STOP_HOOK_SCRIPT], {
+        input: JSON.stringify({ conversationId: 'conv-idem', transcriptPath }),
+        env,
+        encoding: 'utf-8'
+      });
+
+      const statusAfter1 = JSON.parse(
+        execFileSync(process.execPath, [CLI_SCRIPT, '--status', '--json'], { env, encoding: 'utf-8' })
+      );
+      assert.ok(!statusAfter1.models['gemini-4-neon-xhigh']);
+      assert.equal(statusAfter1.models['gemini 4 neon (xhigh)'].samples, 1);
+
+      // Append Turn 2 -> Stop hook must only count +1 sample (total 2, not 1+2=3)
+      const turn2Lines = [
+        ...turn1Lines,
+        JSON.stringify({
+          step_index: 2,
+          type: 'USER_INPUT',
+          source: 'USER_EXPLICIT',
+          created_at: '2026-11-25T08:01:00Z',
+          content: '<USER_REQUEST>Secondo turno</USER_REQUEST>'
+        }),
+        JSON.stringify({
+          step_index: 3,
+          type: 'PLANNER_RESPONSE',
+          source: 'MODEL',
+          model: 'gemini-4-neon-xhigh',
+          output_tokens: 500,
+          created_at: '2026-11-25T08:01:10Z'
+        })
+      ];
+      writeFileSync(transcriptPath, turn2Lines.join('\n') + '\n', 'utf-8');
+
+      execFileSync(process.execPath, [STOP_HOOK_SCRIPT], {
+        input: JSON.stringify({ conversationId: 'conv-idem', transcriptPath }),
+        env,
+        encoding: 'utf-8'
+      });
+
+      const statusAfter2 = JSON.parse(
+        execFileSync(process.execPath, [CLI_SCRIPT, '--status', '--json'], { env, encoding: 'utf-8' })
+      );
+      assert.ok(!statusAfter2.models['gemini-4-neon-xhigh']);
+      assert.equal(statusAfter2.models['gemini 4 neon (xhigh)'].samples, 2);
+
+      // Server-side new family (Gemini 4 Xenon) selected while availableRoster only has Neon/Carbon:
+      // PreInvocation -> Stop -> --lut must preserve DA CALIBRARE and NOT wipe it or reset notifiedConversationIds on Turn 2!
+      const xenonTranscript = join(tmpRoot, 'xenon-transcript.jsonl');
+      writeFileSync(
+        xenonTranscript,
+        JSON.stringify({
+          step_index: 0,
+          type: 'USER_INPUT',
+          source: 'USER_EXPLICIT',
+          created_at: '2026-11-25T08:05:00Z',
+          content: '<USER_REQUEST>esegui i test</USER_REQUEST>'
+        }) + '\n',
+        'utf-8'
+      );
+
+      const xPre1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-xenon',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-xenon-high',
+            transcriptPath: xenonTranscript,
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.match(xPre1.injectSteps[0].systemMessage.systemMessage, /CALIBRATE_MODEL_ROSTER_ONCE/);
+      assert.match(xPre1.injectSteps[0].systemMessage.systemMessage, /Gemini 4 Xenon/);
+
+      writeFileSync(
+        xenonTranscript,
+        [
+          JSON.stringify({
+            step_index: 0,
+            type: 'USER_INPUT',
+            source: 'USER_EXPLICIT',
+            created_at: '2026-11-25T08:05:00Z',
+            content: '<USER_REQUEST>esegui i test</USER_REQUEST>'
+          }),
+          JSON.stringify({
+            step_index: 1,
+            type: 'PLANNER_RESPONSE',
+            source: 'MODEL',
+            model: 'gemini-4-xenon-high',
+            output_tokens: 300,
+            created_at: '2026-11-25T08:05:08Z'
+          })
+        ].join('\n') + '\n',
+        'utf-8'
+      );
+
+      execFileSync(process.execPath, [STOP_HOOK_SCRIPT], {
+        input: JSON.stringify({ conversationId: 'conv-xenon', transcriptPath: xenonTranscript }),
+        env,
+        encoding: 'utf-8'
+      });
+
+      const lutAfterStop = JSON.parse(
+        execFileSync(process.execPath, [CLI_SCRIPT, '--lut', '--json'], { env, encoding: 'utf-8' })
+      );
+      assert.equal(lutAfterStop.pendingDocCalibration.required, true);
+      assert.ok(lutAfterStop.pendingDocCalibration.uncalibratedFamilies.includes('Gemini 4 Xenon'));
+
+      // Turn 2 in the SAME conversation `conv-xenon` must NOT re-spam CALIBRATE_MODEL_ROSTER_ONCE
+      writeFileSync(
+        xenonTranscript,
+        [
+          JSON.stringify({
+            step_index: 0,
+            type: 'USER_INPUT',
+            source: 'USER_EXPLICIT',
+            created_at: '2026-11-25T08:05:00Z',
+            content: '<USER_REQUEST>esegui i test</USER_REQUEST>'
+          }),
+          JSON.stringify({
+            step_index: 1,
+            type: 'PLANNER_RESPONSE',
+            source: 'MODEL',
+            model: 'gemini-4-xenon-high',
+            output_tokens: 300,
+            created_at: '2026-11-25T08:05:08Z'
+          }),
+          JSON.stringify({
+            step_index: 2,
+            type: 'USER_INPUT',
+            source: 'USER_EXPLICIT',
+            created_at: '2026-11-25T08:06:00Z',
+            content: '<USER_REQUEST>esegui i test</USER_REQUEST>'
+          })
+        ].join('\n') + '\n',
+        'utf-8'
+      );
+      const xPre2 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-xenon',
+            invocationNum: 0,
+            initialNumSteps: 3,
+            modelName: 'gemini-4-xenon-high',
+            transcriptPath: xenonTranscript,
+            lastUserInput: 'esegui i test'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(xPre2, {});
+
+      // Empty or non-matching importSwarmModelsCatalog must NOT wipe valid availableRoster or pendingDocCalibration
+      const emptyImport = importSwarmModelsCatalog(
+        {
+          ...createDefaultCapabilityRegistry(),
+          availableRoster: ['gemini-4-carbon-high'],
+          pendingDocCalibration: { required: true, uncalibratedFamilies: ['Gemini 4 Xenon'], detectedAtMs: 1, notifiedAtMs: null, notifiedConversationIds: [] }
+        },
+        { models: ['claude-opus-5-5-high'], display_names: { 'claude-opus-5-5-high': 'Claude Opus 5.5 (High)' } },
+        { providerFilter: 'gemini-ui' }
+      );
+      assert.equal(emptyImport.rosterChanged, false);
+      assert.deepEqual(emptyImport.registry.availableRoster, ['gemini-4-carbon-high']);
+      assert.equal(emptyImport.registry.pendingDocCalibration.required, true);
+    } finally {
+      rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('silences subagent invocations and Reactive Wakeups while triggering on consecutive identical user prompts', () => {
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'adaptive-router-wakeup-subagent-'));
+    try {
+      const analyticsDir = join(tmpRoot, 'analytics');
+      const builtinDir = join(tmpRoot, 'builtin');
+      mkdirSync(analyticsDir, { recursive: true });
+      mkdirSync(builtinDir, { recursive: true });
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v1-wakeup', 'utf-8');
+
+      const env = {
+        ...process.env,
+        ANTIGRAVITY_ANALYTICS_DIR: analyticsDir,
+        ANTIGRAVITY_BUILTIN_DIR: builtinDir
+      };
+
+      const calFile = join(tmpRoot, 'cal.json');
+      writeFileSync(
+        calFile,
+        JSON.stringify({
+          sourceDocs: ['https://antigravity.google'],
+          calibratedFamilies: {
+            'Gemini 4 Hydrogen': { roleClass: 'FAST_EXECUTION', officialSummaryIt: 'Veloce.' },
+            'Gemini 4 Carbon': { roleClass: 'FRONTIER_HEAVYWEIGHT', officialSummaryIt: 'Carbon.' }
+          }
+        }),
+        'utf-8'
+      );
+      execFileSync(process.execPath, [CLI_SCRIPT, '--apply-calibration', calFile], {
+        env,
+        encoding: 'utf-8'
+      });
+
+      // Drift checksum to arm pendingRosterRefresh
+      writeFileSync(join(builtinDir, '.checksum'), 'builtin:v2-wakeup', 'utf-8');
+
+      // 1. Subagent invocation must output {} and NOT consume pendingRosterRefresh
+      const subTranscript = join(tmpRoot, 'sub-transcript.jsonl');
+      writeFileSync(
+        subTranscript,
+        JSON.stringify({
+          step_index: 0,
+          type: 'USER_INPUT',
+          content: 'Agisci esclusivamente come **Subagent Alpha** su task isolato.'
+        }) + '\n',
+        'utf-8'
+      );
+      const subOut = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-subagent-1',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-hydrogen-low',
+            transcriptPath: subTranscript,
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(subOut, {});
+
+      // 2. Human Turn 1 fires UNDERPROVISIONED_UI_MODEL + CALIBRATE_MODEL_ROSTER_ONCE
+      const humanTranscript = join(tmpRoot, 'human-transcript.jsonl');
+      const auditReq = JSON.stringify({
+        step_index: 0,
+        type: 'USER_INPUT',
+        source: 'USER_EXPLICIT',
+        content: '<USER_REQUEST>fai un audit approfondito sul piano architetturale</USER_REQUEST>'
+      });
+      writeFileSync(humanTranscript, auditReq + '\n', 'utf-8');
+
+      const hTurn1 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-human-wakeup',
+            invocationNum: 0,
+            initialNumSteps: 1,
+            modelName: 'gemini-4-hydrogen-low',
+            transcriptPath: humanTranscript,
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.equal(hTurn1.injectSteps.length, 2);
+
+      // 3. Reactive Wakeup: background task finishes, initialNumSteps rises to 6, invocationNum resets to 0,
+      //    but USER_EXPLICIT count is still 1 and lastUserInput is unchanged -> silent {}!
+      writeFileSync(
+        humanTranscript,
+        [
+          auditReq,
+          JSON.stringify({
+            step_index: 1,
+            type: 'SYSTEM_MESSAGE',
+            content: '[Message] timestamp=2026-11-25T09:00:00Z sender=conv-human-wakeup/task-1 content=Done'
+          })
+        ].join('\n') + '\n',
+        'utf-8'
+      );
+      const wakeupOut = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-human-wakeup',
+            invocationNum: 0,
+            initialNumSteps: 6,
+            modelName: 'gemini-4-hydrogen-low',
+            transcriptPath: humanTranscript,
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.deepEqual(wakeupOut, {});
+
+      // 4. Consecutive identical user prompt: user explicitly submits the same prompt again (USER_EXPLICIT count = 2) -> fires!
+      writeFileSync(
+        humanTranscript,
+        [
+          auditReq,
+          JSON.stringify({
+            step_index: 1,
+            type: 'SYSTEM_MESSAGE',
+            content: '[Message] timestamp=2026-11-25T09:00:00Z sender=conv-human-wakeup/task-1 content=Done'
+          }),
+          JSON.stringify({
+            step_index: 2,
+            type: 'USER_INPUT',
+            source: 'USER_EXPLICIT',
+            content: '<USER_REQUEST>fai un audit approfondito sul piano architetturale</USER_REQUEST>'
+          })
+        ].join('\n') + '\n',
+        'utf-8'
+      );
+      const hTurn2 = JSON.parse(
+        execFileSync(process.execPath, [PRE_HOOK_SCRIPT], {
+          input: JSON.stringify({
+            conversationId: 'conv-human-wakeup',
+            invocationNum: 0,
+            initialNumSteps: 7,
+            modelName: 'gemini-4-hydrogen-low',
+            transcriptPath: humanTranscript,
+            lastUserInput: 'fai un audit approfondito sul piano architetturale'
+          }),
+          env,
+          encoding: 'utf-8'
+        })
+      );
+      assert.ok(Array.isArray(hTurn2.injectSteps));
+      assert.match(hTurn2.injectSteps[0].systemMessage.systemMessage, /UNDERPROVISIONED_UI_MODEL/);
+    } finally {
+      rmSync(tmpRoot, { recursive: true, force: true });
+    }
+  });
 });

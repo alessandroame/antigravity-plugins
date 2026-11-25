@@ -72,11 +72,17 @@ export function loadCapabilityRegistry(analyticsDir) {
       liveQuotas: { ...fallback.liveQuotas, ...(parsed.liveQuotas || {}) },
       pendingRosterRefresh: {
         ...fallback.pendingRosterRefresh,
-        ...(parsed.pendingRosterRefresh || {})
+        ...(parsed.pendingRosterRefresh || {}),
+        notifiedConversationIds: Array.isArray(parsed.pendingRosterRefresh?.notifiedConversationIds)
+          ? parsed.pendingRosterRefresh.notifiedConversationIds
+          : []
       },
       pendingDocCalibration: {
         ...fallback.pendingDocCalibration,
-        ...(parsed.pendingDocCalibration || {})
+        ...(parsed.pendingDocCalibration || {}),
+        notifiedConversationIds: Array.isArray(parsed.pendingDocCalibration?.notifiedConversationIds)
+          ? parsed.pendingDocCalibration.notifiedConversationIds
+          : []
       },
       lutCalibration: {
         ...fallback.lutCalibration,
@@ -212,7 +218,16 @@ export function scanBrainForCapabilities(options = {}) {
   const allRecalibrated = [];
   let scannedTranscripts = 0;
 
+  const hadPrevChecksum = Boolean(registry.builtinChecksum);
   const drift = probeBuiltinChecksumDrift(registry, options.builtinDir);
+  if (drift.drifted && hadPrevChecksum) {
+    registry.pendingRosterRefresh = {
+      required: true,
+      detectedAtMs: Date.now(),
+      notifiedAtMs: null,
+      notifiedConversationIds: []
+    };
+  }
 
   function walkTranscripts(dir, depth = 0) {
     if (depth > 5 || !existsSync(dir)) return;
@@ -262,11 +277,17 @@ function formatStatusMarkdown(registry) {
   const models = Object.entries(registry.models || {});
   const modes = Object.entries(registry.effortModes || {});
   const tiers = Object.entries(registry.subagentTiers || {});
+  const calStatusLabel = registry.pendingDocCalibration?.required
+    ? 'DA CALIBRARE'
+    : registry.pendingRosterRefresh?.required
+      ? 'REFRESH ROSTER PENDENTE'
+      : 'ALLINEATA';
 
   const lines = [
     '# Stato Registro Capacità & Modelli (`adaptive-router`)',
     '',
     `- **Modelli censiti**: \`${models.length}\` · **Modalità Effort**: \`${modes.length}\` · **Tier Subagent**: \`${tiers.map(([k]) => k).join(', ')}\``,
+    `- **Stato calibrazione LUT**: \`${calStatusLabel}\` · **Varianti UI**: \`${(registry.availableRoster || []).length}\``,
     `- **Watchdog Harness (\`NOTE-004\`)**: checksum \`${registry.builtinChecksum ? registry.builtinChecksum.slice(0, 20) + '...' : 'n/d'}\` · hash \`PreInvocation\`: \`${registry.preInvocationContractHash || 'n/d'}\` · override modello pre-turno: \`${registry.preInvocationModelOverrideSupported ? 'DISPONIBILE' : 'IN ATTESA'}\``,
     '',
     '| Modello | Fascia (`Tier`) | Effort | Origine | Campioni | Durata Media |',
@@ -300,6 +321,11 @@ export function formatLutMarkdown(registry, activeUiModel = null) {
   const docsList = Array.isArray(cal.sourceDocs) && cal.sourceDocs.length > 0
     ? cal.sourceDocs.join(', ')
     : 'nessuna fonte registrata';
+  const calStatusLabel = registry.pendingDocCalibration?.required
+    ? 'DA CALIBRARE'
+    : registry.pendingRosterRefresh?.required
+      ? 'REFRESH ROSTER PENDENTE'
+      : 'ALLINEATA';
 
   const variantsByFamily = new Map();
   for (const slug of roster) {
@@ -312,7 +338,7 @@ export function formatLutMarkdown(registry, activeUiModel = null) {
   const lines = [
     '# Tabella LUT Dinamica Prompt -> Modello + Modalità (`adaptive-router`)',
     '',
-    `- **Filtro Provider**: \`${registry.lutConfig?.providerFilter || 'gemini-ui'}\` · **Varianti UI attive**: \`${roster.length}\` · **Stato calibrazione**: \`${registry.pendingDocCalibration?.required ? 'DA CALIBRARE' : 'ALLINEATA'}\``,
+    `- **Filtro Provider**: \`${registry.lutConfig?.providerFilter || 'gemini-ui'}\` · **Varianti UI attive**: \`${roster.length}\` · **Stato calibrazione**: \`${calStatusLabel}\``,
     `- **Ultima calibrazione documentazione ufficiale**: \`${calibratedIso}\` · **Fonti**: \`${docsList}\``,
     '',
     '## 1. Ruoli delle Famiglie Gemini / Orchestrator (Documentazione Ufficiale)',
@@ -350,11 +376,12 @@ export function formatLutMarkdown(registry, activeUiModel = null) {
 
   lines.push(
     '',
-    '## 3. Quando Scegliere Orchestrator (Carbon vs Argon)',
+    '## 3. Quando Scegliere Orchestrator (Carbon vs Neon vs Argon)',
     '',
     '| Modello Orchestrator | Quando Selezionarlo nel Menu UI | Beneficio Operativo |',
     '| :--- | :--- | :--- |',
     '| **`Orchestrator (Carbon)`** | Refactoring multi-file (`R5`), workflow end-to-end (piano + codice + test) o sessioni miste con passaggi `HIGH` | Alterna automaticamente `Carbon` sui passaggi complessi e `Hydrogen` su quelli rapidi evitando cambi manuali |',
+    '| **`Orchestrator (Neon)`** | Sviluppo su singolo modulo (`R4`) e task agentici lunghi che richiedono ragionamento vicino a `Carbon` con alta rapidità | Alterna automaticamente `Neon` sul coordinamento tecnico e `Hydrogen` sull\'esecuzione rapida |',
     '| **`Orchestrator (Argon)`** | Sviluppo e bugfix su singolo modulo (`R4`) alternati a comandi e ispezioni (`R1..R3`), o sessioni miste `LOW`/`MEDIUM` | Alterna automaticamente `Argon` e `Hydrogen` con sviluppo fluido e zero frizione sui comandi |',
     '| **Modello fisso (`Carbon High` / `Hydrogen Low`)** | Audit/piani puri ad altissima profondità (`R6`) oppure sole micro-modifiche/comandi ripetuti (`R1`/`R2`) | Controllo deterministico massimo o minimo costo fisso su sessioni mono-fascia |'
   );
@@ -472,6 +499,7 @@ if (isDirectEntry) {
           {
             lutConfig: reg.lutConfig,
             availableRoster: reg.availableRoster,
+            pendingRosterRefresh: reg.pendingRosterRefresh,
             pendingDocCalibration: reg.pendingDocCalibration,
             lutCalibration: reg.lutCalibration
           },

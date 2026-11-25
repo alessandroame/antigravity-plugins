@@ -290,13 +290,15 @@ export function createDefaultCapabilityRegistry() {
     pendingRosterRefresh: {
       required: false,
       detectedAtMs: null,
-      notifiedAtMs: null
+      notifiedAtMs: null,
+      notifiedConversationIds: []
     },
     pendingDocCalibration: {
       required: false,
       uncalibratedFamilies: [],
       detectedAtMs: null,
-      notifiedAtMs: null
+      notifiedAtMs: null,
+      notifiedConversationIds: []
     },
     lutCalibration: {
       calibratedAtMs: null,
@@ -313,7 +315,8 @@ export function createDefaultCapabilityRegistry() {
     effortModes: {
       low: { mappedTier: 'LOW', source: 'builtin' },
       medium: { mappedTier: 'MEDIUM', source: 'builtin' },
-      high: { mappedTier: 'HIGH', source: 'builtin' }
+      high: { mappedTier: 'HIGH', source: 'builtin' },
+      xhigh: { mappedTier: 'HIGH', source: 'builtin' }
     },
     models: {
       'gemini-2.5-flash-lite': {
@@ -353,7 +356,7 @@ const HIGH_MODEL_TOKENS_RX =
 const MEDIUM_MODEL_TOKENS_RX = /\b(?:flash|sonnet|standard|balanced|medium|default|turbo)\b/i;
 
 const LOW_MODE_TOKENS_RX = /\b(?:low|minimal|fast|instant|quick|off|lite|0\.25)\b/i;
-const HIGH_MODE_TOKENS_RX = /\b(?:high|max|deep|ultra|extended|exhaustive|thorough|1\.00|1\.0)\b/i;
+const HIGH_MODE_TOKENS_RX = /\b(?:xhigh|high|max|deep|ultra|extended|exhaustive|thorough|1\.00|1\.0)\b/i;
 const MEDIUM_MODE_TOKENS_RX = /\b(?:medium|med|standard|balanced|auto|adaptive|normal|0\.50|0\.5)\b/i;
 
 /**
@@ -383,7 +386,7 @@ export function inferModelCapability(modelName, metrics = {}) {
     };
   }
 
-  // Stage 0b: Dynamic Orchestrators natively route across Carbon/Argon and Hydrogen
+  // Stage 0b: Dynamic Orchestrators natively route across Carbon/Argon/Neon and Hydrogen
   if (/\borchestrator\b/i.test(clean)) {
     if (/\bargon\b/i.test(clean)) {
       return {
@@ -392,6 +395,15 @@ export function inferModelCapability(modelName, metrics = {}) {
         confidence: 'lexical',
         isDynamicOrchestrator: true,
         reason: 'orchestratore dinamico bilanciato (Argon + Hydrogen)'
+      };
+    }
+    if (/\bneon\b/i.test(clean)) {
+      return {
+        tier: 'HIGH',
+        effort: 'high',
+        confidence: 'lexical',
+        isDynamicOrchestrator: true,
+        reason: 'orchestratore dinamico efficiente (Neon + Hydrogen)'
       };
     }
     return {
@@ -664,7 +676,27 @@ export function resolveLutRoute(archetypeId, registry, activeUiModel) {
   const reg = registry || createDefaultCapabilityRegistry();
   const arch = PROMPT_ARCHETYPES[archetypeId] || PROMPT_ARCHETYPES.R4_SINGLE_MODULE_DEV;
   const calibratedTarget = reg.lutCalibration?.archetypeTargets?.[arch.archetypeId] || null;
-  const recommendedOrchestrator = DEFAULT_ORCHESTRATOR_BY_ARCHETYPE[arch.archetypeId] || null;
+  let recommendedOrchestrator = DEFAULT_ORCHESTRATOR_BY_ARCHETYPE[arch.archetypeId] || null;
+  if (recommendedOrchestrator) {
+    const calibratedOrchCandidate =
+      calibratedTarget?.primaryUiModel && isDynamicOrchestratorModel(calibratedTarget.primaryUiModel, reg)
+        ? calibratedTarget.primaryUiModel
+        : calibratedTarget?.alternativeUiModel && isDynamicOrchestratorModel(calibratedTarget.alternativeUiModel, reg)
+          ? calibratedTarget.alternativeUiModel
+          : null;
+    if (calibratedOrchCandidate && calibratedOrchCandidate !== recommendedOrchestrator.model) {
+      recommendedOrchestrator = {
+        model: calibratedOrchCandidate,
+        whenToSelectIt: /\bneon\b/i.test(calibratedOrchCandidate)
+          ? 'Ideale per sviluppo e task agentici lunghi su singolo modulo: alterna Neon e Hydrogen automaticamente senza cambi manuali.'
+          : /\bargon\b/i.test(calibratedOrchCandidate)
+            ? 'Ideale per sviluppo e test su singolo modulo: alterna Argon e Hydrogen automaticamente senza cambi manuali.'
+            : /\bcarbon\b/i.test(calibratedOrchCandidate)
+              ? 'Ideale per refactoring multi-file e workflow end-to-end: alterna Carbon sui passaggi complessi e Hydrogen su quelli meccanici.'
+              : recommendedOrchestrator.whenToSelectIt
+      };
+    }
+  }
 
   let recommendedUiModel = calibratedTarget?.primaryUiModel || null;
   const alternativeUiModel =
@@ -823,12 +855,20 @@ export function evaluateMixedSessionOrchestratorHint({
     };
   }
 
+  const calibratedR4Alt =
+    registry?.lutCalibration?.archetypeTargets?.R4_SINGLE_MODULE_DEV?.alternativeUiModel;
+  const mediumOrchModel =
+    calibratedR4Alt && isDynamicOrchestratorModel(calibratedR4Alt, registry)
+      ? calibratedR4Alt
+      : 'Orchestrator (Argon)';
+  const mediumOrchLead = /\bneon\b/i.test(mediumOrchModel) ? 'Neon' : 'Argon';
+
   return {
     shouldSuggest: true,
-    orchestratorModel: 'Orchestrator (Argon)',
+    orchestratorModel: mediumOrchModel,
     reasonIt: 'sessione operativa mista LOW/MEDIUM',
     messageIt:
-      'Sessione operativa mista (`LOW`/`MEDIUM`): selezionando **Orchestrator (Argon)** nel menu modello ottieni sviluppo fluido su singolo modulo e risposte rapide sui comandi senza cambiare modalità.'
+      `Sessione operativa mista (\`LOW\`/\`MEDIUM\`): selezionando **${mediumOrchModel}** nel menu modello ottieni sviluppo fluido su singolo modulo (${mediumOrchLead} + Hydrogen) e risposte rapide sui comandi senza cambiare modalità.`
   };
 }
 
@@ -1030,6 +1070,21 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
     return { registry: base, newlyDiscoveredModels, newlyDiscoveredModes, recalibratedModels };
   }
 
+  const resolveModelIdentity = (rawModelStr) => {
+    const sanitized = sanitizeModelSelectionName(rawModelStr);
+    const rawLower = sanitized.toLowerCase();
+    const mapped =
+      (base.swarmDisplayNames && typeof base.swarmDisplayNames === 'object'
+        ? base.swarmDisplayNames[rawLower]
+        : null) || null;
+    const display = mapped ? sanitizeModelSelectionName(mapped) : sanitized;
+    return {
+      key: display.toLowerCase(),
+      displayName: display,
+      slug: mapped ? rawLower : undefined
+    };
+  };
+
   const lines = rawJsonl.split(/\r?\n/).filter((l) => l.trim().length > 0);
   let activeModel = null;
   let lastUserTs = null;
@@ -1039,7 +1094,7 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
 
   const recordTurnMetrics = (endTs) => {
     if (!activeModel) return;
-    const key = activeModel.toLowerCase();
+    const { key, displayName } = resolveModelIdentity(activeModel);
     const entry = base.models[key];
     if (!entry) return;
 
@@ -1063,7 +1118,7 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
     const turnErrRate = turnToolCalls > 0 ? turnToolErrors / turnToolCalls : 0;
     entry.errorRate = Number((((entry.errorRate || 0) * (n - 1) + turnErrRate) / n).toFixed(3));
 
-    const inferred = inferModelCapability(activeModel, entry);
+    const inferred = inferModelCapability(displayName, entry);
     entry.tier = inferred.tier;
     entry.effort = inferred.effort;
     entry.confidence = inferred.confidence;
@@ -1116,14 +1171,14 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
 
         const modelMatch = block.match(/Model Selection`?\s+from\s+.*?\s+to\s+`?([^\r\n`]+?)`?\.?(?:\r|\n|$)/i);
         if (modelMatch && modelMatch[1]) {
-          const rawModel = sanitizeModelSelectionName(modelMatch[1]);
-          const modelKey = rawModel.toLowerCase();
+          const { key: modelKey, displayName, slug } = resolveModelIdentity(modelMatch[1]);
           if (modelKey && modelKey !== 'none') {
-            activeModel = rawModel;
+            activeModel = displayName;
             if (!base.models[modelKey]) {
-              const inferred = inferModelCapability(rawModel);
+              const inferred = inferModelCapability(displayName);
               base.models[modelKey] = {
-                displayName: rawModel,
+                ...(slug ? { slug } : {}),
+                displayName,
                 tier: inferred.tier,
                 effort: inferred.effort,
                 confidence: inferred.confidence,
@@ -1133,7 +1188,7 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
                 avgOutputTokens: 0,
                 errorRate: 0
               };
-              newlyDiscoveredModels.push(rawModel);
+              newlyDiscoveredModels.push(displayName);
             }
           }
         }
@@ -1169,14 +1224,14 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
 
     if (step.type === 'PLANNER_RESPONSE' || step.source === 'MODEL') {
       if (typeof step.model === 'string' && step.model.trim()) {
-        const rawM = sanitizeModelSelectionName(step.model);
-        const mKey = rawM.toLowerCase();
+        const { key: mKey, displayName, slug } = resolveModelIdentity(step.model);
         if (mKey && !/^(?:auto|none|default)$/i.test(mKey)) {
-          activeModel = rawM;
+          activeModel = displayName;
           if (!base.models[mKey]) {
-            const inferred = inferModelCapability(rawM);
+            const inferred = inferModelCapability(displayName);
             base.models[mKey] = {
-              displayName: rawM,
+              ...(slug ? { slug } : {}),
+              displayName,
               tier: inferred.tier,
               effort: inferred.effort,
               confidence: inferred.confidence,
@@ -1186,7 +1241,7 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
               avgOutputTokens: 0,
               errorRate: 0
             };
-            newlyDiscoveredModels.push(rawM);
+            newlyDiscoveredModels.push(displayName);
           }
         }
       }
@@ -1227,6 +1282,18 @@ export function discoverCapabilitiesFromTranscript(rawJsonl, existingRegistry) {
  */
 export function cleanPollutedModelRegistry(registry) {
   const cloned = registry ? JSON.parse(JSON.stringify(registry)) : createDefaultCapabilityRegistry();
+
+  if (cloned.swarmDisplayNames && typeof cloned.swarmDisplayNames === 'object') {
+    const cleanSwarm = {};
+    for (const [slug, disp] of Object.entries(cloned.swarmDisplayNames)) {
+      const cleanSlug = sanitizeModelSelectionName(slug).toLowerCase();
+      if (cleanSlug) {
+        cleanSwarm[cleanSlug] = sanitizeModelSelectionName(disp) || formatHumanModelLabel(cleanSlug);
+      }
+    }
+    cloned.swarmDisplayNames = cleanSwarm;
+  }
+
   if (!cloned.models || typeof cloned.models !== 'object') {
     cloned.models = {};
     return cloned;
@@ -1235,17 +1302,25 @@ export function cleanPollutedModelRegistry(registry) {
   const nextModels = {};
   for (const [rawKey, rawEntry] of Object.entries(cloned.models)) {
     if (!rawEntry || typeof rawEntry !== 'object') continue;
-    const cleanDisplay = sanitizeModelSelectionName(rawEntry.displayName || rawKey);
+    const rawCleanDisplay = sanitizeModelSelectionName(rawEntry.displayName || rawKey);
+    const rawCleanKey = rawCleanDisplay.toLowerCase();
+    if (!rawCleanKey || rawCleanKey === 'none') continue;
+
+    const mappedDisplay = cloned.swarmDisplayNames?.[rawCleanKey] || null;
+    const cleanDisplay = mappedDisplay ? sanitizeModelSelectionName(mappedDisplay) : rawCleanDisplay;
     const cleanKey = cleanDisplay.toLowerCase();
     if (!cleanKey || cleanKey === 'none') continue;
 
     const existing = nextModels[cleanKey];
     if (!existing) {
+      const resolvedSlug = rawEntry.slug || (mappedDisplay ? rawCleanKey : undefined);
       const entry = {
         ...rawEntry,
-        displayName: rawEntry.displayName ? cleanDisplay : undefined
+        displayName: rawEntry.displayName || mappedDisplay ? cleanDisplay : undefined,
+        slug: resolvedSlug
       };
       if (entry.displayName === undefined) delete entry.displayName;
+      if (entry.slug === undefined) delete entry.slug;
       const inferred = inferModelCapability(cleanDisplay, entry);
       entry.tier = inferred.tier;
       entry.effort = inferred.effort;
@@ -1272,6 +1347,15 @@ export function cleanPollutedModelRegistry(registry) {
         );
       }
       existing.samples = totalSamples;
+      if (!existing.displayName && (rawEntry.displayName || mappedDisplay)) {
+        existing.displayName = cleanDisplay;
+      }
+      if (existing.source === 'seed' && rawEntry.source && rawEntry.source !== 'seed') {
+        existing.source = rawEntry.source;
+      }
+      if (!existing.slug && (rawEntry.slug || mappedDisplay)) {
+        existing.slug = rawEntry.slug || rawCleanKey;
+      }
       const inferred = inferModelCapability(cleanDisplay, existing);
       existing.tier = inferred.tier;
       existing.effort = inferred.effort;
@@ -1281,19 +1365,30 @@ export function cleanPollutedModelRegistry(registry) {
 
   cloned.models = nextModels;
 
-  if (cloned.swarmDisplayNames && typeof cloned.swarmDisplayNames === 'object') {
-    const cleanSwarm = {};
-    for (const [slug, disp] of Object.entries(cloned.swarmDisplayNames)) {
-      const cleanSlug = sanitizeModelSelectionName(slug).toLowerCase();
-      if (cleanSlug) {
-        cleanSwarm[cleanSlug] = sanitizeModelSelectionName(disp) || formatHumanModelLabel(cleanSlug);
-      }
-    }
-    cloned.swarmDisplayNames = cleanSwarm;
+  if (cloned.pendingRosterRefresh && Array.isArray(cloned.pendingRosterRefresh.notifiedConversationIds)) {
+    cloned.pendingRosterRefresh.notifiedConversationIds = [
+      ...new Set(
+        cloned.pendingRosterRefresh.notifiedConversationIds.filter(
+          (id) => typeof id === 'string' && id.trim()
+        )
+      )
+    ];
+  }
+
+  if (cloned.pendingDocCalibration && Array.isArray(cloned.pendingDocCalibration.notifiedConversationIds)) {
+    cloned.pendingDocCalibration.notifiedConversationIds = [
+      ...new Set(
+        cloned.pendingDocCalibration.notifiedConversationIds.filter(
+          (id) => typeof id === 'string' && id.trim()
+        )
+      )
+    ];
   }
 
   if (cloned.pendingDocCalibration && Array.isArray(cloned.pendingDocCalibration.uncalibratedFamilies)) {
-    const hasRoster = Array.isArray(cloned.availableRoster) && cloned.availableRoster.length > 0;
+    const rosterIsFresh = !cloned.pendingRosterRefresh?.required;
+    const hasRoster =
+      rosterIsFresh && Array.isArray(cloned.availableRoster) && cloned.availableRoster.length > 0;
     const rosterFamilies = hasRoster
       ? new Set(
           cloned.availableRoster
@@ -1318,6 +1413,104 @@ export function cleanPollutedModelRegistry(registry) {
   }
 
   return cloned;
+}
+
+const SUBAGENT_HEAD_RX =
+  /Skill Attive \(|Agisci (?:esclusivamente )?come \*\*(?:Subagent|Blind Diff Critic)|Sei \*\*Subagent (?:Alpha|Beta|Gamma)|Subagent (?:Alpha|Beta|Gamma)\b|Dialectical Mediator & Conflict Resolver|You have been spawned as a subagent|<subagent_context>|Oracolo (?:di Test )?(?:Tecnico|di Dominio)|\[Message\] timestamp=[^\]]+sender=[0-9a-f-]{36}/i;
+
+/**
+ * Returns true when the given prompt payload or transcript file belongs to an autonomous subagent
+ * rather than an interactive human conversation.
+ *
+ * @param {unknown} promptText
+ * @param {string | null | undefined} [transcriptSource]
+ * @returns {boolean}
+ */
+export function isSubagentPromptOrTranscript(promptText, transcriptSource) {
+  if (typeof promptText === 'string' && promptText && SUBAGENT_HEAD_RX.test(promptText)) {
+    return true;
+  }
+  if (!transcriptSource || typeof transcriptSource !== 'string' || !existsSync(transcriptSource)) {
+    return false;
+  }
+  try {
+    const head = readFileSync(transcriptSource, 'utf-8').slice(0, 12288);
+    if (!head.includes('<USER_REQUEST>') && !head.includes('"source":"USER_EXPLICIT"')) {
+      return true;
+    }
+    const firstUserIdx = head.indexOf('<USER_REQUEST>');
+    const headSlice = firstUserIdx !== -1 ? head.slice(0, firstUserIdx + 1500) : head.slice(0, 2500);
+    return SUBAGENT_HEAD_RX.test(headSlice);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Counts explicit human `USER_INPUT` turns in a transcript file, returning `null` if unavailable.
+ *
+ * @param {string | null | undefined} transcriptSource
+ * @returns {number | null}
+ */
+export function countExplicitUserTurnsInTranscript(transcriptSource) {
+  if (!transcriptSource || typeof transcriptSource !== 'string' || !existsSync(transcriptSource)) {
+    return null;
+  }
+  try {
+    const raw = readFileSync(transcriptSource, 'utf-8');
+    const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    let count = 0;
+    for (const line of lines) {
+      let step;
+      try {
+        step = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const isUser = step.type === 'USER_INPUT' || step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
+      if (
+        isUser &&
+        (step.source === 'USER_EXPLICIT' ||
+          (typeof step.content === 'string' && step.content.includes('<USER_REQUEST>')))
+      ) {
+        count += 1;
+      }
+    }
+    return count;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extracts only the slice of `rawJsonl` starting from the most recent explicit human `USER_INPUT` step
+ * so `Stop` hooks record metrics in O(1) without recounting earlier turns.
+ *
+ * @param {string} rawJsonl
+ * @returns {string}
+ */
+export function sliceLatestExplicitUserTurnJsonl(rawJsonl) {
+  if (typeof rawJsonl !== 'string' || !rawJsonl.trim()) return '';
+  const lines = rawJsonl.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  let lastIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    let step;
+    try {
+      step = JSON.parse(lines[i]);
+    } catch {
+      continue;
+    }
+    const isUser = step.type === 'USER_INPUT' || step.type === 'CORTEX_STEP_TYPE_USER_INPUT';
+    if (
+      isUser &&
+      (step.source === 'USER_EXPLICIT' ||
+        (typeof step.content === 'string' && step.content.includes('<USER_REQUEST>')))
+    ) {
+      lastIdx = i;
+      break;
+    }
+  }
+  return lastIdx >= 0 ? lines.slice(lastIdx).join('\n') : rawJsonl;
 }
 
 /**
@@ -1474,6 +1667,16 @@ export function importSwarmModelsCatalog(registry, swarmPayload = {}, options = 
     })
     .sort();
 
+  if (filteredIds.length === 0) {
+    return {
+      registry: cloned,
+      rosterChanged: false,
+      uncalibratedFamilies: Array.isArray(cloned.pendingDocCalibration?.uncalibratedFamilies)
+        ? cloned.pendingDocCalibration.uncalibratedFamilies
+        : []
+    };
+  }
+
   const prevSorted = Array.isArray(cloned.availableRoster)
     ? [...cloned.availableRoster].sort()
     : [];
@@ -1515,6 +1718,15 @@ export function importSwarmModelsCatalog(registry, swarmPayload = {}, options = 
     }
   }
 
+  if (filteredIds.length > 0) {
+    cloned.pendingRosterRefresh = {
+      required: false,
+      detectedAtMs: null,
+      notifiedAtMs: null,
+      notifiedConversationIds: []
+    };
+  }
+
   const calibratedMap = cloned.lutCalibration?.calibratedFamilies || {};
   const uncalibratedFamilies = [...discoveredFamilies].filter((fam) => !calibratedMap[fam]);
 
@@ -1523,11 +1735,15 @@ export function importSwarmModelsCatalog(registry, swarmPayload = {}, options = 
       required: true,
       uncalibratedFamilies,
       detectedAtMs: Date.now(),
-      notifiedAtMs: null
+      notifiedAtMs: null,
+      notifiedConversationIds: []
     };
   } else if (cloned.pendingDocCalibration) {
     cloned.pendingDocCalibration.required = false;
     cloned.pendingDocCalibration.uncalibratedFamilies = [];
+    cloned.pendingDocCalibration.detectedAtMs = null;
+    cloned.pendingDocCalibration.notifiedAtMs = null;
+    cloned.pendingDocCalibration.notifiedConversationIds = [];
   }
 
   cloned.updatedAtMs = Date.now();
@@ -1590,13 +1806,18 @@ export function applyOfficialDocsCalibration(registry, calibrationPayload = {}) 
     required: remainingUncalibrated.length > 0,
     uncalibratedFamilies: remainingUncalibrated,
     detectedAtMs: remainingUncalibrated.length > 0 ? Date.now() : null,
-    notifiedAtMs: null
+    notifiedAtMs: null,
+    notifiedConversationIds: []
   };
-  cloned.pendingRosterRefresh = {
-    required: false,
-    detectedAtMs: null,
-    notifiedAtMs: null
-  };
+  const hasRoster = Array.isArray(cloned.availableRoster) && cloned.availableRoster.length > 0;
+  if (hasRoster || !cloned.pendingRosterRefresh?.required) {
+    cloned.pendingRosterRefresh = {
+      required: false,
+      detectedAtMs: null,
+      notifiedAtMs: null,
+      notifiedConversationIds: []
+    };
+  }
   cloned.updatedAtMs = Date.now();
   return cloned;
 }

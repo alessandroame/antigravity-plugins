@@ -14,6 +14,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   classifyPromptRoute,
+  countExplicitUserTurnsInTranscript,
   evaluateMixedSessionOrchestratorHint,
   extractExplicitReasoningMode,
   extractLatestTurnSettingsChange,
@@ -21,6 +22,7 @@ import {
   formatHumanModelLabel,
   inferModelCapability,
   isDynamicOrchestratorModel,
+  isSubagentPromptOrTranscript,
   normalizeCanonicalModelId,
   resolveActiveUiModelFromTranscript,
   sanitizeModelSelectionName
@@ -71,7 +73,6 @@ async function main() {
   try {
     const analyticsDir = getAnalyticsDir();
     mkdirSync(analyticsDir, { recursive: true });
-    const registry = loadCapabilityRegistry(analyticsDir);
     const convId = payload.conversationId || 'latest';
     const routeStatePath = join(analyticsDir, `.route_${convId}.json`);
     const transcriptPath =
@@ -79,6 +80,13 @@ async function main() {
       (payload.conversationId
         ? join(getBrainDir(), payload.conversationId, '.system_generated', 'logs', 'transcript.jsonl')
         : '');
+
+    if (isSubagentPromptOrTranscript(promptText, transcriptPath) || isSubagentPromptOrTranscript(rawInput, null)) {
+      process.stdout.write('{}\n');
+      process.exit(0);
+    }
+
+    const registry = loadCapabilityRegistry(analyticsDir);
 
     let prevRoute = null;
     if (existsSync(routeStatePath)) {
@@ -88,6 +96,24 @@ async function main() {
         prevRoute = null;
       }
     }
+
+    const explicitUserTurnCount = countExplicitUserTurnsInTranscript(transcriptPath);
+    const hasInitialNumSteps = typeof payload.initialNumSteps === 'number';
+    const isFollowUpAfterZero =
+      invocationNum === 1 &&
+      prevRoute?.lastInvocationNum === 0 &&
+      (hasInitialNumSteps && typeof prevRoute?.lastInitialNumSteps === 'number'
+        ? payload.initialNumSteps === prevRoute.lastInitialNumSteps
+        : prevRoute?.lastUserInput === promptText);
+    const isSameTurnAsyncWakeup =
+      explicitUserTurnCount !== null &&
+      typeof prevRoute?.lastExplicitUserTurnCount === 'number' &&
+      prevRoute.lastExplicitUserTurnCount > 0 &&
+      explicitUserTurnCount === prevRoute.lastExplicitUserTurnCount &&
+      prevRoute?.lastUserInput === promptText;
+    const isTurnStart =
+      !isSameTurnAsyncWakeup &&
+      (invocationNum === 0 || (invocationNum === 1 && !isFollowUpAfterZero));
 
     const rawPayloadModel = sanitizeModelSelectionName(payload.modelName || payload.model || '');
     const validPayloadModel =
@@ -108,7 +134,7 @@ async function main() {
       prevRoute?.canonicalModelId || normalizeCanonicalModelId(prevRoute?.activeUiModel || '');
 
     // Fast exit on subsequent invocations within the same turn when model/mode did not change
-    if (invocationNum > 1 && (!currentCanonicalId || currentCanonicalId === prevCanonicalId)) {
+    if (!isTurnStart && (!currentCanonicalId || currentCanonicalId === prevCanonicalId)) {
       process.stdout.write('{}\n');
       process.exit(0);
     }
@@ -128,7 +154,7 @@ async function main() {
     if (prevCanonicalId && currentCanonicalId && prevCanonicalId !== currentCanonicalId) {
       switchedFromHuman =
         prevRoute?.humanModelLabel || formatHumanModelLabel(prevRoute?.activeUiModel || '');
-    } else if (!prevCanonicalId && invocationNum === 1) {
+    } else if (!prevCanonicalId && isTurnStart) {
       const turnChange = extractLatestTurnSettingsChange(transcriptPath);
       if (turnChange && turnChange.fromModel && turnChange.toModel) {
         const fromId = normalizeCanonicalModelId(turnChange.fromModel);
@@ -153,15 +179,17 @@ async function main() {
     const lutSnoozed = Boolean(prevRoute?.lutSnoozed);
     const isOrchActive = isDynamicOrchestratorModel(activeUiModel, registry);
     let consecutiveOverprovisioned = prevRoute?.consecutiveOverprovisioned || 0;
-    if (route.lutRoute?.switchAction === 'SUGGEST_0CLICK_DOWNGRADE' && !lutSnoozed && !isOrchActive) {
-      consecutiveOverprovisioned += 1;
-    } else if (route.archetypeId !== 'R1_MECHANICAL_OPS') {
-      consecutiveOverprovisioned = 0;
+    if (isTurnStart) {
+      if (route.lutRoute?.switchAction === 'SUGGEST_0CLICK_DOWNGRADE' && !lutSnoozed && !isOrchActive) {
+        consecutiveOverprovisioned += 1;
+      } else if (route.archetypeId !== 'R1_MECHANICAL_OPS') {
+        consecutiveOverprovisioned = 0;
+      }
     }
 
     const prevTierHistory = Array.isArray(prevRoute?.tierHistory) ? prevRoute.tierHistory : [];
     const tierHistory =
-      invocationNum === 1
+      isTurnStart
         ? [...prevTierHistory, { tier: route.tier, archetypeId: route.archetypeId }].slice(-6)
         : prevTierHistory;
 
@@ -172,12 +200,12 @@ async function main() {
           (route.alignment?.mismatchType && route.alignment.mismatchType !== 'NONE'))
     );
     let mismatchCountInSession = prevRoute?.mismatchCountInSession || 0;
-    if (invocationNum === 1 && hasMismatchThisTurn) {
+    if (isTurnStart && hasMismatchThisTurn) {
       mismatchCountInSession += 1;
     }
 
     const shouldAskLutUpgrade = Boolean(
-      invocationNum === 1 &&
+      isTurnStart &&
         !lutSnoozed &&
         !isOrchActive &&
         !route.signals.includes('manual_force_low') &&
@@ -186,7 +214,7 @@ async function main() {
     );
 
     let didEmitOverprovisionedBanner = false;
-    if (invocationNum === 1 && consecutiveOverprovisioned >= 2 && !lutSnoozed && !isOrchActive) {
+    if (isTurnStart && consecutiveOverprovisioned >= 2 && !lutSnoozed && !isOrchActive) {
       const altHint = route.lutRoute?.alternativeUiModel
         ? ` *(oppure **${route.lutRoute.alternativeUiModel}**)*`
         : '';
@@ -218,7 +246,7 @@ async function main() {
     });
 
     if (
-      invocationNum === 1 &&
+      isTurnStart &&
       mixedHint.shouldSuggest &&
       !shouldAskLutUpgrade &&
       !didEmitOverprovisionedBanner
@@ -244,6 +272,11 @@ async function main() {
         activeUiModel,
         canonicalModelId: currentCanonicalId || null,
         humanModelLabel: currentHumanLabel || null,
+        lastInvocationNum: invocationNum,
+        lastInitialNumSteps: hasInitialNumSteps ? payload.initialNumSteps : null,
+        lastExplicitUserTurnCount:
+          explicitUserTurnCount ?? prevRoute?.lastExplicitUserTurnCount ?? null,
+        lastUserInput: promptText,
         lutSnoozed,
         consecutiveOverprovisioned,
         tierHistory,
@@ -254,7 +287,7 @@ async function main() {
       'utf-8'
     );
 
-    if (invocationNum === 1) {
+    if (isTurnStart) {
       const syncStatePath = join(analyticsDir, 'plugin-sync-state.json');
       if (existsSync(syncStatePath)) {
         try {
@@ -294,7 +327,8 @@ async function main() {
           registry.pendingRosterRefresh = {
             required: true,
             detectedAtMs: Date.now(),
-            notifiedAtMs: null
+            notifiedAtMs: null,
+            notifiedConversationIds: []
           };
         }
       }
@@ -307,6 +341,25 @@ async function main() {
           /^(?:gemini\b|orchestrator\b)/i.test(activeFamily) &&
           !calibratedMap[activeFamily]
         ) {
+          const rosterHasActiveFamily = (registry.availableRoster || []).some(
+            (slug) =>
+              extractModelBaseFamily(registry.swarmDisplayNames?.[String(slug).toLowerCase()] || slug) ===
+              activeFamily
+          );
+          if (
+            !rosterHasActiveFamily &&
+            Array.isArray(registry.availableRoster) &&
+            registry.availableRoster.length > 0 &&
+            !registry.pendingRosterRefresh?.required
+          ) {
+            registry.pendingRosterRefresh = {
+              required: true,
+              detectedAtMs: Date.now(),
+              notifiedAtMs: null,
+              notifiedConversationIds: []
+            };
+            registryDirty = true;
+          }
           const prevUncal = Array.isArray(registry.pendingDocCalibration?.uncalibratedFamilies)
             ? registry.pendingDocCalibration.uncalibratedFamilies
             : [];
@@ -318,7 +371,12 @@ async function main() {
               detectedAtMs: Date.now(),
               notifiedAtMs: isNewlyDetectedFamily
                 ? null
-                : (registry.pendingDocCalibration?.notifiedAtMs ?? null)
+                : (registry.pendingDocCalibration?.notifiedAtMs ?? null),
+              notifiedConversationIds: isNewlyDetectedFamily
+                ? []
+                : (Array.isArray(registry.pendingDocCalibration?.notifiedConversationIds)
+                    ? registry.pendingDocCalibration.notifiedConversationIds
+                    : [])
             };
             registryDirty = true;
           }
@@ -336,20 +394,43 @@ async function main() {
         });
       }
 
+      const isPendingNotifiedForConv = (pendingState, currentConvId) => {
+        if (!pendingState?.required) return true;
+        if (currentConvId && currentConvId !== 'latest') {
+          if (Array.isArray(pendingState.notifiedConversationIds)) {
+            return pendingState.notifiedConversationIds.includes(currentConvId);
+          }
+          return false;
+        }
+        return Boolean(pendingState.notifiedAtMs);
+      };
+      const markPendingNotified = (pendingState, currentConvId, nowMs) => {
+        if (!pendingState) return;
+        pendingState.notifiedAtMs = nowMs;
+        if (currentConvId && currentConvId !== 'latest') {
+          const prevIds = Array.isArray(pendingState.notifiedConversationIds)
+            ? pendingState.notifiedConversationIds
+            : [];
+          pendingState.notifiedConversationIds = [...new Set([...prevIds, currentConvId])].slice(-20);
+        }
+      };
+
       const needsRosterRefresh = Boolean(
-        registry.pendingRosterRefresh?.required && !registry.pendingRosterRefresh?.notifiedAtMs
+        registry.pendingRosterRefresh?.required &&
+          !isPendingNotifiedForConv(registry.pendingRosterRefresh, convId)
       );
       const needsDocCalibration = Boolean(
-        registry.pendingDocCalibration?.required && !registry.pendingDocCalibration?.notifiedAtMs
+        registry.pendingDocCalibration?.required &&
+          !isPendingNotifiedForConv(registry.pendingDocCalibration, convId)
       );
 
       if (needsRosterRefresh || needsDocCalibration) {
         const nowMs = Date.now();
         if (needsRosterRefresh && registry.pendingRosterRefresh) {
-          registry.pendingRosterRefresh.notifiedAtMs = nowMs;
+          markPendingNotified(registry.pendingRosterRefresh, convId, nowMs);
         }
         if (needsDocCalibration && registry.pendingDocCalibration) {
-          registry.pendingDocCalibration.notifiedAtMs = nowMs;
+          markPendingNotified(registry.pendingDocCalibration, convId, nowMs);
         }
         registryDirty = true;
         const uncalLabel =
@@ -381,8 +462,15 @@ async function main() {
             ? `${recOrch}${altUi ? ` (oppure ${altUi})` : ''}`
             : `${recOrch} o ${recUi}`
           : recUi;
+        const orchLead = recOrch
+          ? recOrch.includes('Carbon')
+            ? 'Carbon'
+            : recOrch.includes('Neon')
+              ? 'Neon'
+              : 'Argon'
+          : '';
         const orchNote = recOrch
-          ? ` Consiglio sessione: ${recOrch} adatta in automatico ${recOrch.includes('Carbon') ? 'Carbon' : 'Argon'} e Hydrogen evitando ulteriori conferme nei prossimi turni.`
+          ? ` Consiglio sessione: ${recOrch} adatta in automatico ${orchLead} e Hydrogen evitando ulteriori conferme nei prossimi turni.`
           : '';
         const mixedNote = mixedHint.shouldSuggest ? ` (${mixedHint.reasonIt})` : '';
 
