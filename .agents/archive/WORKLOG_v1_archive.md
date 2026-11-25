@@ -429,3 +429,13 @@ A seguito dell'audit delle direttive e dei comportamenti richiesti agli agenti n
 - **Sintesi**:
   - Sostituito il vincolo fisso a 2 ruoli con la scoperta semantica e l'ordinamento per importanza dei domini via LLM (`2..4` subagent: `DUAL-TRACK`, `TRI-TRACK`, `QUAD-TRACK` con regola di arresto del Rasoio di Occam e matrice in `<details>` trasposta a 4 colonne fisse per riga su `~600px`).
   - Introdotta [`rankAndCapDomains`](./plugins/skizzo/scripts/triage.mjs#L139-L194) in `triage.mjs` (`12/12` test verdi in [`triage.test.mjs`](./plugins/skizzo/tests/triage.test.mjs)), esteso `sanitizeForBlindJudge` in [`bench.mjs`](./plugins/ab-bench/scripts/bench.mjs#L241-L253) agli slot `Delta`/`Epsilon` e codificato il divieto di overfitting sugli esempi (`Anti-Example Hardcoding`) in [`skill-governance/rules/AGENTS.md`](./plugins/skill-governance/rules/AGENTS.md#L14).
+
+
+---
+
+## 2026-10-25 — Evoluzione `telemetry-analytics` v2.0.0–v2.1.0 (Backfill Sessioni Locali `brain/`, Report Token per Prompt e Dashboard HTML)
+- **Tipo**: Osservabilità Personale, Mining Transcript & Contabilità Token per Prompt (`plugins/telemetry-analytics/` v2.1.0)
+- **Dettagli**: [`.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md`](../../.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md)
+- **Sintesi**:
+  - Creato [`session-backfill.mjs`](../../plugins/telemetry-analytics/core/session-backfill.mjs) (`5/5` test in [`session-backfill.test.mjs`](../../plugins/telemetry-analytics/tests/session-backfill.test.mjs)) per indicizzare incrementalmente `~/.gemini/antigravity/brain/` (`sessions-index.json` schema `v3`, tempi attivi netti, abitudini orarie, modelli, slash command e `promptsBreakdown[]` per singolo prompt) e corretto il supporto `read_file`/`totalSessions` in [`collector.mjs`](../../plugins/telemetry-analytics/scripts/collector.mjs).
+  - Introdotta la Dashboard HTML a 5 tab ([`usage-dashboard-template.html`](../../plugins/telemetry-analytics/references/usage-dashboard-template.html)), il flag `--session <id>` in [`report.mjs`](../../plugins/telemetry-analytics/scripts/report.mjs) e la regola del footer minimale a 3 valori in [`rules/AGENTS.md`](../../plugins/telemetry-analytics/rules/AGENTS.md) (`> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`).

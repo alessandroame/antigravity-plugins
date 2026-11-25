@@ -1,11 +1,11 @@
 {
   "name": "ab-bench",
-  "displayName": "A/B Bench — Valutazione Cieca Prompt, Skill e Plugin",
-  "description": "Esegue sfide cieche A/B in parallelo tra un prompt base di controllo e una variante potenziata con plugin o skill (es. /skizzo), valutando il risultato sul Test delle 5 Dita e sul rapporto tempo/beneficio tramite un Giudice Cieco.",
-  "version": "1.0.0",
+  "displayName": "A/B Bench & Discovery Loop — Valutazione Cieca e Scoperta Guidata da Oracoli",
+  "description": "Esegue sfide cieche A/B sul Test delle 5 Dita (/ab-bench) e cicli di scoperta multi-ondata guidati da oracoli oggettivi in worktree isolati con frontiera di Pareto (/discovery-loop), senza regole always-on inline.",
+  "version": "1.1.0",
   "suggestedPrompts": [
     "Esegui /ab-bench su questo requisito per verificare alla cieca se /skizzo produce un risultato migliore rispetto al prompt normale",
-    "Esegui /ab-bench --skill laws-of-ux per confrontare il componente UI con e senza le regole di ergonomia",
+    "Esegui /discovery-loop --profile deep su questo modulo con mutatori divergenti, 4 oracoli e selezione finale su frontiera di Pareto",
     "Mostra /ab-bench --stats per vedere il bilancio storico di vittorie, pareggi e tempi medi dei plugin testati"
   ]
 }

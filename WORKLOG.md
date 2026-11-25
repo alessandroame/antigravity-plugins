@@ -14,6 +14,14 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 
 ---
 
+## 2026-11-25 — Rilascio `ab-bench` v1.1.0 & Skill `/discovery-loop` (Motore Pareto, 4 Oracoli, Uscita Composita e Pilota Reale)
+- **Tipo**: Estensione Plugin Pure-Skill (`0 B` inline), Core Headless, Workflow Python & Pilota End-to-End (`plugins/ab-bench/` v1.1.0, `README.md`, `DESIDERATA.md`, `MEMORY.md`)
+- **Dettagli**: [`.agents/worklog.d/2026-11-25_ab-bench-v110-discovery-loop.md`](./.agents/worklog.d/2026-11-25_ab-bench-v110-discovery-loop.md)
+- **Sintesi**:
+  - Implementati [`discovery-engine.mjs`](./plugins/ab-bench/core/discovery-engine.mjs), CLI [`discovery.mjs`](./plugins/ab-bench/scripts/discovery.mjs), template `run_workflow` [`discovery_workflow_template.py`](./plugins/ab-bench/references/discovery_workflow_template.py) e skill [`discovery-loop/SKILL.md`](./plugins/ab-bench/skills/discovery-loop/SKILL.md) con politica di uscita composita a 5 condizioni (`quick`/`deep`/`overnight`), `9/9` test offline e pilota reale su `triage.mjs` (`TARGET_SATISFICED` in `1` ondata, `405.3s`, `main` intatto).
+
+---
+
 ## 2026-11-24 — Studio Ciclo di Scoperta Orchestrato Guidato da Oracoli (`oracle-guided-discovery-loop`)
 - **Tipo**: Studio Architetturale & Pianificazione Prioritaria (`.agents/plans/oracle-guided-discovery-loop.md`, `DESIDERATA.md`)
 - **Dettagli**: [`.agents/worklog.d/2026-11-24_oracle-guided-discovery-loop-study.md`](./.agents/worklog.d/2026-11-24_oracle-guided-discovery-loop-study.md)
@@ -116,13 +124,4 @@ Giornale a finestra mobile (rolling window, max **250–300 righe** / **ultimi 1
 - **Sintesi**:
   - Rimossi i puntamenti hardcoded `C:/Users/aless/` in 4 file dei plugin e in `GlideMind/.agents/rules/constraints.md` a favore del percorso canonico `c:/github/antigravity-plugins/plugins/...`, codificando la guardia statica `HARDCODED_USER_PATH` (`L3`) in [`scripts/validate.mjs`](file:///c:/github/antigravity-plugins/scripts/validate.mjs#L82-L100) e lo shim `pwsh.cmd` in `%LOCALAPPDATA%\Microsoft\WindowsApps`.
   - Eseguito `skill-collision-check` su `191` skill locali/globali (`0` collisioni `P0`), specializzando i trigger in `Quiz_VDS-VL`, compattando `14` `description` entro `[80, 250]` char (`Quiz_VDS-VL`, `WeatherNerdWearOs`, `AgentBridge`) e convertendo a `trigger: model_decision` le regole verticali di `ParaMeteo*`.
-
----
-
-## 2026-10-25 — Evoluzione `telemetry-analytics` v2.0.0–v2.1.0 (Backfill Sessioni Locali `brain/`, Report Token per Prompt e Dashboard HTML)
-- **Tipo**: Osservabilità Personale, Mining Transcript & Contabilità Token per Prompt (`plugins/telemetry-analytics/` v2.1.0)
-- **Dettagli**: [`.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md`](file:///c:/github/antigravity-plugins/.agents/worklog.d/2026-10-25_telemetry-analytics-v2-session-backfill-and-per-prompt-tokens.md)
-- **Sintesi**:
-  - Creato [`session-backfill.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/core/session-backfill.mjs) (`5/5` test in [`session-backfill.test.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/tests/session-backfill.test.mjs)) per indicizzare incrementalmente `~/.gemini/antigravity/brain/` (`sessions-index.json` schema `v3`, tempi attivi netti, abitudini orarie, modelli, slash command e `promptsBreakdown[]` per singolo prompt) e corretto il supporto `read_file`/`totalSessions` in [`collector.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/scripts/collector.mjs).
-  - Introdotta la Dashboard HTML a 5 tab ([`usage-dashboard-template.html`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/references/usage-dashboard-template.html)), il flag `--session <id>` in [`report.mjs`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/scripts/report.mjs) e la regola del footer minimale a 3 valori in [`rules/AGENTS.md`](file:///c:/github/antigravity-plugins/plugins/telemetry-analytics/rules/AGENTS.md) (`> Prompt #<N>: <in> in / <out> out · Sessione: <totSessione>`).
 

@@ -6,26 +6,34 @@
 
 ## 1. Obiettivo, Tesi Architetturale e Confini Anti-Rumore
 
-Progettare un protocollo di esplorazione lunga (`>= 60` minuti) orchestrata su più agenti per far emergere miglioramenti non incrementali su software, algoritmi e interfacce, evitando i fallimenti tipici dei cicli non ancorati:
+Progettare un protocollo di esplorazione multi-ondata orchestrata su più agenti per far emergere miglioramenti non incrementali su software, algoritmi e interfacce, evitando i fallimenti tipici dei cicli non ancorati:
 
-1. **Tesi Centrale (*Mutazione -> Oracolo -> Selezione*)**: sessioni prolungate in cui personalità "stupide", irrazionali o divergenti discutono liberamente tra loro tendono a produrre caricature facili da scartare, consenso fittizio (*hallucinated consensus*) e deriva di contesto dopo `20-30` turni. Al contrario, quelle stesse personalità diventano efficaci **operatori di mutazione** (schema *Quality-Diversity / MAP-Elites*) quando ogni ipotesi o variante generata viene filtrata da **oracoli oggettivi esterni** che scartano automaticamente circa il `90%` del rumore prima della revisione umana.
-2. **Posizionamento e Anti-Collisione nel Catalogo**:
-   - [`skizzo`](../../plugins/skizzo/README.md) governa il dibattito dialettico rapido all'interno del singolo turno (`2..4` tracce).
-   - [`ab-bench`](../../plugins/ab-bench/README.md) fornisce il protocollo di confronto cieco a 5 Dita tra due candidati A/B.
+1. **Tesi Centrale (*Mutazione -> Oracolo -> Selezione*)**: sessioni prolungate in cui personalità "stupide", irrazionali o divergenti discutono liberamente tra loro tendono a produrre caricature facili da scartare, consenso fittizio (*hallucinated consensus*) e deriva di contesto dopo `20-30` turni. Al contrario, quelle stesse personalità diventano efficaci **operatori di mutazione** (schema *Quality-Diversity / MAP-Elites*) quando ogni ipotesi o variante generata viene filtrata da **oracoli oggettivi esterni** che scartano automaticamente il rumore prima della revisione umana.
+2. **Politica di Uscita Composita a 5 Condizioni (`OR`) e 3 Profili**: il tempo reale di esecuzione non è una durata minima obbligatoria ma solo un tetto massimo di sicurezza configurabile (`maxWallClockMinutes`). Il ciclo si arresta appena si verifica una delle seguenti 5 condizioni:
+   - `PARETO_CONVERGED`: nessuna nuova variante non-dominata migliora la frontiera di Pareto oltre `minImprovementDelta` (`0.05`) per `stagnationWaves` ondate consecutive.
+   - `TARGET_SATISFICED`: almeno `targetSatisficingCount` varianti ortogonali superano tutti gli oracoli e battono la baseline di almeno `targetBaselineMargin` (`0.10`).
+   - `RESOURCE_BUDGET_REACHED`: raggiunto `maxWaves`, `maxVariants`, `maxSubagentCalls` o `maxTotalTokens`.
+   - `YIELD_COLLAPSE`: `0` varianti valide per `yieldCollapseWaves` (`2`) ondate consecutive oppure tasso di ipotesi duplicate oltre `maxDuplicateRate` (`0.70`).
+   - `WALL_CLOCK_CAP`: superato il tetto temporale di sicurezza `maxWallClockMinutes` del profilo attivo (`quick`: `20`m / `2` ondate / `4` varianti / `12` subagent / `300k` tok; `deep`: `60`m / `4` ondate / `8` varianti / `28` subagent / `800k` tok; `overnight`: `120`m / `6` ondate / `12` varianti / `48` subagent / `1.5M` tok).
+3. **Posizionamento, Audit Collisioni (Fase A) e Contenitore Canonico**:
+   - [`skizzo`](../../plugins/skizzo/README.md) governa il dibattito dialettico rapido nel singolo turno (`2..4` tracce).
+   - [`ab-bench`](../../plugins/ab-bench/README.md) fornisce il confronto cieco a 5 Dita tra candidati A/B.
    - [`mapek`](../../plugins/mapek/README.md) e [`nightly-interaction-lab`](./nightly-interaction-lab.md) analizzano retrospettivamente il metodo operatore.
    - [`engineering-workflow`](../../plugins/engineering-workflow/README.md) fornisce `diff-triage.mjs` e la sonda geometrica `ui-geometry-probe.js`.
-   - Questo flusso nasce quindi come **capacità pure-skill / workflow on-demand a `0 B` inline**, che coordina sessioni esplorative lunghe tramite la skill built-in `run-workflow` (orchestrazione Python `parallel` / `pipeline` / `phase`) e worktree isolati (`workspace="share"` / `"branch"`), senza mai alterare il branch principale prima della decisione dell'utente.
+   - **Decisione Fase A**: estensione di [`plugins/ab-bench`](../../plugins/ab-bench/README.md) a `v1.1.0` con seconda skill pura on-demand `skills/discovery-loop/SKILL.md` (`0 B` in `rules/AGENTS.md`, nessuna riga extra in `GEMINI.md`, riuso diretto della valutazione cieca a 5 Dita, zero collisioni `P0`/`P1` con `skizzo`, `ab-bench`, `mapek`, `run-workflow` e `generative_ui`).
 
 ---
 
-## 2. Architettura a 3 Fasi Temporizzate (~60 min) e Stack di 4 Oracoli Oggettivi
+## 2. Architettura a 3 Fasi per Ondata e Stack di 4 Oracoli Oggettivi
 
 ```mermaid
 flowchart TD
-    A["Fase 1: Attacco e Mutazione Divergente (15 min)"] --> B["Filtro Ipotesi Falsificabili"]
-    B --> C["Fase 2: Prototipazione Parallela in Worktree (25 min)"]
-    C --> D["Fase 3: Stack di 4 Oracoli e Giudice Cieco (20 min)"]
-    D --> E["Scheda Comparativa Finale (Scelta Umana)"]
+    A["Ondata W: Attacco e Mutazione Divergente (Parallel)"] --> B["Deduplica Jaccard e Filtro Ipotesi"]
+    B --> C["Prototipazione Parallela in Worktree Isolati (share)"]
+    C --> D["Stack di 4 Oracoli e Giudici Ciechi"]
+    D --> E{"Check Uscita Composita (5 Condizioni OR)"}
+    E -- "CONTINUE" --> A
+    E -- "STOP" --> F["Scheda Comparativa Frontiera di Pareto (Scelta Umana)"]
 ```
 
 ### A. Tre Archetipi di Mutatori Agnostici al Dominio

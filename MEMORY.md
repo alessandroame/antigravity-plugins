@@ -25,6 +25,9 @@ Registro distillato per dominio dei vincoli architetturali e delle particolarit√
 - **Routing LUT `adaptive-router` (`v1.2.0`), Banner `metadata.user_markdown` a `0` Token, `swarm` vs `invoke_subagent` e Modi Espliciti**:
   - *Insidia*: `<USER_SETTINGS_CHANGE>` appende boilerplate (`No need to comment...`) e transizioni iniziali `from None` (falsi banner al turno 1), i turni multi-tool lenti promuoverebbero un modello `(Low)` a `HIGH` se ricalibrato sulla durata, e `swarm{action:"model"}` fallisce fuori da uno swarm attivo (`no swarm member named ""`) mentre `PreInvocation` non espone ancora `modelOverride`.
   - *Regola*: Sanitizzare i nomi modello (`sanitizeModelSelectionName`), bloccare i tier tra parentesi (`extractExplicitReasoningMode`), emettere i banner di switch in `PreInvocation` con `systemMessage: ""` + `metadata.user_markdown` (`0` token, ignorando `from None`), sincronizzare il roster da `swarm{action:"models"}` (`providerFilter: 'gemini-ui'`) con calibrazione docs `una tantum` (`R1..R6`) ed eseguire lo switch a **1 click** tramite `invoke_subagent` (`self`/`research`).
+- **Orchestrazione `/discovery-loop` (`ab-bench` v1.1.0, `0 B` Inline), Uscita Composita & Template `run_workflow`**:
+  - *Insidia*: Usare il solo tempo di orologio (`>= 60m`) spreca token quando gli oracoli convergono prima; un errore di un singolo `agent(...)` dentro `parallel()` cancella gli altri worktree; `ast.parse()` rifiuta `await` top-level nei template `run_workflow`.
+  - *Regola*: Governare l'uscita con la politica composita a 5 condizioni `OR` (`evaluateStopCondition` in `core/discovery-engine.mjs`: `WALL_CLOCK_CAP`, `RESOURCE_BUDGET_REACHED`, `TARGET_SATISFICED`, `YIELD_COLLAPSE`, `PARETO_CONVERGED`), avvolgere ogni `agent(...)` in `parallel()` con `try/except` (`safe_run_agent`), e verificare la sintassi Python con `ast.PyCF_ALLOW_TOP_LEVEL_AWAIT`.
 
 ---
 

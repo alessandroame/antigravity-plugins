@@ -9,7 +9,6 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note / Specifica di Riferimento (<= 160 char) |
 | :--- | :---: | :---: | :--- |
-| Ciclo di Scoperta Guidato da Oracoli (`oracle-guided-discovery-loop`) | Plugin (`ab-bench` / nuovo) | `🔴 Prioritario` | Studio 1h+: mutatori irrazionali su worktree, oracoli dati/ciechi e `0 B` inline ([piano](./.agents/plans/oracle-guided-discovery-loop.md)). |
 | Laboratorio Metodologico Notturno (`interaction-lab`) | Plugin (`mapek`) | `🔴 Prioritario` | `mapek` v1.2.0: slot `02:30`/`08:30`, replay `<= 6 KB`, SSOT padronanza e `0 B` inline ([piano](./.agents/plans/nightly-interaction-lab.md)). |
 | Verifica Deriva `Piano <-> Diff` (`diff-triage --plan`) | Plugin (`engineering-workflow`) | `⚪ Pianificato` | Fase 1: confronto `0`-token tra percorsi in `.agents/plans/*.md` e `git diff` ([piano](./.agents/plans/sdlc-three-grafts.md)). |
 | Regressione Automatica Trigger Skill (`skill-trigger-eval`) | Plugin (`skill-governance`) | `⚪ Pianificato` | Fase 2: ranking deterministico `BM25` su `SKILL.md` per bloccare skill mute post-refactor ([piano](./.agents/plans/sdlc-three-grafts.md)). |
@@ -21,6 +20,7 @@ Matrice di stato delle funzionalità, dei plugin e dei tool interni dell'ecosist
 
 | Modulo / Funzionalità | Ambito | Stato | Note di Rilascio (<= 160 char) |
 | :--- | :---: | :---: | :--- |
+| `ab-bench` (v1.1.0) & `/discovery-loop` | Plugin | `🟢 Completato` | Pure-skill (`0 B` inline), core Pareto headless, 4 oracoli, uscita composita 5-condizioni, template `run_workflow` e pilota reale ([ADR](./WORKLOG.md)). |
 | Snellimento Budget Inline (`48 KB`) & Anti-Mirroring | Catalogo | `🟢 Completato` | Ridotto peso inline del 32,7% (61,8->41,6 KB), tetto L3 48 KB, skill pure ab-bench/code-inspector e blocco self-mirroring ([ADR](./WORKLOG.md)). |
 | Standard Ibrido `EN/IT` & Benchmark `/ab-bench` | Catalogo | `🟢 Completato` | Verdetto `GO` (`-21,6%` B, `+1` dito `S2`), 56 file migrati in `EN` logico + `IT` utente ([piano](./.agents/plans/hybrid-en-it-migration.md)). |
 | `engineering-sobriety` | Plugin | `🟢 Completato` | Regole anti-hype, bonifica lessicale, zero emoji decorative e skill `tone-audit` ([README](./plugins/engineering-sobriety/README.md)). |
